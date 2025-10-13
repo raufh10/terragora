@@ -1,0 +1,18 @@
+# API
+fastapi
+starlette
+uvicorn[standard]
+
+# Extraction
+praw
+
+# Transformation
+openai
+
+# Load
+httpx
+
+# Misc
+pydantic-settings
+python-multipart
+supabase
