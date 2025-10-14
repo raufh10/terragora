@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Body
 
 from services.extraction import PrawStarter, SubmissionsExtractor
-from shared.config import credentials, settings
+from services.config import credentials, settings
 from logger import start_logger
 
 router = APIRouter()

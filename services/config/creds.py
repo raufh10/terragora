@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Credentials(BaseSettings):
   model_config = SettingsConfigDict(
-    env_file="../.env" if os.getenv("ENV", "development") == "development" else None,
+    env_file=".env" if os.getenv("ENV", "development") == "development" else None,
     env_file_encoding="utf-8",
     extra="allow"
   )
@@ -24,12 +24,12 @@ class Credentials(BaseSettings):
       raise ValueError("CLIENT_ID not set.")
     return quote_plus(self.client_id.get_secret_value())
 
-  cliend_secret: SecretStr | None = None
+  client_secret: SecretStr | None = None
   @property
   def CLIENT_SECRET(self) -> str:
-    if not self.cliend_secret:
+    if not self.client_secret:
       raise ValueError("CLIENT_SECRET not set.")
-    return quote_plus(self.cliend_secret.get_secret_value())
+    return quote_plus(self.client_secret.get_secret_value())
 
   # Transform Creds
   openai_api_key: SecretStr | None = None
