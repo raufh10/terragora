@@ -17,6 +17,21 @@ class Credentials(BaseSettings):
   telegram_bot_token: SecretStr | None = None
 
   # Extraction Creds
+  client_id: SecretStr | None = None
+  @property
+  def CLIENT_ID(self) -> str:
+    if not self.client_id:
+      raise ValueError("CLIENT_ID not set.")
+    return quote_plus(self.client_id.get_secret_value())
+
+  cliend_secret: SecretStr | None = None
+  @property
+  def CLIENT_SECRET(self) -> str:
+    if not self.cliend_secret:
+      raise ValueError("CLIENT_SECRET not set.")
+    return quote_plus(self.cliend_secret.get_secret_value())
+
+  # Transform Creds
   openai_api_key: SecretStr | None = None
 
   @property
