@@ -3,7 +3,8 @@ import logging
 from typing import Dict, Callable, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from scheduler.actions import (
-  do_fetch_submissions
+  do_extraction,
+  do_transform
 )
 
 class Settings(BaseSettings):
@@ -28,12 +29,14 @@ class Settings(BaseSettings):
   # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "00:00", "end": "01:00", "action": "collect"}
+    {"start": "00:00", "end": "01:00", "action": "collect"},
+    {"start": "02:00", "end": "23:00", "action": "label"}
   ]
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
-    "collect":  do_fetch_submissions
+    "collect":  do_extraction,
+    "label": do_transform
   }
 
 settings = Settings()
