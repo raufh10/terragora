@@ -1,8 +1,10 @@
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Body
-
-from services.extraction import PrawStarter, SubmissionsExtractor
 from services.config import credentials, settings
+from services.extraction import (
+  AsyncPrawStarter,
+  SubmissionsExtractor
+)
 from logger import start_logger
 
 router = APIRouter()
@@ -18,16 +20,15 @@ def _preflight_check() -> None:
     logger.error("🚫 Missing USER_AGENT in settings")
     raise HTTPException(status_code=500, detail="Server misconfiguration: missing USER_AGENT")
 
-def _build_reddit():
+async def _build_reddit():
   reddit = (
-    PrawStarter(logger)
+    AsyncPrawStarter(logger)
     .with_client(credentials.CLIENT_ID, credentials.CLIENT_SECRET)
     .with_user_agent(settings.USER_AGENT)
     .with_read_only(settings.IS_READ_ONLY)
     .with_timeout(getattr(settings, "TIMEOUT", 15))
-    .build()
   )
-  return reddit
+  return await reddit.build()
 
 def _normalize_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
   payload = payload or {}
@@ -50,11 +51,10 @@ async def fetch_submissions(
 ):
   logger.info("📥 Starting submissions fetch workflow")
   _preflight_check()
-
   try:
     cfg = _normalize_config(config)
-    subs_list: List[str] = []
 
+    subs_list: List[str] = []
     if config and isinstance(config.get("subreddits"), list) and config.get("subreddits"):
       subs_list = [str(s).strip() for s in config["subreddits"] if str(s).strip()]
     elif cfg.get("subreddit"):
@@ -64,33 +64,38 @@ async def fetch_submissions(
       logger.warning("⚠️ No subreddit provided in config and no default in settings")
       raise HTTPException(status_code=400, detail="No subreddit specified")
 
-    reddit = _build_reddit()
-    results: Dict[str, List[Dict[str, Any]]] = {}
-    totals = {"subreddits": len(subs_list), "submissions": 0}
+    reddit = await _build_reddit()
+    try:
+      results: Dict[str, List[Dict[str, Any]]] = {}
+      totals = {"subreddits": len(subs_list), "submissions": 0}
 
-    for sr in subs_list:
-      sr_cfg = {**cfg, "subreddit": sr}
-      logger.debug(
-        f"🔍 Collecting from r/{sr} | sort={sr_cfg['sort']} | time={sr_cfg['time_filter']} | limit={sr_cfg['limit']}"
-      )
-      extractor = SubmissionsExtractor.from_config(reddit, logger, sr_cfg)
-      rows = extractor.collect()
-      results[sr] = rows
-      totals["submissions"] += len(rows)
+      for sr in subs_list:
+        sr_cfg = {**cfg, "subreddit": sr}
+        logger.debug(
+          f"🔍 Collecting from r/{sr} | sort={sr_cfg['sort']} | time={sr_cfg['time_filter']} | limit={sr_cfg['limit']}"
+        )
+        extractor = SubmissionsExtractor.from_config(reddit, logger, sr_cfg)
+        rows = await extractor.collect()
+        results[sr] = rows
+        totals["submissions"] += len(rows)
 
-    logger.info(f"✅ Fetch complete | subreddits={totals['subreddits']} submissions={totals['submissions']}")
-    return {
-      "ok": True,
-      "counts": totals,
-      "results": results,
-      "settings": {
-        "sort": cfg["sort"],
-        "time_filter": cfg["time_filter"],
-        "limit": cfg["limit"],
-        "fields": cfg["fields"],
-      },
-    }
-
+      logger.info(f"✅ Fetch complete | subreddits={totals['subreddits']} submissions={totals['submissions']}")
+      return {
+        "ok": True,
+        "counts": totals,
+        "results": results,
+        "settings": {
+          "sort": cfg["sort"],
+          "time_filter": cfg["time_filter"],
+          "limit": cfg["limit"],
+          "fields": cfg["fields"],
+        },
+      }
+    finally:
+      try:
+        await reddit.close()
+      except Exception:
+        logger.debug("Reddit client close skipped/failed (already closed or not needed).")
   except HTTPException:
     raise
   except Exception:
