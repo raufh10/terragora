@@ -6,9 +6,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
 
 from contextlib import asynccontextmanager
-
 from services.config import settings
-from routers import collect#, label, send
+from routers import collect, label, send
 
 from logger import start_logger
 logger = start_logger()
@@ -37,10 +36,21 @@ def create_app() -> FastAPI:
     allow_headers=["*"]
   )
 
+  # --- Health check route ---
+  @app.get("/", tags=["Health"])
+  async def root():
+    return {
+      "ok": True,
+      "status": "healthy",
+      "title": settings.TITLE,
+      "version": settings.VERSION,
+      "message": "🚀 API is running smoothly"
+    }
+
   # Register API routers
   app.include_router(collect.router, tags=["Extraction"])
-  #app.include_router(label.router, tags=["Transform"])
-  #app.include_router(send.router, tags=["Load"])
+  app.include_router(label.router, tags=["Transform"])
+  app.include_router(send.router, tags=["Load"])
 
   # Global exception handler for HTTP errors
   @app.exception_handler(StarletteHTTPException)

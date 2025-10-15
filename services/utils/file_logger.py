@@ -5,8 +5,7 @@ import logging
 
 from typing import Optional
 from urllib.parse import quote_plus
-from services.config.creds import credentials
-from services.config import settings
+from services.config import settings, credentials
 
 def send_telegram_notification(message: str):
   bot_token = quote_plus(credentials.telegram_bot_token.get_secret_value())

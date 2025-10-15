@@ -1,101 +1,50 @@
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Body
+from typing import Optional, Dict, Any
+from fastapi import APIRouter, Body, HTTPException
 
-from services.config import credentials, settings
-from services.extraction import (
-  PrawStarter,
-  SubmissionsExtractor
-)
+from services.llm import OpenAIResponse
+from services.schemas import AlertData
 
 from logger import start_logger
-router = APIRouter()
 logger = start_logger()
+router = APIRouter()
 
-def _preflight_check() -> None:
-  if not credentials.CLIENT_ID:
-    logger.error("🚫 Missing CLIENT_ID in credentials")
-    raise HTTPException(status_code=500, detail="Server misconfiguration: missing CLIENT_ID")
-  if credentials.CLIENT_SECRET is None:
-    logger.warning("⚠️ CLIENT_SECRET is empty or not set")
-  if not (settings.USER_AGENT or "").strip():
-    logger.error("🚫 Missing USER_AGENT in settings")
-    raise HTTPException(status_code=500, detail="Server misconfiguration: missing USER_AGENT")
-
-def _build_reddit():
-  reddit = (
-    PrawStarter(logger)
-    .with_client(credentials.CLIENT_ID, credentials.CLIENT_SECRET)
-    .with_user_agent(settings.USER_AGENT)
-    .with_read_only(settings.IS_READ_ONLY)
-    .with_timeout(getattr(settings, "TIMEOUT", 15))
-    .build()
-  )
-  return reddit
-
-def _normalize_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-  payload = payload or {}
-  cfg = {
-    "subreddit": payload.get("subreddit") or getattr(settings, "DEFAULT_SUBREDDIT", None),
-    "limit": int(payload.get("limit", getattr(settings, "LIMIT", 25))),
-    "sort": (payload.get("sort") or getattr(settings, "SORT", "hot")).lower(),
-    "time_filter": (payload.get("time_filter") or getattr(settings, "TIME_FILTER", "day")).lower(),
-    "fields": payload.get("fields") or getattr(
-      settings,
-      "FIELDS",
-      ["id", "title", "author", "score", "permalink", "created_utc"],
-    ),
-  }
-  return cfg
-
-@router.post("/submissions/fetch")
-async def fetch_submissions(
-  config: Optional[Dict[str, Any]] = Body(None),
+@router.post("/analysis/run")
+async def run_analysis(
+  payload: Optional[Dict[str, Any]] = Body(None),
 ):
-  logger.info("📥 Starting submissions fetch workflow")
-  _preflight_check()
-
+  logger.info("📥 Starting /analysis/run (AlertData)")
   try:
-    cfg = _normalize_config(config)
-    subs_list: List[str] = []
+    payload = payload or {}
+    system_prompt = str(payload.get("system_prompt", "")).strip()
+    user_prompt = str(payload.get("user_prompt", "")).strip()
 
-    if config and isinstance(config.get("subreddits"), list) and config.get("subreddits"):
-      subs_list = [str(s).strip() for s in config["subreddits"] if str(s).strip()]
-    elif cfg.get("subreddit"):
-      subs_list = [cfg["subreddit"]]
+    if not system_prompt:
+      logger.warning("⚠️ Missing system_prompt for AlertData generation")
+    if not user_prompt:
+      logger.warning("⚠️ Missing user_prompt for AlertData generation")
 
-    if not subs_list:
-      logger.warning("⚠️ No subreddit provided in config and no default in settings")
-      raise HTTPException(status_code=400, detail="No subreddit specified")
+    logger.debug(f"Prompt lengths | system={len(system_prompt)} user={len(user_prompt)}")
 
-    reddit = _build_reddit()
-    results: Dict[str, List[Dict[str, Any]]] = {}
-    totals = {"subreddits": len(subs_list), "submissions": 0}
+    llm = OpenAIResponse()
+    result = llm.generate_structured_response(
+      logger,
+      system_prompt,
+      user_prompt,
+      response_format=AlertData
+    )
 
-    for sr in subs_list:
-      sr_cfg = {**cfg, "subreddit": sr}
-      logger.debug(
-        f"🔍 Collecting from r/{sr} | sort={sr_cfg['sort']} | time={sr_cfg['time_filter']} | limit={sr_cfg['limit']}"
-      )
-      extractor = SubmissionsExtractor.from_config(reddit, logger, sr_cfg)
-      rows = extractor.collect()
-      results[sr] = rows
-      totals["submissions"] += len(rows)
+    if not result:
+      logger.error("⚠️ LLM returned no structured result (AlertData)")
+      raise HTTPException(status_code=502, detail="LLM produced no result")
 
-    logger.info(f"✅ Fetch complete | subreddits={totals['subreddits']} submissions={totals['submissions']}")
-    return {
-      "ok": True,
-      "counts": totals,
-      "results": results,
-      "settings": {
-        "sort": cfg["sort"],
-        "time_filter": cfg["time_filter"],
-        "limit": cfg["limit"],
-        "fields": cfg["fields"],
-      },
-    }
+    data = result.model_dump()
+    logger.info("✅ AlertData generation completed")
+    logger.debug(f"AlertData keys: {list(data.keys())}")
+
+    return data
 
   except HTTPException:
     raise
   except Exception:
-    logger.exception("💥 Unhandled exception during submissions fetch")
+    logger.exception("💥 Unhandled error in /analysis/run (AlertData)")
     raise HTTPException(status_code=500, detail="Internal server error")

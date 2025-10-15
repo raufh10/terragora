@@ -1,7 +1,7 @@
-from .praw import PrawStarter
+from .praw import AsyncPrawStarter
 from .submissions import SubmissionsExtractor
 
 __all__ = [
-  "PrawStarter",
+  "AsyncPrawStarter",
   "SubmissionsExtractor"
 ]

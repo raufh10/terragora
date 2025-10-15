@@ -32,4 +32,8 @@ class Settings(BaseSettings):
   IS_READ_ONLY: bool = True
   TIMEOUT: int = 60
 
+  # Load Settings
+  TELEGRAM_MIN_LENGHT: int = 1
+  TELEGRAM_MAX_LENGHT: int = 4096
+
 settings = Settings()
