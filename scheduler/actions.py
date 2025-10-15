@@ -195,3 +195,98 @@ def do_transform(logger):
 
   except requests.RequestException as e:
     logger.exception(f"❌ Request error calling {url}: {e}")
+
+def do_load(logger):
+  supabase = db.get_supabase_client()
+
+  # --- Fetch alerts data from Supabase ---
+  try:
+    alerts_data = asyncio.run(alerts.select(supabase, logger))
+  except Exception as e:
+    logger.error(f"❌ Insert exception: {e}")
+
+  # --- Process alerts data to load-ready state ---
+  to_load_data = []
+  for item in alerts_data:
+    sid = item.get("id")
+    relevance = item.get("relevance")
+    agenda_type = (item.get("messageagendas") or {}).get("type")
+
+    sub = item.get("submissions") or {}
+    data = sub.get("data") or {}
+    subreddit = sub.get("subreddit")
+
+    title = data.get("title")
+    score = data.get("score")
+    author = data.get("author")
+    permalink = data.get("permalink")
+    created_ts = data.get("created_utc")
+
+    created_iso = (
+      datetime.fromtimestamp(created_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+      if isinstance(created_ts, (int, float)) else "N/A"
+    )
+
+    message = (
+      f"🔔 Alert — r/{subreddit} ({agenda_type or 'agenda'})\n"
+      f"Title: {title}\n"
+      f"Author: u/{author} • Score: {score}\n"
+      f"Relevance: {relevance}%\n"
+      f"Link: {permalink}\n"
+      f"Created (UTC): {created_iso}"
+    )
+    to_load_data.append({"id": sid, "message": message})
+
+  # --- Send alerts data using API ---
+  from services.config import settings
+  api = getattr(settings, "API_ENDPOINT", None)
+  if not api:
+    logger.error("❌ Missing settings.API_ENDPOINT")
+    return
+
+  url = f"{api.rstrip('/')}/telegram"
+  logger.info(f"📡 Sending {len(to_load_data)} Telegram notifications → {url}")
+
+  success_updates = []
+
+  for row in to_load_data:
+    sid = row.get("id")
+    msg = row.get("message", "")
+
+    if not msg:
+      logger.warning(f"⚠️ Skipping id={sid}: empty message")
+      continue
+
+    try:
+      resp = requests.post(url, json={"message": msg}, timeout=30)
+    except requests.RequestException as e:
+      logger.error(f"💥 Request error for id={sid}: {e}")
+      continue
+
+    if not resp.ok:
+      preview = (msg[:120] + "…") if len(msg) > 120 else msg
+      logger.error(f"🚫 Telegram send failed for id={sid} [{resp.status_code}] | preview={preview!r}")
+      continue
+
+    try:
+      body = resp.json()
+    except ValueError:
+      logger.error(f"⚠️ Invalid JSON response for id={sid}")
+      continue
+
+    if bool(body.get("ok")):
+      success_updates.append(sid)
+      logger.info(f"✅ Telegram sent for id={sid}")
+    else:
+      logger.warning(f"⚠️ Telegram endpoint returned ok=false for id={sid}: {body}")
+
+  logger.info(f"📬 Telegram send summary | success={len(success_updates)} / {len(to_load_data)}")
+
+  # --- Update alerts data status in supabase ---
+  try:
+    status = asyncio.run(alerts.update_statuses_success(supabase, logger, success_updates))
+  except Exception as e:
+    logger.error(f"❌ Insert exception: {e}")
+
+  if status:
+    logger.info("📥 Insert is complete")
