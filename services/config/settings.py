@@ -28,12 +28,12 @@ class Settings(BaseSettings):
   # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "02:00", "end": "05:00", "action": "night"}
+    {"start": "00:00", "end": "01:00", "action": "collect"}
   ]
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
-    "night":  do_fetch_submissions
+    "collect":  do_fetch_submissions
   }
 
 settings = Settings()
