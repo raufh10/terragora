@@ -2,11 +2,13 @@ import os
 import logging
 from typing import Dict, Callable, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from scheduler.actions import do_morning, do_midday, do_night
+from scheduler.actions import (
+  do_fetch_submissions
+)
 
 class Settings(BaseSettings):
   model_config = SettingsConfigDict(
-    env_file="../.env" if os.getenv("ENV", "development") == "development" else None,
+    env_file=".env" if os.getenv("ENV", "development") == "development" else None,
     env_file_encoding="utf-8",
     extra="allow",
   )
@@ -21,17 +23,17 @@ class Settings(BaseSettings):
   TELEGRAM_BASE: int = logging.ERROR
 
   # API
-  API_ENDPOINT: str = "http://localhost:8000"
+  API_ENDPOINT: str = "http://127.0.0.1:8000"
 
   # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "02:00", "end": "03:00", "action": "night"}
+    {"start": "02:00", "end": "05:00", "action": "night"}
   ]
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
-    "night":  do_night
+    "night":  do_fetch_submissions
   }
 
 settings = Settings()
