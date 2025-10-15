@@ -19,11 +19,10 @@ class TimeRange:
     if self.start <= self.end:
       return self.start <= t < self.end
     else:
-      # Cross-midnight window
       return t >= self.start or t < self.end
 
   def contains(self, dt: datetime) -> bool:
-    return self.matches_day(dt) and self.contains_time(dt.timetz())
+    return self.matches_day(dt) and self.contains_time(dt.time())
 
 @dataclass(frozen=True)
 class Rule:

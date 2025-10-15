@@ -26,16 +26,12 @@ class Settings(BaseSettings):
   # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "06:00", "end": "10:00", "days": {"mon","tue","wed","thu","fri"}, "action": "morning"},
-    {"start": "12:00", "end": "14:00", "action": "midday"},
-    {"start": "22:00", "end": "02:00", "action": "night"},
+    {"start": "02:00", "end": "03:00", "action": "night"}
   ]
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
-    "morning": do_morning,
-    "midday": do_midday,
-    "night":  do_night,
+    "night":  do_night
   }
 
 settings = Settings()
