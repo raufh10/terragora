@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from typing import Iterable, List, Optional
-import sys
 import inspect
 
 from scheduler.models import Rule

@@ -2,11 +2,7 @@ import os
 import logging
 from typing import Dict, Callable, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from scheduler.actions import (
-  do_extraction,
-  do_transform,
-  do_load
-)
+from scheduler import actions
 
 class Settings(BaseSettings):
   model_config = SettingsConfigDict(
@@ -25,7 +21,7 @@ class Settings(BaseSettings):
   TELEGRAM_BASE: int = logging.ERROR
 
   # API
-  API_ENDPOINT: str = "http://127.0.0.1:8000"
+  API_ENDPOINT: str = "http://leaddits-api.railway.internal/"
 
   # Scheduler (UTC)
   LIST_RULES: bool = False
@@ -37,9 +33,9 @@ class Settings(BaseSettings):
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
-    "collect":  do_extraction,
-    "label": do_transform,
-    "send": do_load
+    "collect":  actions.do_extraction,
+    "label": actions.do_transform,
+    "send": actions.do_load
   }
 
 settings = Settings()

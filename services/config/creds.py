@@ -1,6 +1,5 @@
 import os
 from pydantic import SecretStr
-from urllib.parse import quote_plus
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Credentials(BaseSettings):
