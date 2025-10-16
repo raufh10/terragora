@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, constr
 
-from services.config.settings import settings
+from services.config import settings
 from services.utils.file_logger import send_telegram_notification as _tg_send
 
 from logger import start_logger
