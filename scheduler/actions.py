@@ -135,13 +135,6 @@ def do_transform(logger):
       f"Post title: \"{item['data']['title']}\"\n"
       f"Current upvotes: {item['data']['score']}\n\n"
       f"Agenda context:\n{agenda_prompt}\n\n"
-      "Write a thoughtful, engaging, and authentic reply that is likely to get upvoted "
-      "by members of this subreddit. Focus on adding value to the discussion — "
-      "for example, share useful insights, relatable experiences, or concise technical tips "
-      "that align with the community’s interests.\n\n"
-      "Additionally, evaluate how relevant this post is to the agenda context above. "
-      "Provide a relevance score from 0 to 100, where 0 means completely unrelated "
-      "and 100 means perfectly aligned with the agenda topic."
     )
 
     new_item = {
