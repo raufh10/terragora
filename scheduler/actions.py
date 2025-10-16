@@ -20,25 +20,28 @@ def do_extraction(logger):
 
   url = f"{api.rstrip('/')}/submissions/fetch"
 
+  submissions_limit = 10
+  submissions_sort = "hot"
+
   payload = [
     {
       "subreddit": "lakers",
-      "limit": 1000,
-      "sort": "new",
+      "limit": submissions_limit,
+      "sort": submissions_sort,
       "time_filter": "day",
       "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
     },
     {
       "subreddit": "AEWOfficial",
-      "limit": 1000,
-      "sort": "new",
+      "limit": submissions_limit,
+      "sort": submissions_sort,
       "time_filter": "day",
       "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
     },
     {
       "subreddit": "indotech",
-      "limit": 1000,
-      "sort": "new",
+      "limit": submissions_limit,
+      "sort": submissions_sort,
       "time_filter": "day",
       "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
     },
