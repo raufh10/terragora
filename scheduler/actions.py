@@ -19,13 +19,30 @@ def do_extraction(logger):
     return
 
   url = f"{api.rstrip('/')}/submissions/fetch"
-  payload = {
-    "subreddit": "dataengineering",
-    "limit": 10,
-    "sort": "hot",
-    "time_filter": "day",
-    "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
-  }
+
+  payload = [
+    {
+      "subreddit": "lakers",
+      "limit": 1000,
+      "sort": "new",
+      "time_filter": "day",
+      "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
+    },
+    {
+      "subreddit": "AEWOfficial",
+      "limit": 1000,
+      "sort": "new",
+      "time_filter": "day",
+      "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
+    },
+    {
+      "subreddit": "indotech",
+      "limit": 1000,
+      "sort": "new",
+      "time_filter": "day",
+      "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
+    },
+  ]
 
   try:
     logger.info(f"📡 POST {url}")
