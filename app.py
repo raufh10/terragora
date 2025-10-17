@@ -52,7 +52,7 @@ def main():
     run_action(match.action)
   else:
     logger.debug(f"No matching rule for current UTC time window. {timestamp_str}")
-    import requests; print(requests.get("https://leaddits-api-production.up.railway.app:8080/", timeout=10).status_code)
+    import requests; print(requests.get(f"{settings.API_ENDPOINT}/", timeout=10).status_code)
 
 if __name__ == "__main__":
   main()

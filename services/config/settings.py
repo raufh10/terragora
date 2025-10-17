@@ -25,15 +25,14 @@ class Settings(BaseSettings):
   TELEGRAM_BASE: int = logging.ERROR
 
   # API
-  API_ENDPOINT: str = "https://leaddits-api-production.up.railway.app:8080/"
-  #API_ENDPOINT: str = "https://leaddits-api.railway.internal:8080/"
+  API_ENDPOINT: str = "http://127.0.0.1:8000"
 
   # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "10:00", "end": "11:00", "action": "collect"},
-    {"start": "08:00", "end": "09:00", "action": "label"},
-    {"start": "09:00", "end": "10:00", "action": "send"}
+    {"start": "03:00", "end": "23:00", "action": "collect"},
+    {"start": "21:00", "end": "23:00", "action": "label"},
+    {"start": "22:00", "end": "23:00", "action": "send"}
   ]
 
   # Central action registry
