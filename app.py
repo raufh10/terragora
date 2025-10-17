@@ -36,6 +36,7 @@ def run_action(action_name: str) -> None:
 
 def main():
   now = datetime.now(timezone.utc)
+  timestamp_str = now.strftime("%Y-%m-%d %H:%M UTC")
   rules = build_rules(settings.TIME_RULES)
 
   if getattr(settings, "LIST_RULES", False):
@@ -50,7 +51,7 @@ def main():
   if match:
     run_action(match.action)
   else:
-    logger.debug("No matching rule for current UTC time window.")
+    logger.debug(f"No matching rule for current UTC time window. {timestamp_str}")
 
 if __name__ == "__main__":
   main()
