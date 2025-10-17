@@ -11,6 +11,8 @@ from services.database import (
 def do_extraction(logger):
   supabase = db.get_supabase_client()
 
+  # --- Import inside the function ---
+  from services.config import settings
   api = getattr(settings, "API_ENDPOINT", None)
   if not api:
     logger.error("❌ Missing settings.API_ENDPOINT")
