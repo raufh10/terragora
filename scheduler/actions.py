@@ -11,19 +11,16 @@ from services.database import (
 def do_extraction(logger):
   supabase = db.get_supabase_client()
 
-  # --- Extract submissions data from API ---
-  from services.config import settings
   api = getattr(settings, "API_ENDPOINT", None)
   if not api:
     logger.error("❌ Missing settings.API_ENDPOINT")
     return
 
   url = f"{api.rstrip('/')}/submissions/fetch"
-
   submissions_limit = 10
   submissions_sort = "hot"
 
-  payload = [
+  payloads = [
     {
       "subreddit": "lakers",
       "limit": submissions_limit,
@@ -47,60 +44,71 @@ def do_extraction(logger):
     },
   ]
 
-  try:
-    logger.info(f"📡 POST {url}")
-    resp = requests.post(url, json=payload, timeout=30)
-    if not resp.ok:
-      logger.error(f"⚠️ Fetch failed [{resp.status_code}] → {resp.text[:300]}")
-      return
+  all_insert_data = []
 
+  for cfg in payloads:
+    subreddit = cfg["subreddit"]
     try:
-      data = resp.json()
-    except ValueError:
-      logger.error("⚠️ Response is not valid JSON")
-      return
-
-    ok = bool(data.get("ok"))
-    counts = data.get("counts") or {}
-    results = data.get("results") or []
-    settings_echo = data.get("settings") or {}
-
-    if not ok:
-      logger.warning(
-        f"⚠️ Fetch returned ok=false | counts={counts} results_len={len(results)}"
-      )
-      return
-
-    logger.info(
-      f"✅ Fetch complete | subreddits={counts.get('subreddits')} "
-      f"submissions={counts.get('submissions')} results_len={len(results)} "
-      f"sort={settings_echo.get('sort')} time_filter={settings_echo.get('time_filter')} "
-      f"limit={settings_echo.get('limit')} fields={settings_echo.get('fields')}"
-    )
-
-    # --- Process submissions data to insert-ready state ---
-    to_insert_data = []
-    for subreddit, posts in results.items():
-      if not isinstance(posts, list):
+      logger.info(f"📡 POST {url} | subreddit={subreddit}")
+      resp = requests.post(url, json=cfg, timeout=30)
+      if not resp.ok:
+        logger.error(f"⚠️ Fetch failed [{resp.status_code}] for {subreddit} → {resp.text[:300]}")
         continue
+
+      try:
+        data = resp.json()
+      except ValueError:
+        logger.error(f"⚠️ Invalid JSON response for subreddit={subreddit}")
+        continue
+
+      ok = bool(data.get("ok"))
+      counts = data.get("counts") or {}
+      results = data.get("results") or {}
+      settings_echo = data.get("settings") or {}
+
+      if not ok:
+        logger.warning(
+          f"⚠️ Fetch returned ok=false | subreddit={subreddit} "
+          f"counts={counts} results_type={type(results)}"
+        )
+        continue
+
+      logger.info(
+        f"✅ Fetch complete | subreddit={subreddit} "
+        f"submissions={counts.get('submissions')} "
+        f"sort={settings_echo.get('sort')} "
+        f"time_filter={settings_echo.get('time_filter')} "
+        f"limit={settings_echo.get('limit')}"
+      )
+
+      posts = results.get(subreddit) if isinstance(results, dict) else results
+      if not posts:
+        logger.warning(f"⚠️ No posts returned for subreddit={subreddit}")
+        continue
+
       for post in posts:
         if isinstance(post, dict):
-          to_insert_data.append({
-            "subreddit": subreddit,
-            "data": post
-          })
+          all_insert_data.append({"subreddit": subreddit, "data": post})
 
-    # --- Insert submissions data to supabase ---
-    try:
-      status = asyncio.run(submissions.insert(supabase, logger, to_insert_data))
-    except Exception as e:
-      logger.error(f"❌ Insert exception: {e}")
+    except requests.RequestException as e:
+      logger.exception(f"❌ Request error calling {url} for {subreddit}: {e}")
+      continue
 
-    if status:
-      logger.info("📥 Insert is complete")
+  # --- Insert to Supabase ---
+  if not all_insert_data:
+    logger.warning("⚠️ No valid submission data collected; skipping insert")
+    return
 
-  except requests.RequestException as e:
-    logger.exception(f"❌ Request error calling {url}: {e}")
+  try:
+    status = asyncio.run(submissions.insert(supabase, logger, all_insert_data))
+  except Exception as e:
+    logger.error(f"❌ Insert exception: {e}")
+    return
+
+  if status:
+    logger.info(f"📥 Insert complete | total_inserted={len(all_insert_data)}")
+  else:
+    logger.warning("⚠️ Insert returned falsy result")
 
 def do_transform(logger):
   supabase = db.get_supabase_client()
