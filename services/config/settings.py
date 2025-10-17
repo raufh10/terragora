@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
   # Logging
   LOG_PATH: str = "./logs/app.log"
-  LOGGING_BASE: int = logging.INFO
+  LOGGING_BASE: int = logging.DEBUG
   TELEGRAM_BASE: int = logging.ERROR
 
   # API
