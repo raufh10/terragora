@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
   # Logging Settings
   API_LOG_PATH: str = "./logs/api.log"
-  LOGGING_BASE: int = logging.INFO
+  LOGGING_BASE: int = logging.DEBUG
   TELEGRAM_BASE: int = logging.ERROR
 
   # Extraction Settings
