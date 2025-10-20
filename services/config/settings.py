@@ -30,13 +30,15 @@ class Settings(BaseSettings):
   # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "03:00", "end": "23:00", "action": "collect"},
-    {"start": "21:00", "end": "23:00", "action": "label"},
-    {"start": "22:00", "end": "23:00", "action": "send"}
+    {"start": "00:00", "end": "23:59", "action": "test"},
+    {"start": "10:00", "end": "11:00", "action": "collect"},
+    {"start": "11:00", "end": "12:00", "action": "label"},
+    {"start": "12:00", "end": "13:00", "action": "send"}
   ]
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
+    "test": do_transform,
     "collect":  do_extraction,
     "label": do_transform,
     "send": do_load

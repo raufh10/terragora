@@ -19,8 +19,8 @@ def do_extraction(logger):
     return
 
   url = f"{api.rstrip('/')}/submissions/fetch"
-  submissions_limit = 10
-  submissions_sort = "hot"
+  submissions_limit = 100
+  submissions_sort = "new"
 
   payloads = [
     {
@@ -48,6 +48,7 @@ def do_extraction(logger):
 
   all_insert_data = []
 
+  payloads = [:1]
   for cfg in payloads:
     subreddit = cfg["subreddit"]
     try:
@@ -90,7 +91,17 @@ def do_extraction(logger):
 
       for post in posts:
         if isinstance(post, dict):
-          all_insert_data.append({"subreddit": subreddit, "data": post})
+
+          new_post = {**post}
+          del new_post["id"]
+
+          all_insert_data.append(
+            {
+              "reddit_id": post["id"],
+              "subreddit": subreddit,
+              "data": new_post
+            }
+          )
 
     except requests.RequestException as e:
       logger.exception(f"❌ Request error calling {url} for {subreddit}: {e}")
@@ -127,7 +138,18 @@ def do_transform(logger):
   except Exception as e:
     logger.error(f"❌ Insert exception: {e}")
 
-  # --- Process data to API's transform-ready state ---  
+  # --- Filter submissions data from already done submissions and agenda combination ---
+  try:
+    existing_alerts_ids = asyncio.run(alerts.select_exists_ids(supabase, logger, 1))
+  except Exception as e:
+    logger.error(f"❌ Insert exception: {e}")
+
+  new_submissions_data = []
+  for item in submissions_data:
+    if item["id"] not in existing_alerts_ids:
+      new_submissions_data.append(item)
+
+  # --- Process data to API's transform-ready state ---
   payloads = []
 
   agenda_id = agenda["id"]
@@ -142,7 +164,7 @@ def do_transform(logger):
       "Additionally, assess how relevant each post is to the given agenda prompt, providing a relevance score from 0 to 100."
     )
 
-  for item in submissions_data:
+  for item in new_submissions_data:
     user_prompt = (
       f"You are writing a reply to a Reddit post in r/{agenda_subreddit}.\n\n"
       f"Post title: \"{item['data']['title']}\"\n"
@@ -158,7 +180,7 @@ def do_transform(logger):
     }
     payloads.append(new_item)
 
-  payloads = payloads[:1]
+  payloads = payloads[:30]
 
   # --- Transform data using API ---
   from services.config import settings
