@@ -25,7 +25,7 @@ class Settings(BaseSettings):
   TELEGRAM_BASE: int = logging.ERROR
 
   # API
-  API_ENDPOINT: str = "http://leaddits_api.railway.internal:3000"
+  API_ENDPOINT: str = "http://leaddits_api.railway.internal:8080"
   #API_ENDPOINT: str = "http://127.0.0.1:8000"
 
   # Scheduler (UTC)
