@@ -43,3 +43,27 @@ async def select(
   except Exception as e:
     logger.error(f"Exception selecting agenda: {e}")
     return []
+
+async def select_reddit_ids(
+  supabase: Client,
+  logger,
+  subreddit: str
+):
+
+  try:
+    response = (
+      supabase
+      .table("submissions")
+      .select("reddit_id")
+      .eq("subreddit", subreddit)
+      .execute()
+    )
+
+    if response.data:
+      return [item["reddit_id"] for item in response.data]
+    else:
+      return []
+
+  except Exception as e:
+    logger.error(f"Exception selecting agenda: {e}")
+    return []

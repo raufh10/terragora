@@ -64,6 +64,8 @@ async def select_exists_ids(
 
     if response.data:
       return [item["submission_id"] for item in response.data]
+    else:
+      return []
 
   except Exception as e:
     logger.error(f"Exception selecting agenda: {e}")

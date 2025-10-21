@@ -1,3 +1,5 @@
+from sys import exit
+
 import asyncio
 import requests
 from datetime import datetime, timezone
@@ -48,7 +50,7 @@ def do_extraction(logger):
 
   all_insert_data = []
 
-  payloads = [:1]
+  payloads = [payloads[0]]
   for cfg in payloads:
     subreddit = cfg["subreddit"]
     try:
@@ -89,8 +91,12 @@ def do_extraction(logger):
         logger.warning(f"⚠️ No posts returned for subreddit={subreddit}")
         continue
 
+      existing_ids = asyncio.run(submissions.select_reddit_ids(supabase, logger, subreddit))
       for post in posts:
         if isinstance(post, dict):
+
+          if post["id"] in existing_ids:
+            continue
 
           new_post = {**post}
           del new_post["id"]
@@ -146,8 +152,9 @@ def do_transform(logger):
 
   new_submissions_data = []
   for item in submissions_data:
-    if item["id"] not in existing_alerts_ids:
-      new_submissions_data.append(item)
+    if item["id"] in existing_alerts_ids:
+      continue
+    new_submissions_data.append(item)
 
   # --- Process data to API's transform-ready state ---
   payloads = []
@@ -253,7 +260,7 @@ def do_load(logger):
   # --- Process alerts data to load-ready state ---
   to_load_data = []
   for item in alerts_data:
-    sid = item.get("id")
+    sid = item.get("unique_key")
     relevance = item.get("relevance")
     agenda_type = (item.get("messageagendas") or {}).get("type")
 
