@@ -5,9 +5,6 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PORT=3000
-EXPOSE 3000
-
 RUN adduser -D appuser
 USER appuser
 
