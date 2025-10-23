@@ -187,7 +187,7 @@ def do_transform(logger):
     }
     payloads.append(new_item)
 
-  payloads = payloads[:30]
+  payloads = payloads[:5]
 
   # --- Transform data using API ---
   from services.config import settings
@@ -203,7 +203,7 @@ def do_transform(logger):
     for payload in payloads:
       logger.info(f"📡 POST {url} | submission_id={payload['submission_id']}")
       try:
-        resp = requests.post(url, json=payload, timeout=30)
+        resp = requests.post(url, json=payload, timeout=60)
       except requests.RequestException as e:
         logger.error(f"💥 Request error for submission_id={payload['submission_id']}: {e}")
         continue
