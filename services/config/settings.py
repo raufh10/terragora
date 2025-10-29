@@ -33,7 +33,7 @@ class Settings(BaseSettings):
   TIME_RULES: List[dict] = [
     {
       "start": "00:00",
-      "end": "00:59",
+      "end": "23:59",
       "action": ["collect", "label", "send"]
     },
   ]
