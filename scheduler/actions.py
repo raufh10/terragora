@@ -227,16 +227,13 @@ def _process_agenda(
     logger.error(f"❌ Alerts select exception: {e}")
     return
 
-  print(alerts_data[0])
   to_load_data = []
   for item in alerts_data:
-    if item.get("agenda_id") != agenda_id:
-      continue
     relevance = item.get("relevance", 0)
     if relevance is None or relevance < 50:
       continue
 
-    sid = item.get("unique_key") or item.get("submission_id") or item.get("id")
+    sid = item.get("unique_key")
     suggestions = item.get("suggestions") or []
     sub = item.get("submissions") or {}
     sdata = sub.get("data") or {}
