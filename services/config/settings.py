@@ -31,9 +31,11 @@ class Settings(BaseSettings):
   # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "00:00", "end": "00:59", "action": "collect"},
-    {"start": "01:00", "end": "01:59", "action": "label"},
-    {"start": "02:00", "end": "02:59", "action": "send"}
+    {
+      "start": "00:00",
+      "end": "00:59",
+      "action": ["collect", "label", "send"]
+    },
   ]
 
   # Central action registry
