@@ -227,6 +227,7 @@ def _process_agenda(
     logger.error(f"❌ Alerts select exception: {e}")
     return
 
+  print(alerts_data[0])
   to_load_data = []
   for item in alerts_data:
     if item.get("agenda_id") != agenda_id:
