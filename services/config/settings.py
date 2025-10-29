@@ -5,7 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from scheduler.actions import (
   do_extraction,
   do_transform,
-  do_load
+  do_load,
+  do_all
 )
 
 class Settings(BaseSettings):
@@ -34,7 +35,7 @@ class Settings(BaseSettings):
     {
       "start": "00:00",
       "end": "23:59",
-      "action": ["collect", "label", "send"]
+      "action": "all"
     },
   ]
 
@@ -42,7 +43,8 @@ class Settings(BaseSettings):
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
     "collect":  do_extraction,
     "label": do_transform,
-    "send": do_load
+    "send": do_load,
+    "all": do_all
   }
 
 settings = Settings()
