@@ -263,9 +263,9 @@ def do_load(logger):
   for item in alerts_data:
     relevance = item.get("relevance")
 
-    if score >= 50:
-
+    if relevance >= 50:
       sid = item.get("unique_key")
+      suggestions = item.get("suggestions")
       agenda_type = (item.get("messageagendas") or {}).get("type")
 
       sub = item.get("submissions") or {}
@@ -289,6 +289,7 @@ def do_load(logger):
         f"Author: u/{author} • Score: {score}\n"
         f"Relevance: {relevance}%\n"
         f"Link: {permalink}\n"
+        f"Suggestions\n{"\n".join([f"- {c['text']}" for c in suggestions])}"
         f"Created (UTC): {created_iso}"
       )
       to_load_data.append({"id": sid, "message": message})
