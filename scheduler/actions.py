@@ -265,7 +265,7 @@ def do_load(logger):
     data = sub.get("data") or {}
     score = data.get("score")
 
-    if score => 50:
+    if score >= 50:
 
       sid = item.get("unique_key")
       relevance = item.get("relevance")
