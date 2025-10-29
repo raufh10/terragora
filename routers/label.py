@@ -37,7 +37,7 @@ async def run_analysis(
       logger.error("⚠️ LLM returned no structured result (AlertData)")
       raise HTTPException(status_code=502, detail="LLM produced no result")
 
-    data = result.model_dump() | {"message": ""}
+    data = result.model_dump()
     logger.info("✅ AlertData generation completed")
     logger.debug(f"AlertData keys: {list(data.keys())}")
 
