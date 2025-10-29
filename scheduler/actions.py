@@ -266,6 +266,7 @@ def do_load(logger):
     if relevance >= 50:
       sid = item.get("unique_key")
       suggestions = item.get("suggestions")
+      print(suggestions)
       agenda_type = (item.get("messageagendas") or {}).get("type")
 
       sub = item.get("submissions") or {}
