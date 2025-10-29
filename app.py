@@ -8,15 +8,27 @@ from services.config import settings
 from logger import start_logger
 logger = start_logger()
 
+# ---------- Rules ----------
+
 def _normalize_rule_dict(d: Dict[str, Any]) -> Dict[str, Any]:
-  if "tr" in d:
+  """
+  Accepts:
+    {"start":"00:00","end":"23:59","days":[...], "action":[...]}
+  or
+    {"tr":{"start":"00:00","end":"23:59","days":[...]}, "action":[...]}
+  Returns the top-level shape expected by Rule.from_dict.
+  """
+  if "start" in d and "end" in d:
     return d
-  tr = {
-    "start": d.get("start"),
-    "end": d.get("end"),
-    "days": d.get("days"),
-  }
-  return {"tr": tr, "action": d.get("action")}
+  if "tr" in d and isinstance(d["tr"], dict):
+    tr = d["tr"]
+    return {
+      "start": tr.get("start"),
+      "end": tr.get("end"),
+      "days": tr.get("days"),
+      "action": d.get("action"),
+    }
+  raise ValueError("Rule must contain 'start'/'end' or 'tr' with those fields")
 
 def build_rules(config: Iterable[dict]) -> List[Rule]:
   rules: List[Rule] = []
@@ -34,6 +46,8 @@ def choose_matching_rule(now_utc: datetime, rules: List[Rule]) -> Optional[Rule]
       return r
   return None
 
+# ---------- Actions ----------
+
 def _resolve_action(name: str) -> Optional[Callable]:
   fn = settings.ACTION_REGISTRY.get(name)
   if not fn:
@@ -42,42 +56,41 @@ def _resolve_action(name: str) -> Optional[Callable]:
   return fn
 
 def _normalize_actions(action_spec: Union[str, List[str]]) -> List[str]:
-
+  # list already? clean it
   if isinstance(action_spec, list):
-    return [a.strip() for a in action_spec if a and a.strip()]
+    return [a.strip() for a in action_spec if a and str(a).strip()]
+  # string? split on > , or whitespace
   if isinstance(action_spec, str):
-    parts = []
     tmp = action_spec.replace(">", " ").replace(",", " ")
-    for p in tmp.split():
-      if p.strip():
-        parts.append(p.strip())
-    return parts
-  logger.warning(f"⚠️ Unsupported action spec type: {type(action_spec)}; ignoring.")
+    return [p.strip() for p in tmp.split() if p.strip()]
+  # unknown → none
+  logger.warning(f"⚠️ Unsupported action type: {type(action_spec)}; ignoring.")
   return []
 
 def run_actions(action_spec: Union[str, List[str]]) -> None:
-
-  action_names = _normalize_actions(action_spec)
-  if not action_names:
+  names = _normalize_actions(action_spec)
+  if not names:
     logger.info("ℹ️ No actions to run.")
     return
 
-  logger.info(f"🧩 Running actions in sequence: {', '.join(action_names)}")
-  for name in action_names:
+  logger.info(f"🧩 Running actions in sequence: {', '.join(names)}")
+  for name in names:
     fn = _resolve_action(name)
     if not fn:
       continue
     try:
       sig = inspect.signature(fn)
       if "logger" in sig.parameters:
-        logger.info(f"▶️  {name} (with logger)")
+        logger.info(f"▶️ {name} (with logger)")
         fn(logger=logger)
       else:
-        logger.info(f"▶️  {name}")
+        logger.info(f"▶️ {name}")
         fn()
       logger.info(f"✅ {name} completed")
     except Exception as e:
       logger.exception(f"❌ Error while running action '{name}': {e}")
+
+# ---------- Main ----------
 
 def main():
   now = datetime.now(timezone.utc)
