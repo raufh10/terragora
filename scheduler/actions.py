@@ -289,7 +289,7 @@ def do_load(logger):
         f"Author: u/{author} • Score: {score}\n"
         f"Relevance: {relevance}%\n"
         f"Link: {permalink}\n"
-        f"Suggestions\n{"\n".join([f"- {c['text']}" for c in suggestions])}"
+        f"Suggestions\n{'\n'.join([f'- {c["text"]}' for c in suggestions])}"
         f"Created (UTC): {created_iso}"
       )
       to_load_data.append({"id": sid, "message": message})
