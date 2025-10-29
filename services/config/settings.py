@@ -41,9 +41,6 @@ class Settings(BaseSettings):
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
-    "collect":  do_extraction,
-    "label": do_transform,
-    "send": do_load,
     "all": do_all
   }
 
