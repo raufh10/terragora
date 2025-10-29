@@ -32,7 +32,7 @@ async def select(
       supabase
       .table("alerts")
       .select(
-        "unique_key, relevance, suggestions"
+        "unique_key, relevance, suggestions,"
         "agendas:agenda_id(type), "
         "submissions:submission_id(subreddit, data)"
       )
