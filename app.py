@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 from contextlib import asynccontextmanager
 from services.config import settings
-from routers import collect, label, send
+from routers import collect, label, send, rules
 
 from logger import start_logger
 logger = start_logger()
@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
 
   # Register API routers
   app.include_router(collect.router, tags=["Extraction"])
+  app.include_router(rules.router, tags=["Extraction"])
   app.include_router(label.router, tags=["Transform"])
   app.include_router(send.router, tags=["Load"])
 
