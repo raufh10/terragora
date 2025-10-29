@@ -171,7 +171,7 @@ def do_transform(logger):
   if agenda_type == "upvote":
     system_prompt = "Your goal is to help assess how relevant each post is to the given agenda prompt, providing a relevance score from 0 to 100."
 
-  for item in new_submissions_data:
+  for item in top5:
     user_prompt = (
       f"You are assesing a Reddit post in r/{agenda_subreddit}.\n\n"
       f"Post title: \"{item['data']['title']}\"\n"
