@@ -261,7 +261,7 @@ def do_load(logger):
   # --- Process alerts data to load-ready state ---
   to_load_data = []
   for item in alerts_data:
-  if data.get("score") > 50:
+    if data.get("score") > 50:
 
       sid = item.get("unique_key")
       relevance = item.get("relevance")
