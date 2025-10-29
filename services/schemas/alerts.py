@@ -12,6 +12,7 @@ class AlertData(BaseModel):
     )
   )
 
+  """
   message: Annotated[str, Field(min_length=1, strip_whitespace=True)] = Field(
     description=(
       "A concise and natural Reddit reply that aligns with the post context and the target subreddit. "
@@ -20,3 +21,4 @@ class AlertData(BaseModel):
       "Avoid generic or spammy phrasing — the goal is to encourage upvotes and engagement while staying relevant."
     )
   )
+ """
