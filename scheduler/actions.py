@@ -232,8 +232,8 @@ def _process_agenda(
     if item.get("agenda_id") != agenda_id:
       continue
     relevance = item.get("relevance", 0)
-    if relevance is None or relevance < 50:
-      continue
+    #if relevance is None or relevance < 50:
+      #continue
 
     sid = item.get("unique_key") or item.get("submission_id") or item.get("id")
     suggestions = item.get("suggestions") or []
