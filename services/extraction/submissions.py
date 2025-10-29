@@ -98,7 +98,7 @@ class SubmissionsExtractor:
       f"fields={self.fields})"
     )
 
-# Sync Praw
+# Sync Praw Not Used
 """
 class SubmissionsExtractor:
   def __init__(
