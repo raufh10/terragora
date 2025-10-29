@@ -29,7 +29,7 @@ def do_extraction(logger):
       "subreddit": "lakers",
       "limit": submissions_limit,
       "sort": submissions_sort,
-      "time_filter": "day",
+      "time_filter": "hour",
       "fields": ["id", "title", "author", "score", "permalink", "created_utc"],
     },
     {
@@ -156,6 +156,10 @@ def do_transform(logger):
       continue
     new_submissions_data.append(item)
 
+  # --- Filter submissions data with top 5 most upvoted ---
+
+  top5 = sorted(new_submissions_data, key=lambda x: x["data"]["score"], reverse=True)[:5]
+
   # --- Process data to API's transform-ready state ---
   payloads = []
 
@@ -165,15 +169,11 @@ def do_transform(logger):
   agenda_prompt = agenda["data"]["prompt"]
 
   if agenda_type == "upvote":
-    system_prompt = (
-      "Your goal is to help generate Reddit replies that are likely to receive more upvotes. "
-      "Focus on writing authentic, engaging, and contextually relevant responses aligned with the subreddit audience. "
-      "Additionally, assess how relevant each post is to the given agenda prompt, providing a relevance score from 0 to 100."
-    )
+    system_prompt = "Your goal is to help assess how relevant each post is to the given agenda prompt, providing a relevance score from 0 to 100."
 
   for item in new_submissions_data:
     user_prompt = (
-      f"You are writing a reply to a Reddit post in r/{agenda_subreddit}.\n\n"
+      f"You are assesing a Reddit post in r/{agenda_subreddit}.\n\n"
       f"Post title: \"{item['data']['title']}\"\n"
       f"Current upvotes: {item['data']['score']}\n\n"
       f"Agenda context:\n{agenda_prompt}\n\n"
@@ -186,8 +186,6 @@ def do_transform(logger):
       "user_prompt": user_prompt
     }
     payloads.append(new_item)
-
-  payloads = payloads[:5]
 
   # --- Transform data using API ---
   from services.config import settings
