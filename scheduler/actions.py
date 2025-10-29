@@ -169,7 +169,10 @@ def do_transform(logger):
   agenda_prompt = agenda["data"]["prompt"]
 
   if agenda_type == "upvote":
-    system_prompt = "Your goal is to help assess how relevant each post is to the given agenda prompt, providing a relevance score from 0 to 100."
+    system_prompt = (
+      "Your goal is to help assess how relevant each post is to the given agenda prompt, providing a relevance score from 0 to 100. "
+      "Additionally generate comment 5 ideas that align with agenda prompt"
+    )
 
   for item in top5:
     user_prompt = (
@@ -258,34 +261,36 @@ def do_load(logger):
   # --- Process alerts data to load-ready state ---
   to_load_data = []
   for item in alerts_data:
-    sid = item.get("unique_key")
-    relevance = item.get("relevance")
-    agenda_type = (item.get("messageagendas") or {}).get("type")
+  if data.get("score") > 50:
 
-    sub = item.get("submissions") or {}
-    data = sub.get("data") or {}
-    subreddit = sub.get("subreddit")
+      sid = item.get("unique_key")
+      relevance = item.get("relevance")
+      agenda_type = (item.get("messageagendas") or {}).get("type")
 
-    title = data.get("title")
-    score = data.get("score")
-    author = data.get("author")
-    permalink = data.get("permalink")
-    created_ts = data.get("created_utc")
+      sub = item.get("submissions") or {}
+      data = sub.get("data") or {}
+      subreddit = sub.get("subreddit")
 
-    created_iso = (
-      datetime.fromtimestamp(created_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
-      if isinstance(created_ts, (int, float)) else "N/A"
-    )
+      title = data.get("title")
+      score = data.get("score")
+      author = data.get("author")
+      permalink = data.get("permalink")
+      created_ts = data.get("created_utc")
 
-    message = (
-      f"🔔 Alert — r/{subreddit} ({agenda_type or 'agenda'})\n"
-      f"Title: {title}\n"
-      f"Author: u/{author} • Score: {score}\n"
-      f"Relevance: {relevance}%\n"
-      f"Link: {permalink}\n"
-      f"Created (UTC): {created_iso}"
-    )
-    to_load_data.append({"id": sid, "message": message})
+      created_iso = (
+        datetime.fromtimestamp(created_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+        if isinstance(created_ts, (int, float)) else "N/A"
+      )
+
+      message = (
+        f"🔔 Alert — r/{subreddit} ({agenda_type or 'agenda'})\n"
+        f"Title: {title}\n"
+        f"Author: u/{author} • Score: {score}\n"
+        f"Relevance: {relevance}%\n"
+        f"Link: {permalink}\n"
+        f"Created (UTC): {created_iso}"
+      )
+      to_load_data.append({"id": sid, "message": message})
 
   # --- Send alerts data using API ---
   from services.config import settings
