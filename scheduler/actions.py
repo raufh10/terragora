@@ -261,20 +261,20 @@ def do_load(logger):
   # --- Process alerts data to load-ready state ---
   to_load_data = []
   for item in alerts_data:
-    sub = item.get("submissions") or {}
-    data = sub.get("data") or {}
-    score = data.get("score")
+    relevance = item.get("relevance")
 
     if score >= 50:
 
       sid = item.get("unique_key")
-      relevance = item.get("relevance")
       agenda_type = (item.get("messageagendas") or {}).get("type")
 
+      sub = item.get("submissions") or {}
       subreddit = sub.get("subreddit")
+      data = sub.get("data") or {}
 
       title = data.get("title")
       author = data.get("author")
+      score = data.get("score")
       permalink = data.get("permalink")
       created_ts = data.get("created_utc")
 
