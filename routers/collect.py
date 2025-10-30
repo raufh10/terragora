@@ -34,13 +34,27 @@ def _normalize_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
   payload = payload or {}
   cfg = {
     "subreddit": payload.get("subreddit") or getattr(settings, "DEFAULT_SUBREDDIT", None),
-    "limit": int(payload.get("limit", getattr(settings, "LIMIT", 25))),
-    "sort": (payload.get("sort") or getattr(settings, "SORT", "hot")).lower(),
-    "time_filter": (payload.get("time_filter") or getattr(settings, "TIME_FILTER", "day")).lower(),
+    "limit": int(payload.get("limit", getattr(settings, "LIMIT", 10))),
+    "sort": (payload.get("sort") or getattr(settings, "SORT", "new")).lower(),
+    "time_filter": (payload.get("time_filter") or getattr(settings, "TIME_FILTER", "hour")).lower(),
     "fields": payload.get("fields") or getattr(
       settings,
       "FIELDS",
-      ["id", "title", "author", "score", "permalink", "created_utc"],
+      [
+        "id",
+        "title",
+        "author",
+        "link_flair_text",
+        "score",
+        "upvote_ratio",
+        "num_comments",
+        "comments",
+        "created_utc",
+        "is_self",
+        "selftext",
+        "url",
+        "permalink",
+      ],
     ),
   }
   return cfg

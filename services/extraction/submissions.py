@@ -7,8 +7,8 @@ class SubmissionsExtractor:
     logger,
     subreddit: str,
     limit: int = 10,
-    sort: str = "hot",
-    time_filter: str = "day",
+    sort: str = "new",
+    time_filter: str = "hour",
     fields: Optional[List[str]] = None,
   ):
     self.reddit = reddit
@@ -18,8 +18,19 @@ class SubmissionsExtractor:
     self.sort = sort
     self.time_filter = time_filter
     self.fields = fields or [
-      "id", "title", "author", "score", "url",
-      "num_comments", "created_utc", "selftext", "permalink"
+      "id",
+      "title",
+      "author",
+      "link_flair_text",
+      "score",
+      "upvote_ratio",
+      "num_comments",
+      "comments",
+      "created_utc",
+      "is_self",
+      "selftext",
+      "url",
+      "permalink"
     ]
     self.logger.debug(
       f"SubmissionsExtractor init | r/{self.subreddit} | limit={self.limit} "
@@ -32,9 +43,26 @@ class SubmissionsExtractor:
     if not subreddit:
       raise ValueError("subreddit is required in config")
     limit = int(config.get("limit", 10))
-    sort = (config.get("sort") or "hot").lower()
-    time_filter = (config.get("time_filter") or "day").lower()
-    fields = config.get("fields")
+    sort = (config.get("sort") or "new").lower()
+    time_filter = (config.get("time_filter") or "hour").lower()
+    fields = config.get(
+      "fields",
+      [
+        "id",
+        "title",
+        "author",
+        "link_flair_text",
+        "score",
+        "upvote_ratio",
+        "num_comments",
+        "comments",
+        "created_utc",
+        "is_self",
+        "selftext",
+        "url",
+        "permalink"
+      ]
+    )
     return cls(
       reddit=reddit,
       logger=logger,
@@ -73,15 +101,33 @@ class SubmissionsExtractor:
 
       async for post in iterator:
         row: Dict[str, Any] = {}
-        if "id" in self.fields: row["id"] = post.id
-        if "title" in self.fields: row["title"] = post.title
-        if "author" in self.fields: row["author"] = str(post.author) if post.author is not None else None
-        if "score" in self.fields: row["score"] = post.score
-        if "url" in self.fields: row["url"] = post.url
-        if "num_comments" in self.fields: row["num_comments"] = post.num_comments
-        if "created_utc" in self.fields: row["created_utc"] = post.created_utc
-        if "selftext" in self.fields: row["selftext"] = post.selftext
-        if "permalink" in self.fields: row["permalink"] = f"https://reddit.com{post.permalink}"
+
+        if "id" in self.fields:
+          row["id"] = post.id
+        if "title" in self.fields:
+          row["title"] = post.title
+        if "author" in self.fields:
+          row["author"] = str(post.author) if post.author is not None else None
+        if "link_flair_text" in self.fields:
+          row["link_flair_text"] = post.link_flair_text
+        if "score" in self.fields:
+          row["score"] = post.score
+        if "upvote_ratio" in self.fields:
+          row["upvote_ratio"] = post.upvote_ratio
+        if "num_comments" in self.fields:
+          row["num_comments"] = post.num_comments
+        #if "comments" in self.fields:
+          #row["comments"] = getattr(post, "comments", None)
+        if "created_utc" in self.fields:
+          row["created_utc"] = post.created_utc
+        if "is_self" in self.fields:
+          row["is_self"] = post.is_self
+        if "selftext" in self.fields:
+          row["selftext"] = post.selftext
+        if "url" in self.fields:
+          row["url"] = post.url
+        if "permalink" in self.fields:
+          row["permalink"] = f"https://reddit.com{post.permalink}"
         data.append(row)
 
       self.logger.info(f"Collected {len(data)} submissions from r/{self.subreddit}")
