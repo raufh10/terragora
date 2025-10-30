@@ -64,11 +64,6 @@ def _process_agenda(
     data = agenda.get("data") or {}
     agenda_subreddit = data.get("subreddit", "lakers")
     agenda_prompt = data.get("prompt", "")
-    extraction_data = data.get("extraction_data") or {}
-    limit = int(extraction_data.get("limit", 100))
-    sort = extraction_data.get("sort", "new")
-    time_filter = extraction_data.get("time_filter", "hour")
-    fields = extraction_data.get("fields") or ["id", "title", "author", "score", "permalink", "created_utc"]
   except Exception:
     logger.exception("❌ Agenda missing required fields; skipping")
     return
@@ -77,17 +72,12 @@ def _process_agenda(
   # 1️⃣ EXTRACT
   # =====================
   fetch_payload = {
-    "subreddit": agenda_subreddit,
-    "limit": limit,
-    "sort": sort,
-    "time_filter": time_filter,
-    "fields": fields,
-    "prompt": agenda_prompt,
+    "subreddit": agenda_subreddit
   }
 
   all_insert_data = []
   try:
-    logger.info(f"📡 POST {fetch_url} | subreddit={agenda_subreddit} | sort={sort} | limit={limit}")
+    logger.info(f"📡 POST {fetch_url} | subreddit={agenda_subreddit}")
     resp = requests.post(fetch_url, json=fetch_payload, timeout=30)
     if not resp.ok:
       logger.error(f"⚠️ Fetch failed [{resp.status_code}] → {resp.text[:300]}")
@@ -171,12 +161,8 @@ def _process_agenda(
     )
     payloads.append({
       "submission_id": item.get("id"),
-      "agenda_id": agenda_id,
       "system_prompt": system_prompt,
       "user_prompt": user_prompt,
-      "prompt": agenda_prompt,
-      "extraction_data": extraction_data,
-      "subreddit": agenda_subreddit
     })
 
   all_results = []
