@@ -1,5 +1,33 @@
 from typing import List, Dict, Any, Optional
 
+async def fetch_comments(post, limit=None):
+
+  try:
+    await post.load()
+    await post.comments.replace_more(limit=0)
+    flat = post.comments.list()
+
+    if limit is not None:
+      flat = flat[:limit]
+
+    comments = [
+      {
+        "id": c.id,
+        "author": str(c.author) if c.author else None,
+        "body": c.body,
+        "score": c.score,
+        "created_utc": c.created_utc,
+        "parent_id": c.parent_id,
+        "is_submitter": getattr(c, "is_submitter", None),
+        "permalink": f"https://reddit.com{c.permalink}",
+      }
+      for c in flat
+    ]
+    return comments
+
+  except Exception:
+    return []
+
 class SubmissionsExtractor:
   def __init__(
     self,
@@ -116,8 +144,8 @@ class SubmissionsExtractor:
           row["upvote_ratio"] = post.upvote_ratio
         if "num_comments" in self.fields:
           row["num_comments"] = post.num_comments
-        #if "comments" in self.fields:
-          #row["comments"] = getattr(post, "comments", None)
+        if "comments" in self.fields:
+          row["comments"] = await fetch_comments(post)
         if "created_utc" in self.fields:
           row["created_utc"] = post.created_utc
         if "is_self" in self.fields:
