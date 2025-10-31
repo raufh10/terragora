@@ -15,9 +15,13 @@ async def run_labeling(
   try:
     payload = payload or {}
 
+    print(payload)
+
     subreddit: str = str(payload.get("subreddit", "")).strip()
     text: str = str(payload.get("text", "")).strip()
     keyword_map: Dict[str, Any] = payload.get("keyword_map") or {}
+
+    print(subreddit), print(text), print(keyword_map)
 
     model_name: str = str(payload.get("model_name", "all-MiniLM-L6-v2")).strip()
     thresh_lead: float = float(payload.get("thresh_lead", 0.58))
