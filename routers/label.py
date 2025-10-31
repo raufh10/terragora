@@ -79,7 +79,10 @@ async def run_labeling(
         },
         "preprocess": preprocess
       },
-      "result": result
+      "result": {
+        "relevance": 0,
+        "suggestions": result
+      }
     }
 
   except HTTPException:
