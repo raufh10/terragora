@@ -9,7 +9,6 @@ asyncpraw
 # Transformation
 openai
 sentence-transformers
-scikit-learn
 numpy
 
 # Load
