@@ -1,50 +1,89 @@
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Body, HTTPException
 
-from services.llm import OpenAIResponse
-from services.schemas import AlertData
-
+from services.label import RedditPostCategorizer
 from logger import start_logger
+
 logger = start_logger()
 router = APIRouter()
 
-@router.post("/analysis/run")
-async def run_analysis(
+@router.post("/label/run")
+async def run_labeling(
   payload: Optional[Dict[str, Any]] = Body(None),
 ):
-  logger.info("📥 Starting /analysis/run (AlertData)")
+  logger.info("📥 Starting /label/run (RedditPostCategorizer)")
   try:
     payload = payload or {}
-    system_prompt = str(payload.get("system_prompt", "")).strip()
-    user_prompt = str(payload.get("user_prompt", "")).strip()
 
-    if not system_prompt:
-      logger.warning("⚠️ Missing system_prompt for AlertData generation")
-    if not user_prompt:
-      logger.warning("⚠️ Missing user_prompt for AlertData generation")
+    subreddit: str = str(payload.get("subreddit", "")).strip()
+    text: str = str(payload.get("text", "")).strip()
+    keyword_map: Dict[str, Any] = payload.get("keyword_map") or {}
 
-    logger.debug(f"Prompt lengths | system={len(system_prompt)} user={len(user_prompt)}")
+    model_name: str = str(payload.get("model_name", "all-MiniLM-L6-v2")).strip()
+    thresh_lead: float = float(payload.get("thresh_lead", 0.58))
+    thresh_related: float = float(payload.get("thresh_related", 0.55))
+    thresh_qd: float = float(payload.get("thresh_qd", 0.52))
+    preprocess: bool = bool(payload.get("preprocess", True))
 
-    llm = OpenAIResponse()
-    result = llm.generate_structured_response(
-      logger,
-      system_prompt,
-      user_prompt,
-      response_format=AlertData
+    if not subreddit:
+      logger.warning("⚠️ Missing 'subreddit'")
+    if not text:
+      logger.warning("⚠️ Missing 'text'")
+    if not keyword_map:
+      logger.warning("⚠️ Missing 'keyword_map'")
+
+    if not subreddit or not text or not keyword_map:
+      raise HTTPException(status_code=400, detail="subreddit, text, and keyword_map are required")
+
+    logger.debug(
+      f"Params | sub='{subreddit}' | text_len={len(text)} | "
+      f"model={model_name} | thresholds={{lead:{thresh_lead}, related:{thresh_related}, qd:{thresh_qd}}} | "
+      f"preprocess={preprocess}"
     )
 
-    if not result:
-      logger.error("⚠️ LLM returned no structured result (AlertData)")
-      raise HTTPException(status_code=502, detail="LLM produced no result")
+    # Optional normalization/deduplication/lowercasing
+    if preprocess:
+      logger.debug("🔧 Preprocessing keyword_map via classmethod")
+      keyword_map = RedditPostCategorizer.process_keywords(keyword_map)
 
-    data = result.model_dump()
-    logger.info("✅ AlertData generation completed")
-    logger.debug(f"AlertData keys: {list(data.keys())}")
+    # Initialize categorizer
+    categorizer = RedditPostCategorizer(
+      keyword_map=keyword_map,
+      model_name=model_name,
+      thresh_lead=thresh_lead,
+      thresh_related=thresh_related,
+      thresh_qd=thresh_qd
+    )
 
-    return data
+    # Run categorization
+    logger.debug("🧠 Encoding & scoring post against categories")
+    result = categorizer.categorize_post(subreddit, text)
+
+    if not result or "category" not in result:
+      logger.error("⚠️ Categorizer returned no result")
+      raise HTTPException(status_code=502, detail="No categorization result")
+
+    logger.info(f"✅ Labeling complete | category={result.get('category')} score={result.get('score')}")
+    logger.debug(f"Scores breakdown: {result.get('scores', {})}")
+
+    # Return minimal useful payload (echo inputs for traceability)
+    return {
+      "input": {
+        "subreddit": subreddit,
+        "text_length": len(text),
+        "model_name": model_name,
+        "thresholds": {
+          "lead": thresh_lead,
+          "related": thresh_related,
+          "question_discussion": thresh_qd
+        },
+        "preprocess": preprocess
+      },
+      "result": result
+    }
 
   except HTTPException:
     raise
   except Exception:
-    logger.exception("💥 Unhandled error in /analysis/run (AlertData)")
+    logger.exception("💥 Unhandled error in /label/run (RedditPostCategorizer)")
     raise HTTPException(status_code=500, detail="Internal server error")
