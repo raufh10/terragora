@@ -226,7 +226,6 @@ def _process_agenda(
       if isinstance(created_ts, (int, float)) else "N/A"
     )
 
-    suggestions_str = "\n".join([f"- {c.get('text', '').strip()}" for c in suggestions if c.get("text")]) or "- (no suggestions)"
     message = (
       f"🔔 Alert — r/{agenda_subreddit}\n"
       f"Title: {title}\n"
