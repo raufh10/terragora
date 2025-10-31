@@ -7,6 +7,8 @@ from logger import start_logger
 logger = start_logger()
 router = APIRouter()
 
+EXPECTED_CATEGORY_KEYS = {"lead", "related", "question-help", "discussion"}
+
 @router.post("/label/run")
 async def run_labeling(
   payload: Optional[Dict[str, Any]] = Body(None),
@@ -25,24 +27,30 @@ async def run_labeling(
     thresh_qd: float = float(payload.get("thresh_qd", 0.52))
     preprocess: bool = bool(payload.get("preprocess", True))
 
-    # --- Guard checks ---
-    if not subreddit:
-      logger.warning("⚠️ Missing 'subreddit'")
-    if not text:
-      logger.warning("⚠️ Missing 'text'")
-    if not keyword_map:
-      logger.warning("⚠️ Missing 'keyword_map'")
-
+    # --- Guard checks (required fields) ---
     if not subreddit or not text or not keyword_map:
+      missing = [k for k, v in [("subreddit", subreddit), ("text", text), ("keyword_map", keyword_map)] if not v]
+      logger.warning(f"⚠️ Missing required fields: {', '.join(missing)}")
       raise HTTPException(status_code=400, detail="subreddit, text, and keyword_map are required")
 
     if not isinstance(keyword_map, dict):
       logger.error(f"❌ Invalid keyword_map type={type(keyword_map).__name__}, expected dict")
       raise HTTPException(status_code=400, detail="keyword_map must be a JSON object")
 
+    # --- Accept both shapes:
+    #     A) {"Rochester": {lead:..., related:...}}
+    #     B) {lead:..., related:...}  -> auto-wrap under subreddit
     if subreddit not in keyword_map:
-      logger.warning(f"⚠️ Subreddit '{subreddit}' not found in keyword_map keys={list(keyword_map.keys())}")
-      raise HTTPException(status_code=400, detail=f"'{subreddit}' not found in keyword_map")
+      top_keys = set(map(str, keyword_map.keys()))
+      if EXPECTED_CATEGORY_KEYS & top_keys:
+        logger.warning(
+          f"🔁 Auto-wrapping keyword_map under subreddit='{subreddit}' "
+          f"(top-level keys looked like categories: {sorted(top_keys)})"
+        )
+        keyword_map = {subreddit: keyword_map}
+      else:
+        logger.warning(f"⚠️ Subreddit '{subreddit}' not found in keyword_map keys={list(keyword_map.keys())}")
+        raise HTTPException(status_code=400, detail=f"'{subreddit}' not found in keyword_map")
 
     logger.debug(
       f"Params | sub='{subreddit}' | text_len={len(text)} | "
@@ -50,7 +58,7 @@ async def run_labeling(
       f"preprocess={preprocess}"
     )
 
-    # --- Preprocess keywords safely ---
+    # --- Preprocess keywords safely (defensive against lists / light-heavy) ---
     if preprocess:
       try:
         logger.debug("🔧 Preprocessing keyword_map via classmethod")
@@ -58,6 +66,11 @@ async def run_labeling(
       except Exception as e:
         logger.exception(f"💥 Failed processing keyword_map: {e}")
         raise HTTPException(status_code=400, detail="Invalid keyword_map structure")
+
+    # Ensure the subreddit still exists post-processing
+    if subreddit not in keyword_map:
+      logger.error(f"❌ Subreddit '{subreddit}' missing after processing")
+      raise HTTPException(status_code=400, detail=f"'{subreddit}' missing after keyword processing")
 
     # --- Initialize categorizer ---
     try:
