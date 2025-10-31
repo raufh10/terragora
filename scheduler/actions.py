@@ -25,7 +25,7 @@ def do_all(logger):
     return
 
   fetch_url = f"{api.rstrip('/')}/submissions/fetch"
-  run_url = f"{api.rstrip('/')}/analysis/run"
+  run_url = f"{api.rstrip('/')}/label/run"
   tg_url = f"{api.rstrip('/')}/telegram"
 
   # --- Fetch all agendas ---
@@ -62,8 +62,8 @@ def _process_agenda(
   try:
     agenda_id = agenda["id"]
     data = agenda.get("data") or {}
-    agenda_subreddit = data.get("subreddit", "lakers")
-    agenda_prompt = data.get("prompt", "")
+    agenda_subreddit, agenda_keywords = next(iter(data.items()))
+
   except Exception:
     logger.exception("❌ Agenda missing required fields; skipping")
     return
@@ -140,29 +140,19 @@ def _process_agenda(
     existing_alerts_ids = set()
 
   new_submissions_data = [it for it in submissions_data if it.get("id") not in existing_alerts_ids]
-  top5 = sorted(new_submissions_data, key=lambda x: (x.get("data") or {}).get("score", 0), reverse=True)[:5]
-
-  system_prompt = (
-    "Your goal is to help assess how relevant each post is to the given agenda prompt, "
-    "providing a relevance score from 0 to 100. Additionally, generate 5 comment ideas "
-    "that align with the agenda prompt."
-  )
 
   payloads = []
-  for item in top5:
+  for item in new_submissions_data:
     pdata = item.get("data") or {}
     title = pdata.get("title", "-")
-    score = pdata.get("score", 0)
-    user_prompt = (
-      f"You are assessing a Reddit post in r/{agenda_subreddit}.\n\n"
-      f"Post title: \"{title}\"\n"
-      f"Current upvotes: {score}\n\n"
-      f"Agenda context:\n{agenda_prompt}\n\n"
-    )
+    selftext = pdata.get("selftext", "")
+
+    submissions_text = f"{title}\n{selftext}"
     payloads.append({
       "submission_id": item.get("id"),
-      "system_prompt": system_prompt,
-      "user_prompt": user_prompt,
+      "subreddit": agenda_subreddit,
+      "text": submissions_text,
+      "keyword_map": agenda_keywords
     })
 
   all_results = []
@@ -189,9 +179,12 @@ def _process_agenda(
 
     if not isinstance(data_out, dict) or not data_out:
       continue
-    data_out["agenda_id"] = agenda_id
-    data_out["submission_id"] = sid
-    all_results.append(data_out)
+    result = data_out.get("result")
+    insert_result = {
+      "agenda_id": agenda_id
+      "submission_id": sid
+    }
+    all_results.append(insert_result | result)
 
   if not all_results:
     logger.warning("⚠️ No transform results — skipping alerts insert/load for this agenda")
@@ -215,19 +208,18 @@ def _process_agenda(
 
   to_load_data = []
   for item in alerts_data:
-    relevance = item.get("relevance", 0)
-    if relevance is None or relevance < 50:
-      continue
 
     sid = item.get("unique_key")
     suggestions = item.get("suggestions") or []
+    category = suggestions.get("category", "Category Placeholder")
+    score = suggestions.get("score", "Score Placeholder")
+    scores = suggestions.get("scores", "Scores Placeholder")
+
     sub = item.get("submissions") or {}
     sdata = sub.get("data") or {}
 
     title = sdata.get("title", "-")
     author = sdata.get("author", "-")
-    score = sdata.get("score", 0)
-    permalink = sdata.get("permalink", "-")
     created_ts = sdata.get("created_utc")
     created_iso = (
       datetime.fromtimestamp(created_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
@@ -239,9 +231,8 @@ def _process_agenda(
       f"🔔 Alert — r/{agenda_subreddit}\n"
       f"Title: {title}\n"
       f"Author: u/{author} • Score: {score}\n"
-      f"Relevance: {relevance}%\n"
-      f"Link: {permalink}\n"
-      f"Suggestions\n{suggestions_str}\n"
+      f"Category: {category}\n"
+      f"Score: {score}-{scores}\n"
       f"Created (UTC): {created_iso}"
     )
     to_load_data.append({"id": sid, "message": message})
