@@ -181,7 +181,7 @@ def _process_agenda(
       continue
     result = data_out.get("result")
     insert_result = {
-      "agenda_id": agenda_id
+      "agenda_id": agenda_id,
       "submission_id": sid
     }
     all_results.append(insert_result | result)
