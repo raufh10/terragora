@@ -15,13 +15,9 @@ async def run_labeling(
   try:
     payload = payload or {}
 
-    print(payload)
-
     subreddit: str = str(payload.get("subreddit", "")).strip()
     text: str = str(payload.get("text", "")).strip()
-    keyword_map: Dict[str, Any] = payload.get("keyword_map") or {}
-
-    print(subreddit), print(text), print(keyword_map)
+    keyword_map: Any = payload.get("keyword_map")
 
     model_name: str = str(payload.get("model_name", "all-MiniLM-L6-v2")).strip()
     thresh_lead: float = float(payload.get("thresh_lead", 0.58))
@@ -29,6 +25,7 @@ async def run_labeling(
     thresh_qd: float = float(payload.get("thresh_qd", 0.52))
     preprocess: bool = bool(payload.get("preprocess", True))
 
+    # --- Guard checks ---
     if not subreddit:
       logger.warning("⚠️ Missing 'subreddit'")
     if not text:
@@ -39,38 +36,58 @@ async def run_labeling(
     if not subreddit or not text or not keyword_map:
       raise HTTPException(status_code=400, detail="subreddit, text, and keyword_map are required")
 
+    if not isinstance(keyword_map, dict):
+      logger.error(f"❌ Invalid keyword_map type={type(keyword_map).__name__}, expected dict")
+      raise HTTPException(status_code=400, detail="keyword_map must be a JSON object")
+
+    if subreddit not in keyword_map:
+      logger.warning(f"⚠️ Subreddit '{subreddit}' not found in keyword_map keys={list(keyword_map.keys())}")
+      raise HTTPException(status_code=400, detail=f"'{subreddit}' not found in keyword_map")
+
     logger.debug(
       f"Params | sub='{subreddit}' | text_len={len(text)} | "
       f"model={model_name} | thresholds={{lead:{thresh_lead}, related:{thresh_related}, qd:{thresh_qd}}} | "
       f"preprocess={preprocess}"
     )
 
-    # Optional normalization/deduplication/lowercasing
+    # --- Preprocess keywords safely ---
     if preprocess:
-      logger.debug("🔧 Preprocessing keyword_map via classmethod")
-      keyword_map = RedditPostCategorizer.process_keywords(keyword_map)
+      try:
+        logger.debug("🔧 Preprocessing keyword_map via classmethod")
+        keyword_map = RedditPostCategorizer.process_keywords(keyword_map)
+      except Exception as e:
+        logger.exception(f"💥 Failed processing keyword_map: {e}")
+        raise HTTPException(status_code=400, detail="Invalid keyword_map structure")
 
-    # Initialize categorizer
-    categorizer = RedditPostCategorizer(
-      keyword_map=keyword_map,
-      model_name=model_name,
-      thresh_lead=thresh_lead,
-      thresh_related=thresh_related,
-      thresh_qd=thresh_qd
-    )
+    # --- Initialize categorizer ---
+    try:
+      categorizer = RedditPostCategorizer(
+        keyword_map=keyword_map,
+        model_name=model_name,
+        thresh_lead=thresh_lead,
+        thresh_related=thresh_related,
+        thresh_qd=thresh_qd
+      )
+    except Exception as e:
+      logger.exception(f"💥 Failed initializing RedditPostCategorizer: {e}")
+      raise HTTPException(status_code=500, detail="Failed to initialize categorizer")
 
-    # Run categorization
-    logger.debug("🧠 Encoding & scoring post against categories")
-    result = categorizer.categorize_post(subreddit, text)
+    # --- Run categorization safely ---
+    try:
+      logger.debug("🧠 Encoding & scoring post against categories")
+      result = categorizer.categorize_post(subreddit, text)
+    except Exception as e:
+      logger.exception(f"💥 Categorization error: {e}")
+      raise HTTPException(status_code=500, detail="Categorization process failed")
 
     if not result or "category" not in result:
-      logger.error("⚠️ Categorizer returned no result")
+      logger.error("⚠️ Categorizer returned no valid result")
       raise HTTPException(status_code=502, detail="No categorization result")
 
     logger.info(f"✅ Labeling complete | category={result.get('category')} score={result.get('score')}")
     logger.debug(f"Scores breakdown: {result.get('scores', {})}")
 
-    # Return minimal useful payload (echo inputs for traceability)
+    # --- Return response ---
     return {
       "input": {
         "subreddit": subreddit,
@@ -91,6 +108,6 @@ async def run_labeling(
 
   except HTTPException:
     raise
-  except Exception:
-    logger.exception("💥 Unhandled error in /label/run (RedditPostCategorizer)")
+  except Exception as e:
+    logger.exception(f"💥 Unhandled error in /label/run (RedditPostCategorizer): {e}")
     raise HTTPException(status_code=500, detail="Internal server error")

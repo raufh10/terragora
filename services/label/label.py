@@ -1,16 +1,18 @@
+from typing import Dict, List, Union
 from sentence_transformers import SentenceTransformer, util
 import torch
-from typing import Dict, List, Union
 
 KeywordValue = Union[List[str], Dict[str, List[str]]]
 
 class RedditPostCategorizer:
   """
+  Torch + SentenceTransformers version.
+
   Decision order:
-    1️⃣ lead (if score >= thresh_lead)
-    2️⃣ related (if score >= thresh_related)
-    3️⃣ max(question-help, discussion), if score >= thresh_qd
-    4️⃣ general
+    1) lead (if score >= thresh_lead)
+    2) related (if score >= thresh_related)
+    3) max(question-help, discussion), if score >= thresh_qd
+    4) general
   """
   def __init__(
     self,
@@ -30,32 +32,72 @@ class RedditPostCategorizer:
   @classmethod
   def process_keywords(cls, keyword_map: dict) -> dict:
     """
-    Normalize, lowercase, and deduplicate keywords in-place.
-    Also flattens nested structures for consistency.
+    Defensive normalizer:
+      - Ensures each subreddit value is a dict of categories
+      - Accepts legacy/list-only shapes and maps them to 'related'
+      - Flattens question-help/discussion {light, heavy} -> list
+      - Normalizes strings (strip/lower) and deduplicates
+      - For 'lead': accepts dict (service->list) OR list; if list, wraps under 'generic'
     """
-    def _normalize_list(lst):
-      cleaned = []
-      seen = set()
-      for item in lst:
-        text = item.strip().lower()
-        if text and text not in seen:
-          cleaned.append(text)
-          seen.add(text)
-      return cleaned
+    def _norm_list(lst):
+      out, seen = [], set()
+      for x in lst or []:
+        s = str(x).strip().lower()
+        if s and s not in seen:
+          out.append(s)
+          seen.add(s)
+      return out
 
-    processed = {}
-    for subreddit, cats in keyword_map.items():
-      processed[subreddit] = {}
-      for cat, value in cats.items():
-        if isinstance(value, dict):  # nested (e.g., lead)
-          subdict = {}
-          for subcat, kw_list in value.items():
-            subdict[subcat] = _normalize_list(kw_list)
-          processed[subreddit][cat] = subdict
-        elif isinstance(value, list):  # flat (related, question-help, discussion)
-          processed[subreddit][cat] = _normalize_list(value)
-        else:
-          processed[subreddit][cat] = []
+    def _flatten_light_heavy(v) -> List[str]:
+      if isinstance(v, dict):
+        return _norm_list((v.get("light") or []) + (v.get("heavy") or []))
+      return _norm_list(v or [])
+
+    if not isinstance(keyword_map, dict):
+      # If user passed a top-level list by mistake, coerce to a fake subreddit
+      return {"default": {"related": _norm_list(keyword_map)}}
+
+    processed: Dict[str, Dict[str, KeywordValue]] = {}
+
+    for subreddit, cats in (keyword_map or {}).items():
+      # If subreddit value is a list, treat it as 'related'
+      if isinstance(cats, list):
+        processed[subreddit] = {"related": _norm_list(cats)}
+        continue
+
+      # If not a dict, coerce to empty dict
+      if not isinstance(cats, dict):
+        processed[subreddit] = {}
+        continue
+
+      out_cats: Dict[str, KeywordValue] = {}
+
+      # --- lead ---
+      lead_val = cats.get("lead")
+      if isinstance(lead_val, dict):
+        out_cats["lead"] = {svc: _norm_list(lst) for svc, lst in (lead_val or {}).items()}
+      elif isinstance(lead_val, list):
+        out_cats["lead"] = {"generic": _norm_list(lead_val)}
+      elif lead_val is not None:
+        out_cats["lead"] = {"generic": _norm_list([lead_val])}
+
+      # --- related ---
+      rel_val = cats.get("related")
+      if rel_val is not None:
+        out_cats["related"] = _norm_list(rel_val if isinstance(rel_val, list) else [rel_val])
+
+      # --- question-help ---
+      qh_val = cats.get("question-help")
+      if qh_val is not None:
+        out_cats["question-help"] = _flatten_light_heavy(qh_val)
+
+      # --- discussion ---
+      disc_val = cats.get("discussion")
+      if disc_val is not None:
+        out_cats["discussion"] = _flatten_light_heavy(disc_val)
+
+      processed[subreddit] = out_cats
+
     return processed
 
   # ---------- internals ----------
@@ -76,7 +118,7 @@ class RedditPostCategorizer:
     if not phrases:
       return 0.0
     kw_emb = self._encode(phrases)
-    sims = util.cos_sim(post_emb, kw_emb)
+    sims = util.cos_sim(post_emb, kw_emb)  # shape roughly (1, K)
     return float(torch.mean(sims))
 
   # ---------- public API ----------
@@ -112,7 +154,7 @@ class RedditPostCategorizer:
       "discussion": round(discussion_score, 4),
     }
 
-    # --- Decision order & thresholds ---
+    # Decision order & thresholds
     if lead_score >= self.thresh_lead:
       return {"category": "lead", "score": round(lead_score, 4), "scores": scores}
 
