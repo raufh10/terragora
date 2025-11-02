@@ -8,15 +8,11 @@ asyncpraw
 
 # Transformation
 openai
-sentence-transformers
-numpy
 
 # Load
 httpx
 
 # Misc
-pydantic
 pydantic-settings
 python-multipart
-typing-extensions
 supabase

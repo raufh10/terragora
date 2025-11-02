@@ -1,5 +1,5 @@
-from .alerts import AlertData
+from .category import SubmissionCategory
 
 __all__ = [
-  "AlertData"
+  "SubmissionCategory"
 ]
