@@ -1,14 +1,143 @@
 import asyncio
 import requests
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Tuple, Optional
+import os
 
-from services.database import agendas, db, submissions
+from services.database import agendas, alerts, db, submissions
+
+
+PROMPTS_PATH = "data/prompts.md"
+
+
+def _load_prompts(logger, path: str = PROMPTS_PATH) -> Tuple[str, str]:
+  """
+  Load system & user prompts from a markdown file.
+
+  Supported markers inside data/prompts.md (any one will work):
+    - HTML comments:
+        <!-- SYSTEM_PROMPT_START -->
+        ...system text...
+        <!-- SYSTEM_PROMPT_END -->
+        <!-- USER_PROMPT_START -->
+        ...user template...
+        <!-- USER_PROMPT_END -->
+
+    - Headings:
+        ## SubmissionCategory System
+        ...system text...
+        ## SubmissionCategory User
+        ...user template...
+
+    - Fallbacks:
+        - Entire file becomes system prompt.
+        - User prompt falls back to a safe template using placeholders.
+  """
+  system_prompt = ""
+  user_prompt_tpl = ""
+
+  try:
+    with open(path, "r", encoding="utf-8") as f:
+      content = f.read()
+  except Exception:
+    logger.exception(f"❌ Unable to read prompts file at {path}")
+    # Fallbacks
+    system_prompt = (
+      "You are a Reddit post classifier that returns a JSON object with fields "
+      "'label' (one of: lead, relevant, help, question, discussion), "
+      "'confidence' (0–100), and 'rationale' (one concise sentence)."
+    )
+    user_prompt_tpl = (
+      "Subreddit: r/{subreddit}\n"
+      "Title: {title}\n"
+      "Body: {selftext}\n"
+      "Author: u/{author}\n"
+      "Created_UTC: {created_utc}"
+    )
+    return system_prompt, user_prompt_tpl
+
+  # Try HTML comment markers first
+  def _extract_between(text: str, start_marker: str, end_marker: str) -> Optional[str]:
+    start = text.find(start_marker)
+    if start == -1:
+      return None
+    start += len(start_marker)
+    end = text.find(end_marker, start)
+    if end == -1:
+      return None
+    return text[start:end].strip()
+
+  sys_from_comments = _extract_between(
+    content, "<!-- SYSTEM_PROMPT_START -->", "<!-- SYSTEM_PROMPT_END -->"
+  )
+  user_from_comments = _extract_between(
+    content, "<!-- USER_PROMPT_START -->", "<!-- USER_PROMPT_END -->"
+  )
+
+  if sys_from_comments or user_from_comments:
+    system_prompt = (sys_from_comments or "").strip()
+    user_prompt_tpl = (user_from_comments or "").strip()
+
+  # If not found, try heading-based extraction
+  if not system_prompt or not user_prompt_tpl:
+    lines = content.splitlines()
+    buff = []
+    block = None
+    system_block = []
+    user_block = []
+
+    def _is_sys_heading(s: str) -> bool:
+      s = s.strip().lower()
+      return ("submissioncategory" in s and "system" in s) or s.endswith("system")
+
+    def _is_user_heading(s: str) -> bool:
+      s = s.strip().lower()
+      return ("submissioncategory" in s and "user" in s) or s.endswith("user")
+
+    for ln in lines:
+      if ln.strip().startswith("#"):  # heading
+        if _is_sys_heading(ln):
+          block = "system"
+          continue
+        if _is_user_heading(ln):
+          block = "user"
+          continue
+        # other headings end any active block
+        block = None
+      else:
+        if block == "system":
+          system_block.append(ln)
+        elif block == "user":
+          user_block.append(ln)
+
+    if not system_prompt and system_block:
+      system_prompt = "\n".join(system_block).strip()
+    if not user_prompt_tpl and user_block:
+      user_prompt_tpl = "\n".join(user_block).strip()
+
+  # Final fallbacks if still missing
+  if not system_prompt:
+    system_prompt = (
+      "You are a Reddit post classifier that returns a JSON object with fields "
+      "'label' (one of: lead, relevant, help, question, discussion), "
+      "'confidence' (0–100), and 'rationale' (one concise sentence)."
+    )
+  if not user_prompt_tpl:
+    user_prompt_tpl = (
+      "Subreddit: r/{subreddit}\n"
+      "Title: {title}\n"
+      "Body: {selftext}\n"
+      "Author: u/{author}\n"
+      "Created_UTC: {created_utc}"
+    )
+
+  return system_prompt, user_prompt_tpl
+
 
 def do_all(logger):
   """
   Fetches ALL agendas from Supabase and processes each sequentially:
-  EXTRACT → TRANSFORM → (optionally) LOAD
+  EXTRACT → TRANSFORM
   """
   supabase = db.get_supabase_client()
 
@@ -24,8 +153,15 @@ def do_all(logger):
     return
 
   fetch_url = f"{api.rstrip('/')}/submissions/fetch"
-  run_url = f"{api.rstrip('/')}/label/run"
+  # ✅ switched to the new endpoint
+  run_url = f"{api.rstrip('/')}/analysis/run"
   tg_url = f"{api.rstrip('/')}/telegram"
+
+  # --- Load prompts from file ---
+  system_prompt, user_prompt_tpl = _load_prompts(logger, PROMPTS_PATH)
+  logger.debug(
+    f"🧾 Prompts loaded | system_len={len(system_prompt)} user_tpl_len={len(user_prompt_tpl)}"
+  )
 
   # --- Fetch all agendas ---
   try:
@@ -41,26 +177,12 @@ def do_all(logger):
   logger.info(f"🗂️ Found {len(agenda_list)} agenda(s) to process")
 
   for idx, agenda in enumerate(agenda_list, start=1):
-    # Peek subreddit now so we can call loader after processing if is_test
-    try:
-      data_peek = agenda.get("data") or {}
-      agenda_subreddit_for_load = next(iter(data_peek.keys()))
-    except Exception:
-      agenda_subreddit_for_load = None
-
     try:
       logger.info(f"====== ▶️ Agenda {idx}/{len(agenda_list)} | id={agenda.get('id')} ======")
-      _process_agenda(logger, supabase, agenda, fetch_url, run_url, tg_url)
+      _process_agenda(logger, supabase, agenda, fetch_url, run_url, tg_url, system_prompt, user_prompt_tpl)
     except Exception as e:
       logger.exception(f"💥 Unhandled error processing agenda id={agenda.get('id')}: {e}")
       continue
-
-    # If test mode, trigger the LOAD step immediately for this agenda
-    if is_test and agenda_subreddit_for_load:
-      try:
-        _load_agenda(logger, supabase, tg_url, agenda_subreddit=agenda_subreddit_for_load)
-      except Exception as e:
-        logger.exception(f"💥 Load step failed for agenda id={agenda.get('id')}: {e}")
 
 
 def _process_agenda(
@@ -70,6 +192,8 @@ def _process_agenda(
   fetch_url: str,
   run_url: str,
   tg_url: str,
+  system_prompt: str,
+  user_prompt_tpl: str,
 ):
   """Performs EXTRACT → TRANSFORM for a single agenda."""
   try:
@@ -83,9 +207,7 @@ def _process_agenda(
   # =====================
   # 1️⃣ EXTRACT
   # =====================
-  fetch_payload = {
-    "subreddit": agenda_subreddit
-  }
+  fetch_payload = {"subreddit": agenda_subreddit}
 
   all_insert_data: List[Dict[str, Any]] = []
   try:
@@ -121,7 +243,11 @@ def _process_agenda(
             continue
           new_post = dict(post)
           new_post.pop("id", None)
-          all_insert_data.append({"reddit_id": rid, "subreddit": agenda_subreddit, "data": new_post})
+          all_insert_data.append({
+            "reddit_id": rid,
+            "subreddit": agenda_subreddit,
+            "data": new_post
+          })
   except requests.RequestException as e:
     logger.exception(f"❌ Request error calling fetch endpoint: {e}")
 
@@ -138,7 +264,7 @@ def _process_agenda(
     logger.warning("⚠️ No valid submission data collected; skipping insert")
 
   # =====================
-  # 2️⃣ TRANSFORM
+  # 2️⃣ TRANSFORM (→ /analysis/run with prompts)
   # =====================
   try:
     submissions_data = asyncio.run(submissions.select(supabase, logger, agenda_subreddit))
@@ -153,20 +279,35 @@ def _process_agenda(
     logger.error(f"❌ Existing alerts IDs fetch exception: {e}")
     existing_alerts_ids = set()
 
-  new_submissions_data = [it for it in submissions_data if it.get("id") not in existing_alerts_ids]
+  new_submissions_data = [
+    it for it in submissions_data if it.get("id") not in existing_alerts_ids
+  ]
 
   payloads: List[Dict[str, Any]] = []
   for item in new_submissions_data:
     pdata = item.get("data") or {}
-    title = pdata.get("title", "-")
-    selftext = pdata.get("selftext", "")
+    title = pdata.get("title", "-") or "-"
+    selftext = pdata.get("selftext", "") or ""
+    author = pdata.get("author", "unknown") or "unknown"
+    created_ts = pdata.get("created_utc")
+    created_iso = (
+      datetime.fromtimestamp(created_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+      if isinstance(created_ts, (int, float)) else "N/A"
+    )
 
-    submissions_text = f"{title}\n{selftext}".strip()
+    # Build the user prompt from template
+    user_prompt = user_prompt_tpl.format(
+      subreddit=agenda_subreddit,
+      title=title,
+      selftext=selftext,
+      author=author,
+      created_utc=created_iso
+    ).strip()
+
     payloads.append({
       "submission_id": item.get("id"),
-      "subreddit": agenda_subreddit,
-      "text": submissions_text,
-      "keyword_map": agenda_keywords
+      "system_prompt": system_prompt,
+      "user_prompt": user_prompt
     })
 
   all_results: List[Dict[str, Any]] = []
@@ -176,7 +317,10 @@ def _process_agenda(
       continue
     logger.info(f"📡 POST {run_url} | submission_id={sid}")
     try:
-      resp = requests.post(run_url, json=payload, timeout=60)
+      resp = requests.post(run_url, json={
+        "system_prompt": payload["system_prompt"],
+        "user_prompt": payload["user_prompt"]
+      }, timeout=60)
     except requests.RequestException as e:
       logger.error(f"💥 Request error for submission_id={sid}: {e}")
       continue
@@ -194,12 +338,15 @@ def _process_agenda(
     if not isinstance(data_out, dict) or not data_out:
       continue
 
-    result = data_out.get("result") or {}
+    # The /analysis/run endpoint returns the SubmissionCategory model directly
+    # e.g., {"label": "...", "confidence": 87.3, "rationale": "..."}
+    result = data_out
     insert_result = {
       "agenda_id": agenda_id,
       "submission_id": sid
     }
-    all_results.append(insert_result | result)
+    # Merge and collect for alerts.insert
+    all_results.append(insert_result | {"suggestions": result, "relevance": 0})
 
   if not all_results:
     logger.warning("⚠️ No transform results — skipping alerts insert for this agenda")
@@ -211,94 +358,3 @@ def _process_agenda(
       logger.info("📥 Alerts insert complete")
   except Exception as e:
     logger.error(f"❌ Alerts insert exception: {e}")
-
-
-def _load_agenda(
-  logger,
-  supabase,
-  tg_url: str,
-  agenda_subreddit: Optional[str] = None
-):
-  """
-  LOAD step:
-    - Select alerts
-    - Compose Telegram messages
-    - Send notifications
-    - Mark successes in DB
-  Optionally takes agenda_subreddit to label messages or filter in the future.
-  """
-  # =====================
-  # 3️⃣ LOAD
-  # =====================
-  try:
-    alerts_data = asyncio.run(alerts.select(supabase, logger))
-  except Exception as e:
-    logger.error(f"❌ Alerts select exception: {e}")
-    return
-
-  to_load_data: List[Dict[str, Any]] = []
-  for item in alerts_data:
-    sid = item.get("unique_key")
-    suggestions = item.get("suggestions") or {}  # ensure dict
-    category = suggestions.get("category", "Category Placeholder")
-    score = suggestions.get("score", "Score Placeholder")
-    scores = suggestions.get("scores", "Scores Placeholder")
-
-    sub = item.get("submissions") or {}
-    sdata = sub.get("data") or {}
-    sub_subreddit = sub.get("subreddit") or agenda_subreddit or "unknown"
-
-    title = sdata.get("title", "-")
-    author = sdata.get("author", "-")
-    created_ts = sdata.get("created_utc")
-
-    created_iso = (
-      datetime.fromtimestamp(created_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
-      if isinstance(created_ts, (int, float)) else "N/A"
-    )
-
-    message = (
-      f"🔔 Alert — r/{sub_subreddit}\n"
-      f"Title: {title}\n"
-      f"Author: u/{author}\n"
-      f"Category: {category}\n"
-      f"Score: {score} — {scores}\n"
-      f"Created (UTC): {created_iso}"
-    )
-    if sid and message:
-      to_load_data.append({"id": sid, "message": message})
-
-  if not to_load_data:
-    logger.info("ℹ️ No alerts to send")
-    return
-
-  logger.info(f"📡 Sending {len(to_load_data)} Telegram notifications → {tg_url}")
-
-  success_updates: List[str] = []
-  for row in to_load_data:
-    sid = row.get("id")
-    msg = row.get("message", "")
-    if not sid or not msg:
-      continue
-    try:
-      resp = requests.post(tg_url, json={"message": msg}, timeout=30)
-      ok = False
-      try:
-        ok = resp.ok and (resp.json().get("ok") is True)
-      except Exception:
-        ok = resp.ok
-      if ok:
-        success_updates.append(sid)
-        logger.info(f"✅ Telegram sent for id={sid}")
-      else:
-        logger.error(f"🚫 Telegram send failed for id={sid} [{resp.status_code}]")
-    except Exception as e:
-      logger.error(f"💥 Telegram send exception for id={sid}: {e}")
-
-  if success_updates:
-    try:
-      status = asyncio.run(alerts.update_statuses_success(supabase, logger, success_updates))
-      if status:
-        logger.info(f"🗂️ Updated alert statuses | success={len(success_updates)}")
-    except Exception as e:
-      logger.error(f"❌ Alerts status update exception: {e}")
