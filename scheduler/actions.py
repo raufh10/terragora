@@ -1,144 +1,39 @@
+import yaml
 import asyncio
 import requests
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Tuple, Optional
-import os
+from typing import Dict, Any, List, Tuple
 
-from services.database import agendas, alerts, db, submissions
+from services.database import db, agendas, submissions
 
-
-PROMPTS_PATH = "data/prompts.md"
-
-
-def _load_prompts(logger, path: str = PROMPTS_PATH) -> Tuple[str, str]:
-  """
-  Load system & user prompts from a markdown file.
-
-  Supported markers inside data/prompts.md (any one will work):
-    - HTML comments:
-        <!-- SYSTEM_PROMPT_START -->
-        ...system text...
-        <!-- SYSTEM_PROMPT_END -->
-        <!-- USER_PROMPT_START -->
-        ...user template...
-        <!-- USER_PROMPT_END -->
-
-    - Headings:
-        ## SubmissionCategory System
-        ...system text...
-        ## SubmissionCategory User
-        ...user template...
-
-    - Fallbacks:
-        - Entire file becomes system prompt.
-        - User prompt falls back to a safe template using placeholders.
-  """
-  system_prompt = ""
-  user_prompt_tpl = ""
-
+PROMPTS_PATH = "data/prompts.yaml"
+def _load_prompts_yaml(logger, path: str = PROMPTS_PATH) -> Tuple[str, str]:
   try:
     with open(path, "r", encoding="utf-8") as f:
-      content = f.read()
-  except Exception:
-    logger.exception(f"❌ Unable to read prompts file at {path}")
-    # Fallbacks
-    system_prompt = (
-      "You are a Reddit post classifier that returns a JSON object with fields "
-      "'label' (one of: lead, relevant, help, question, discussion), "
-      "'confidence' (0–100), and 'rationale' (one concise sentence)."
-    )
-    user_prompt_tpl = (
-      "Subreddit: r/{subreddit}\n"
-      "Title: {title}\n"
-      "Body: {selftext}\n"
-      "Author: u/{author}\n"
-      "Created_UTC: {created_utc}"
-    )
-    return system_prompt, user_prompt_tpl
+      data = yaml.safe_load(f)
+  except Exception as e:
+    logger.exception(f"❌ Unable to read or parse YAML at {path}")
+    raise RuntimeError(f"Failed to read/parse prompts YAML: {e}") from e
 
-  # Try HTML comment markers first
-  def _extract_between(text: str, start_marker: str, end_marker: str) -> Optional[str]:
-    start = text.find(start_marker)
-    if start == -1:
-      return None
-    start += len(start_marker)
-    end = text.find(end_marker, start)
-    if end == -1:
-      return None
-    return text[start:end].strip()
+  if not isinstance(data, dict):
+    raise ValueError(f"Invalid YAML structure in {path}: expected a mapping at top-level")
 
-  sys_from_comments = _extract_between(
-    content, "<!-- SYSTEM_PROMPT_START -->", "<!-- SYSTEM_PROMPT_END -->"
-  )
-  user_from_comments = _extract_between(
-    content, "<!-- USER_PROMPT_START -->", "<!-- USER_PROMPT_END -->"
-  )
+  block = data.get("submission_category")
+  if not isinstance(block, dict):
+    raise ValueError("Missing required key 'submission_category' (mapping) in prompts YAML")
 
-  if sys_from_comments or user_from_comments:
-    system_prompt = (sys_from_comments or "").strip()
-    user_prompt_tpl = (user_from_comments or "").strip()
+  system_prompt = block.get("system_prompt")
+  user_prompt = block.get("user_prompt")
 
-  # If not found, try heading-based extraction
-  if not system_prompt or not user_prompt_tpl:
-    lines = content.splitlines()
-    buff = []
-    block = None
-    system_block = []
-    user_block = []
+  if not isinstance(system_prompt, str) or not system_prompt.strip():
+    raise ValueError("'submission_category.system_prompt' must be a non-empty string")
 
-    def _is_sys_heading(s: str) -> bool:
-      s = s.strip().lower()
-      return ("submissioncategory" in s and "system" in s) or s.endswith("system")
+  if not isinstance(user_prompt, str) or not user_prompt.strip():
+    raise ValueError("'submission_category.user_prompt' must be a non-empty string")
 
-    def _is_user_heading(s: str) -> bool:
-      s = s.strip().lower()
-      return ("submissioncategory" in s and "user" in s) or s.endswith("user")
-
-    for ln in lines:
-      if ln.strip().startswith("#"):  # heading
-        if _is_sys_heading(ln):
-          block = "system"
-          continue
-        if _is_user_heading(ln):
-          block = "user"
-          continue
-        # other headings end any active block
-        block = None
-      else:
-        if block == "system":
-          system_block.append(ln)
-        elif block == "user":
-          user_block.append(ln)
-
-    if not system_prompt and system_block:
-      system_prompt = "\n".join(system_block).strip()
-    if not user_prompt_tpl and user_block:
-      user_prompt_tpl = "\n".join(user_block).strip()
-
-  # Final fallbacks if still missing
-  if not system_prompt:
-    system_prompt = (
-      "You are a Reddit post classifier that returns a JSON object with fields "
-      "'label' (one of: lead, relevant, help, question, discussion), "
-      "'confidence' (0–100), and 'rationale' (one concise sentence)."
-    )
-  if not user_prompt_tpl:
-    user_prompt_tpl = (
-      "Subreddit: r/{subreddit}\n"
-      "Title: {title}\n"
-      "Body: {selftext}\n"
-      "Author: u/{author}\n"
-      "Created_UTC: {created_utc}"
-    )
-
-  return system_prompt, user_prompt_tpl
-
+  return system_prompt.strip(), user_prompt.strip()
 
 def do_all(logger):
-  """
-  Fetches ALL agendas from Supabase and processes each sequentially:
-  EXTRACT → TRANSFORM
-  """
   supabase = db.get_supabase_client()
 
   # --- Load configuration ---
@@ -153,12 +48,11 @@ def do_all(logger):
     return
 
   fetch_url = f"{api.rstrip('/')}/submissions/fetch"
-  # ✅ switched to the new endpoint
   run_url = f"{api.rstrip('/')}/analysis/run"
   tg_url = f"{api.rstrip('/')}/telegram"
 
-  # --- Load prompts from file ---
-  system_prompt, user_prompt_tpl = _load_prompts(logger, PROMPTS_PATH)
+  # --- Load prompts from YAML ---
+  system_prompt, user_prompt_tpl = _load_prompts_yaml(logger, PROMPTS_PATH)
   logger.debug(
     f"🧾 Prompts loaded | system_len={len(system_prompt)} user_tpl_len={len(user_prompt_tpl)}"
   )
@@ -195,11 +89,14 @@ def _process_agenda(
   system_prompt: str,
   user_prompt_tpl: str,
 ):
-  """Performs EXTRACT → TRANSFORM for a single agenda."""
   try:
     agenda_id = agenda["id"]
     data = agenda.get("data") or {}
-    agenda_subreddit, agenda_keywords = next(iter(data.items()))
+
+    agenda_subreddit = agenda.get("subreddit")
+    if not agenda_subreddit:
+      raise ValueError("Missing required field: subreddit")
+
   except Exception:
     logger.exception("❌ Agenda missing required fields; skipping")
     return
@@ -267,21 +164,12 @@ def _process_agenda(
   # 2️⃣ TRANSFORM (→ /analysis/run with prompts)
   # =====================
   try:
-    submissions_data = asyncio.run(submissions.select(supabase, logger, agenda_subreddit))
+    submissions_data = asyncio.run(submissions.select_to_label(supabase, logger, agenda_subreddit))
   except Exception as e:
     logger.error(f"❌ Submissions fetch exception: {e}")
-    submissions_data = []
-
-  try:
-    existing_alerts_ids = asyncio.run(alerts.select_exists_ids(supabase, logger, agenda_id))
-    existing_alerts_ids = set(existing_alerts_ids or [])
-  except Exception as e:
-    logger.error(f"❌ Existing alerts IDs fetch exception: {e}")
-    existing_alerts_ids = set()
-
-  new_submissions_data = [
-    it for it in submissions_data if it.get("id") not in existing_alerts_ids
-  ]
+  else:
+    if submissions_data is None:
+      submissions_data = []
 
   payloads: List[Dict[str, Any]] = []
   for item in new_submissions_data:
@@ -295,7 +183,6 @@ def _process_agenda(
       if isinstance(created_ts, (int, float)) else "N/A"
     )
 
-    # Build the user prompt from template
     user_prompt = user_prompt_tpl.format(
       subreddit=agenda_subreddit,
       title=title,
@@ -338,22 +225,24 @@ def _process_agenda(
     if not isinstance(data_out, dict) or not data_out:
       continue
 
-    # The /analysis/run endpoint returns the SubmissionCategory model directly
-    # e.g., {"label": "...", "confidence": 87.3, "rationale": "..."}
-    result = data_out
     insert_result = {
-      "agenda_id": agenda_id,
-      "submission_id": sid
+      "submission_id": sid,
+      "to_insert": {
+        "category": data_out["label"]
+        "category_data": {
+          "confidence": data_out["confidence"],
+          "rationale": data_out["rationale"]
+        }
+      }
     }
-    # Merge and collect for alerts.insert
-    all_results.append(insert_result | {"suggestions": result, "relevance": 0})
+    all_results.append(insert_result)
 
   if not all_results:
     logger.warning("⚠️ No transform results — skipping alerts insert for this agenda")
     return
 
   try:
-    status = asyncio.run(alerts.insert(supabase, logger, all_results))
+    status = asyncio.run(submissions.update_category(supabase, logger, all_results))
     if status:
       logger.info("📥 Alerts insert complete")
   except Exception as e:
