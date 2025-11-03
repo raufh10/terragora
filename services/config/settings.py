@@ -4,7 +4,9 @@ from pydantic import SecretStr
 from urllib.parse import quote_plus
 from typing import Dict, Callable, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from scheduler.actions import do_all, do_test
+
+from scheduler.actions import do_all
+from scheduler.test_actions import do_test
 
 class Settings(BaseSettings):
   model_config = SettingsConfigDict(
