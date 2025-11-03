@@ -108,7 +108,7 @@ def _process_agenda(
   all_insert_data: List[Dict[str, Any]] = []
   try:
     logger.info(f"📡 POST {fetch_url} | subreddit={agenda_subreddit}")
-    resp = requests.post(fetch_url, json=fetch_payload, timeout=30)
+    resp = requests.post(fetch_url, json=fetch_payload, timeout=60)
     if not resp.ok:
       logger.error(f"⚠️ Fetch failed [{resp.status_code}] → {resp.text[:300]}")
     else:
@@ -326,7 +326,7 @@ def do_test(logger):
       fetch_payload = {"subreddit": agenda_subreddit, "limit": 1000, "time_filter": "month"}
       try:
         logger.info(f"(TEST) 📡 POST {fetch_url} | subreddit={agenda_subreddit}")
-        resp = requests.post(fetch_url, json=fetch_payload, timeout=30)
+        resp = requests.post(fetch_url, json=fetch_payload, timeout=300)
         if not resp.ok:
           logger.error(f"(TEST) ⚠️ Fetch failed [{resp.status_code}] → {resp.text[:300]}")
         else:
