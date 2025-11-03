@@ -323,7 +323,7 @@ def do_test(logger):
         continue
 
       # EXTRACT
-      fetch_payload = {"subreddit": agenda_subreddit, "limit": 1000, "time_filter": "month"}
+      fetch_payload = {"subreddit": agenda_subreddit}
       try:
         logger.info(f"(TEST) 📡 POST {fetch_url} | subreddit={agenda_subreddit}")
         resp = requests.post(fetch_url, json=fetch_payload, timeout=300)
