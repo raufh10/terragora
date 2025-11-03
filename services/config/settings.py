@@ -2,7 +2,7 @@ import os
 import logging
 from typing import Dict, Callable, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from scheduler.actions import do_all
+from scheduler.actions import do_all, do_test
 
 class Settings(BaseSettings):
   model_config = SettingsConfigDict(
@@ -30,13 +30,14 @@ class Settings(BaseSettings):
     {
       "start": "00:00",
       "end": "23:59",
-      "action": "all"
+      "action": "test"
     },
   ]
 
   # Central action registry
   ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
-    "all": do_all
+    "all": do_all,
+    "test": do_test
   }
 
 settings = Settings()
