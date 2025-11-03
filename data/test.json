@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "submission_id": 1230,
+    "data": {
+      "is_lead": false,
+      "label": "lost pet",
+      "confidence": 92.0
+    }
+  }
+]

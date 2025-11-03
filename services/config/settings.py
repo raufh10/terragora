@@ -1,5 +1,7 @@
 import os
 import logging
+from pydantic import SecretStr
+from urllib.parse import quote_plus
 from typing import Dict, Callable, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from scheduler.actions import do_all, do_test
@@ -11,6 +13,9 @@ class Settings(BaseSettings):
     extra="allow",
   )
 
+  # Environments
+  env_type: SecretStr | None = None
+
   # App
   TITLE: str = "LeadditsScheduler"
   VERSION: str = "1.0.0"
@@ -21,8 +26,12 @@ class Settings(BaseSettings):
   TELEGRAM_BASE: int = logging.ERROR
 
   # API
-  API_ENDPOINT: str = "http://leaddits_api.railway.internal:8080"
-  #API_ENDPOINT: str = "http://127.0.0.1:8000"
+  env_type_var: str = env_type.get_secret_value()
+
+  if env_type_var == "local_machine":
+    API_ENDPOINT: str = "http://127.0.0.1:8000"
+  else:
+    API_ENDPOINT: str = "http://leaddits_api.railway.internal:8080"
 
   # Scheduler (UTC)
   LIST_RULES: bool = False

@@ -171,7 +171,6 @@ def _process_agenda(
     if submissions_data is None:
       submissions_data = []
 
-  submissions_data = submissions_data[:5]
   payloads: List[Dict[str, Any]] = []
   for item in submissions_data:
     pdata = item.get("data") or {}
@@ -324,9 +323,11 @@ def do_test(logger):
 
       # EXTRACT
       fetch_payload = {"subreddit": agenda_subreddit}
+      #fetch_payload = {"subreddit": agenda_subreddit, "limit": 1000, "time_filter": "month"}
+
       try:
         logger.info(f"(TEST) 📡 POST {fetch_url} | subreddit={agenda_subreddit}")
-        resp = requests.post(fetch_url, json=fetch_payload, timeout=300)
+        resp = requests.post(fetch_url, json=fetch_payload, timeout=3600)
         if not resp.ok:
           logger.error(f"(TEST) ⚠️ Fetch failed [{resp.status_code}] → {resp.text[:300]}")
         else:
@@ -363,6 +364,7 @@ def do_test(logger):
               })
 
             if all_insert_data:
+              all_insert_data = all_insert_data[0:200]
               try:
                 status = asyncio.run(submissions.insert(supabase, logger, all_insert_data))
                 if status:
@@ -384,6 +386,7 @@ def do_test(logger):
           submissions_data = []
 
       # Build prompts per submission and call /analysis/test
+      submissions_data = submissions_data[:1]
       for item in submissions_data:
         pdata = item.get("data") or {}
         title = pdata.get("title", "-") or "-"
