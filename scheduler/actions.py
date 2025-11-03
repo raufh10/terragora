@@ -322,8 +322,7 @@ def do_test(logger):
         continue
 
       # EXTRACT
-      fetch_payload = {"subreddit": agenda_subreddit}
-      #fetch_payload = {"subreddit": agenda_subreddit, "limit": 1000, "time_filter": "month"}
+      fetch_payload = {"subreddit": agenda_subreddit, "limit": 1000, "time_filter": "month"}
 
       try:
         logger.info(f"(TEST) 📡 POST {fetch_url} | subreddit={agenda_subreddit}")
@@ -364,7 +363,6 @@ def do_test(logger):
               })
 
             if all_insert_data:
-              all_insert_data = all_insert_data[0:200]
               try:
                 status = asyncio.run(submissions.insert(supabase, logger, all_insert_data))
                 if status:
@@ -386,7 +384,7 @@ def do_test(logger):
           submissions_data = []
 
       # Build prompts per submission and call /analysis/test
-      submissions_data = submissions_data[:1]
+      #submissions_data = submissions_data[:1]
       for item in submissions_data:
         pdata = item.get("data") or {}
         title = pdata.get("title", "-") or "-"
