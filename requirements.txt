@@ -2,3 +2,4 @@ pydantic-settings
 python-multipart
 requests
 supabase
+pyyaml
