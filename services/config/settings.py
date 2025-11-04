@@ -1,8 +1,8 @@
 import os
 import logging
-from pydantic import SecretStr
-from urllib.parse import quote_plus
-from typing import Dict, Callable, List
+from typing import Optional, Dict, Callable, List
+
+from pydantic import SecretStr, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from scheduler.actions import do_all
@@ -15,40 +15,32 @@ class Settings(BaseSettings):
     extra="allow",
   )
 
-  # Environments
-  env_type: SecretStr | None = None
+  env_type: Optional[SecretStr] = Field(default=None, alias="ENV_TYPE")
 
-  # App
   TITLE: str = "LeadditsScheduler"
   VERSION: str = "1.0.0"
 
-  # Logging
   LOG_PATH: str = "./logs/app.log"
   LOGGING_BASE: int = logging.DEBUG
   TELEGRAM_BASE: int = logging.ERROR
 
-  # API
-  env_type_var: str = env_type.get_secret_value()
+  API_ENDPOINT: str = "http://leaddits_api.railway.internal:8080"
 
-  if env_type_var == "local_machine":
-    API_ENDPOINT: str = "http://127.0.0.1:8000"
-  else:
-    API_ENDPOINT: str = "http://leaddits_api.railway.internal:8080"
-
-  # Scheduler (UTC)
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {
-      "start": "00:00",
-      "end": "23:59",
-      "action": "test"
-    },
+    {"start": "00:00", "end": "23:59", "action": "test"},
   ]
 
-  # Central action registry
-  ACTION_REGISTRY: Dict[str, Callable[[], None]] = {
+  ACTION_REGISTRY: Dict[str, Callable[..., None]] = {
     "all": do_all,
-    "test": do_test
+    "test": do_test,
   }
+
+  @model_validator(mode="after")
+  def _compute_api_endpoint(self) -> "Settings":
+    env_type_val = (self.env_type.get_secret_value() if self.env_type else "").strip()
+    if env_type_val == "local_machine":
+      self.API_ENDPOINT = "http://127.0.0.1:8000"
+    return self
 
 settings = Settings()

@@ -6,3 +6,7 @@ __pycache__/
 *.idea/
 *.vscode/
 .git/
+
+# Tests JSON
+data/test.json
+data/testing_post.json

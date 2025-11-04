@@ -2,6 +2,10 @@
 __pycache__/
 legacy/
 
+# Tests JSON
+data/test.json
+data/testing_post.json
+
 # Logs
 logs/
 *.log

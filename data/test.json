@@ -1,0 +1,2402 @@
+[
+  {
+    "submission_id": "1onajng",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1onafcw",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1onacdy",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1on3vjr",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1on0ybv",
+    "data": {
+      "is_lead": false,
+      "label": "lost pet",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omysif",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1omxp8f",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1omvjf0",
+    "data": {
+      "is_lead": true,
+      "label": "Starbucks barista job / employment",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omv6mv",
+    "data": {
+      "is_lead": true,
+      "label": "hair braiding (braids and cornrows)",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1omupy9",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omuowv",
+    "data": {
+      "is_lead": true,
+      "label": "CBD disposable vapes",
+      "confidence": 84.0
+    }
+  },
+  {
+    "submission_id": "1omu9ex",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1omtmsj",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omti2f",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1omszl7",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omsl52",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1omsih0",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omsceg",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omrnp1",
+    "data": {
+      "is_lead": true,
+      "label": "tent wedding venue",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1omqyud",
+    "data": {
+      "is_lead": true,
+      "label": "Polish restaurant (pierogies)",
+      "confidence": 76.0
+    }
+  },
+  {
+    "submission_id": "1omonui",
+    "data": {
+      "is_lead": true,
+      "label": "credit repair",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1omoims",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ommwa1",
+    "data": {
+      "is_lead": false,
+      "label": "found pet",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ommjzb",
+    "data": {
+      "is_lead": false,
+      "label": "local business information",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1omm77m",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1omlv1f",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oml6ys",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omkl2q",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1omkimg",
+    "data": {
+      "is_lead": false,
+      "label": "lost pet",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1omj60j",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1omj1js",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1omhr9c",
+    "data": {
+      "is_lead": true,
+      "label": "Christmas tree farm",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1omg892",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1om9ojp",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 77.0
+    }
+  },
+  {
+    "submission_id": "1om68va",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1om66vz",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 68.0
+    }
+  },
+  {
+    "submission_id": "1om3wlk",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1om3wcn",
+    "data": {
+      "is_lead": true,
+      "label": "jewelry buyer",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1om3233",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1om2863",
+    "data": {
+      "is_lead": false,
+      "label": "resources",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1om2373",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1olz2gc",
+    "data": {
+      "is_lead": false,
+      "label": "lost and found",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1olz0lp",
+    "data": {
+      "is_lead": false,
+      "label": "announcement",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1olz0fu",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1oly9f1",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 80.0
+    }
+  },
+  {
+    "submission_id": "1olx9rs",
+    "data": {
+      "is_lead": true,
+      "label": "hazardous waste disposal",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1oluuon",
+    "data": {
+      "is_lead": true,
+      "label": "EV service center",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oluu5t",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1olul9l",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1olsr3e",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1olsbyy",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1olrmq5",
+    "data": {
+      "is_lead": true,
+      "label": "marijuana use disorder treatment / recovery resources",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1olr679",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1olqr62",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1olqlyo",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1olq5d2",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1olpkg2",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1olp3j8",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1olosde",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1olonuh",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1olo5ax",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 68.0
+    }
+  },
+  {
+    "submission_id": "1olnyni",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1olmoe1",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1olmfqc",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 80.0
+    }
+  },
+  {
+    "submission_id": "1ollhff",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1olleny",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1olfr9z",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oldgfv",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1old2yc",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1olc885",
+    "data": {
+      "is_lead": true,
+      "label": "sound equipment rental/purchase",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1olbw16",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ol99qk",
+    "data": {
+      "is_lead": true,
+      "label": "hairstyling services",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ol8eug",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ol7ghh",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ol7a8v",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ol7818",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ol6zxd",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ol5ruk",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ol5hjk",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 80.0
+    }
+  },
+  {
+    "submission_id": "1ol4q3e",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ol49x6",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1ol48ba",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1ol3gi8",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ol29ri",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1ol20gd",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ol10fm",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ol0pch",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1ol0evm",
+    "data": {
+      "is_lead": true,
+      "label": "radio airtime",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ol0a6m",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1okzwvj",
+    "data": {
+      "is_lead": false,
+      "label": "fundraising",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okzwm5",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okz2a9",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okye1p",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1oky1kv",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okx18s",
+    "data": {
+      "is_lead": true,
+      "label": "nail salon and spa",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okwkqd",
+    "data": {
+      "is_lead": false,
+      "label": "announcement",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1okw7gj",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1okuq9v",
+    "data": {
+      "is_lead": true,
+      "label": "second-hand Christmas tree (skinny pencil tree) - buying",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oku59o",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oksbpv",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1okpxq4",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1okplet",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1okkr90",
+    "data": {
+      "is_lead": true,
+      "label": "Filipino food catering",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1okiwb4",
+    "data": {
+      "is_lead": true,
+      "label": "dental crowns",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okiper",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1okintg",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1oki7vv",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1okgnv2",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1okeun1",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1okeull",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1okdppb",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1okdltu",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1okcutt",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okcp0x",
+    "data": {
+      "is_lead": false,
+      "label": "event",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1okcey4",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1okbzcy",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1okbyw9",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1okbyrs",
+    "data": {
+      "is_lead": true,
+      "label": "improv jams and drop-in classes",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1okbp92",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1okaye8",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1okamab",
+    "data": {
+      "is_lead": true,
+      "label": "LASIK surgery",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1ok9zj0",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 68.0
+    }
+  },
+  {
+    "submission_id": "1ok9gnd",
+    "data": {
+      "is_lead": false,
+      "label": "promotion",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1ok956x",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ok90bd",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ok8jyo",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1ok81ki",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ok81fn",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1ok7hwe",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ok73o2",
+    "data": {
+      "is_lead": false,
+      "label": "announcement",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ok6xyu",
+    "data": {
+      "is_lead": true,
+      "label": "event venue",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ok54tj",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ok4u64",
+    "data": {
+      "is_lead": true,
+      "label": "end-of-lease cleaning",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ok4c3t",
+    "data": {
+      "is_lead": true,
+      "label": "dentist",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ok3znc",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ok3ron",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 80.0
+    }
+  },
+  {
+    "submission_id": "1ok30uv",
+    "data": {
+      "is_lead": true,
+      "label": "rare music acquisition",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ok22vo",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ok1tkd",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ok1kkr",
+    "data": {
+      "is_lead": true,
+      "label": "used car purchase / auto financing",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ok18j9",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ok167i",
+    "data": {
+      "is_lead": true,
+      "label": "curly hair coloring",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1ok12qd",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ojzvbw",
+    "data": {
+      "is_lead": true,
+      "label": "roof insulation",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ojzmb4",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ojzj9a",
+    "data": {
+      "is_lead": true,
+      "label": "diner",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ojzj8y",
+    "data": {
+      "is_lead": false,
+      "label": "information",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojzb9p",
+    "data": {
+      "is_lead": false,
+      "label": "event",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojys0m",
+    "data": {
+      "is_lead": true,
+      "label": "brake rotor replacement",
+      "confidence": 83.0
+    }
+  },
+  {
+    "submission_id": "1ojynzc",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1ojyma6",
+    "data": {
+      "is_lead": true,
+      "label": "pottery painting studio",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1ojvg0m",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oju7ou",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1ojtziq",
+    "data": {
+      "is_lead": false,
+      "label": "announcement",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojtn4d",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ojrv9r",
+    "data": {
+      "is_lead": true,
+      "label": "ticket resale",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ojr660",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1ojox75",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojopkz",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 80.0
+    }
+  },
+  {
+    "submission_id": "1ojoo9p",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojnr1r",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ojn7r9",
+    "data": {
+      "is_lead": true,
+      "label": "sewing and alterations (non-couture)",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ojmdai",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojlsxn",
+    "data": {
+      "is_lead": true,
+      "label": "car selling platforms",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1ojkb7y",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ojjrze",
+    "data": {
+      "is_lead": false,
+      "label": "promotion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oji4bd",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1ojg9je",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1ojft70",
+    "data": {
+      "is_lead": true,
+      "label": "car interior mold testing",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojesgy",
+    "data": {
+      "is_lead": false,
+      "label": "event",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ojdxt9",
+    "data": {
+      "is_lead": true,
+      "label": "barber",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ojdurg",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ojap65",
+    "data": {
+      "is_lead": true,
+      "label": "home loan / mortgage lending (non-traditional income/verif) ",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1oj9ues",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oj9u47",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1oj8x66",
+    "data": {
+      "is_lead": false,
+      "label": "job posting",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1oj8vn5",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1oj8pfl",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oj7wz2",
+    "data": {
+      "is_lead": false,
+      "label": "news",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oj7uhk",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1oj7ta2",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1oj6t59",
+    "data": {
+      "is_lead": true,
+      "label": "restaurant reservations (Thanksgiving dinner)",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1oj5y1n",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1oj4mv7",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oj4fu4",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1oj4dfw",
+    "data": {
+      "is_lead": false,
+      "label": "event",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oj3584",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1oj31qm",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1oj26j4",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1oj08qg",
+    "data": {
+      "is_lead": false,
+      "label": "information",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oirvh5",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oirmbd",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oiqugc",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oiqlyh",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1oiq5tt",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1oippq3",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1oip66z",
+    "data": {
+      "is_lead": true,
+      "label": "home and auto repair services",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oiou3l",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oios43",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 77.0
+    }
+  },
+  {
+    "submission_id": "1oiojo4",
+    "data": {
+      "is_lead": false,
+      "label": "hazard report",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oioi4d",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oinx74",
+    "data": {
+      "is_lead": true,
+      "label": "fence installation",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oimlw9",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oilml2",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oikgng",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oijz6v",
+    "data": {
+      "is_lead": false,
+      "label": "lost item",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oijr9d",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1oij0ef",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oiiq16",
+    "data": {
+      "is_lead": true,
+      "label": "low-cost vaccines / immunizations",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1oihmm7",
+    "data": {
+      "is_lead": true,
+      "label": "play cafe / children's play center",
+      "confidence": 80.0
+    }
+  },
+  {
+    "submission_id": "1oihits",
+    "data": {
+      "is_lead": true,
+      "label": "used car purchase (auto dealership)",
+      "confidence": 74.0
+    }
+  },
+  {
+    "submission_id": "1oih3mj",
+    "data": {
+      "is_lead": true,
+      "label": "fine line tattoo artist",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oig4my",
+    "data": {
+      "is_lead": true,
+      "label": "hair coloring / colorist",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oidmo6",
+    "data": {
+      "is_lead": true,
+      "label": "physical therapy",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1oicag7",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1oibzkc",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oiaj02",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oiacpe",
+    "data": {
+      "is_lead": false,
+      "label": "events",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oia7wl",
+    "data": {
+      "is_lead": true,
+      "label": "job leads / employment opportunities",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oi9vg9",
+    "data": {
+      "is_lead": true,
+      "label": "jeep repair",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oi94rn",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1oi8vig",
+    "data": {
+      "is_lead": true,
+      "label": "audio recording studio rental",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1oi7vbr",
+    "data": {
+      "is_lead": true,
+      "label": "tattoo shop",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oi7otp",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1oi0dzi",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 75.0
+    }
+  },
+  {
+    "submission_id": "1ohxzs5",
+    "data": {
+      "is_lead": true,
+      "label": "bakery (Mexican pan dulce / Pan de Muerto)",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ohxp8j",
+    "data": {
+      "is_lead": true,
+      "label": "primary care physician",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ohwc74",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ohummf",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ohugg3",
+    "data": {
+      "is_lead": true,
+      "label": "orthodontics (braces and Invisalign)",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ohschl",
+    "data": {
+      "is_lead": true,
+      "label": "sleep study providers",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ohrve2",
+    "data": {
+      "is_lead": true,
+      "label": "boxing lessons",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1ohpghv",
+    "data": {
+      "is_lead": true,
+      "label": "dental pricing (root canal and crown)",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ohpfsb",
+    "data": {
+      "is_lead": false,
+      "label": "link",
+      "confidence": 80.0
+    }
+  },
+  {
+    "submission_id": "1ohotwk",
+    "data": {
+      "is_lead": false,
+      "label": "event",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ohnunl",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1ohmsy9",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 86.0
+    }
+  },
+  {
+    "submission_id": "1ohmp5d",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ohlmoz",
+    "data": {
+      "is_lead": false,
+      "label": "survey",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ohkhw3",
+    "data": {
+      "is_lead": true,
+      "label": "retail space for sale",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ohjlg6",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ohhp7e",
+    "data": {
+      "is_lead": true,
+      "label": "NYS car inspection",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ohgz23",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ohgv03",
+    "data": {
+      "is_lead": false,
+      "label": "promotion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ohg32v",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1ohezhv",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ohe38d",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ohe026",
+    "data": {
+      "is_lead": false,
+      "label": "announcement",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1ohbu5q",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ohb5ye",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ohb3xq",
+    "data": {
+      "is_lead": true,
+      "label": "small business operations consulting",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1oh45fv",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1oh35qn",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1oh28md",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 65.0
+    }
+  },
+  {
+    "submission_id": "1oh22dd",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1oh1hkb",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oh0ag9",
+    "data": {
+      "is_lead": true,
+      "label": "bathroom remodel",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ogzzgc",
+    "data": {
+      "is_lead": true,
+      "label": "maternity photography",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ogyvbh",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ogxq3e",
+    "data": {
+      "is_lead": false,
+      "label": "event",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1ogxdt7",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ogwee3",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ogwaiy",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ogw0to",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ogv0dk",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ogu927",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1ogscwl",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1ogs1mi",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1ogrsq6",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ogpwzi",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ogothn",
+    "data": {
+      "is_lead": false,
+      "label": "lost-and-found",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ognu6o",
+    "data": {
+      "is_lead": true,
+      "label": "cigarettes",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ogmis4",
+    "data": {
+      "is_lead": true,
+      "label": "electrician",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1oglieh",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1ogkm35",
+    "data": {
+      "is_lead": true,
+      "label": "small local gym",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ogj0pp",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ogchhn",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 88.0
+    }
+  },
+  {
+    "submission_id": "1ogcg0p",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1ogccya",
+    "data": {
+      "is_lead": false,
+      "label": "announcement",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ogb4ho",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1og8roi",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1og881k",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 74.0
+    }
+  },
+  {
+    "submission_id": "1og6l6h",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1og5v74",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1og3rka",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1og33q5",
+    "data": {
+      "is_lead": false,
+      "label": "information",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ofxnrx",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 78.0
+    }
+  },
+  {
+    "submission_id": "1ofwo5x",
+    "data": {
+      "is_lead": true,
+      "label": "sports bar showing UFC fights",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ofwdt6",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 70.0
+    }
+  },
+  {
+    "submission_id": "1ofumlr",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 60.0
+    }
+  },
+  {
+    "submission_id": "1oftrux",
+    "data": {
+      "is_lead": false,
+      "label": "event announcement",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ofqxg0",
+    "data": {
+      "is_lead": true,
+      "label": "seed garlic",
+      "confidence": 90.0
+    }
+  },
+  {
+    "submission_id": "1ofpzyh",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ofpnh3",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 68.0
+    }
+  },
+  {
+    "submission_id": "1ofois7",
+    "data": {
+      "is_lead": true,
+      "label": "university employment benefits",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ofm23k",
+    "data": {
+      "is_lead": true,
+      "label": "Asian market / grocery store",
+      "confidence": 72.0
+    }
+  },
+  {
+    "submission_id": "1oflcgj",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 92.0
+    }
+  },
+  {
+    "submission_id": "1ofhfoa",
+    "data": {
+      "is_lead": false,
+      "label": "event",
+      "confidence": 82.0
+    }
+  },
+  {
+    "submission_id": "1offz29",
+    "data": {
+      "is_lead": false,
+      "label": "question",
+      "confidence": 85.0
+    }
+  },
+  {
+    "submission_id": "1ofexbr",
+    "data": {
+      "is_lead": false,
+      "label": "discussion",
+      "confidence": 75.0
+    }
+  }
+]
