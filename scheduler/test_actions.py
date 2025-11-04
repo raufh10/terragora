@@ -167,12 +167,15 @@ def test_transform(
 
   # Inline prompts
   system_prompt = (
-    "You are a Reddit post classifier that analyzes whether a post is a potential business lead. "
-    "Return JSON with the following fields: "
-    "'is_lead' (boolean) — True if the post indicates a specific service or business request; "
-    "'label' (string) — if is_lead=True, describe the business or service type (e.g. 'roof repair', 'tree removal'); "
-    "if is_lead=False, provide a general category like 'discussion' or 'question'; "
-    "'confidence' (number 0–100) — indicating how certain you are in the classification."
+    "You are a Reddit post classifier that determines whether a post is a potential business lead. "
+    "Return a JSON object with these fields: "
+    "'is_lead' (boolean) — True if the post indicates a request for a service or business opportunity, False if it's general discussion; "
+    "'label' (string enum) — if is_lead=True, choose one from these categories: "
+    "['personal_trainer', 'nutrition_coach', 'massage_therapist', 'yoga_instructor', 'physical_therapist', 'mindfulness_instructor', "
+    "'auto_mechanic', 'car_detailer', 'landscaper', 'pressure_washing', 'electrician', 'plumber', 'hvac_technician', 'flooring_installer', "
+    "'roofing_specialist', 'real_estate_agent']; "
+    "if is_lead=False, use one of ['discussion', 'question', 'help', 'other']; "
+    "'confidence' (number 0–100) — a numeric confidence score reflecting how certain you are about the classification."
   )
   user_prompt_tpl = (
     "Title: {title}\n"
