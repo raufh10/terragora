@@ -212,7 +212,7 @@ def test_transform(
         resp = requests.post(run_url, json={
           "system_prompt": system_prompt,
           "user_prompt": user_prompt
-        }, timeout=60)
+        }, timeout=120)
       except requests.RequestException as e:
         logger.error(f"(TEST_TRANSFORM) 💥 Request error for submission_id={sid}: {e}")
         continue
@@ -234,6 +234,7 @@ def test_transform(
         }
       })
       total_classified += 1
+      time.sleep(1)
 
     except Exception as e:
       logger.exception(f"(TEST_TRANSFORM) 💥 Unhandled error on a post row: {e}")
@@ -261,15 +262,17 @@ def do_test(logger):
 
   # Split into 10 chunks
   existing_posts = asyncio.run(submissions.select_non_test(db.get_supabase_client(), logger, "Rochester")) or []
-  chunks = _chunk_into_n(existing_posts[:100], 10)
-  logger.info(f"(TEST) 🧩 Prepared {len(chunks)} chunk(s) for transform")
 
-  total_classified = 0
-  for loop_idx, posts_chunk in enumerate(chunks, start=1):
-    logger.info(f"🔁 (TEST_LOOP {loop_idx}/10) Transforming {len(posts_chunk)} post(s)...")
-    classified = test_transform(logger, posts_chunk)
-    total_classified += classified
-    logger.info("⏳ Sleeping 30 seconds before next test_transform loop.")
-    time.sleep(30)
+  if existing_posts:
+    chunks = _chunk_into_n(existing_posts, 25)
+    logger.info(f"(TEST) 🧩 Prepared {len(chunks)} chunk(s) for transform")
 
-  logger.info(f"✅ (TEST) Finished | fetched={fetched_count} | classified_total={total_classified}")
+    total_classified = 0
+    for loop_idx, posts_chunk in enumerate(chunks, start=1):
+      logger.info(f"🔁 (TEST_LOOP {loop_idx}/10) Transforming {len(posts_chunk)} post(s)...")
+      classified = test_transform(logger, posts_chunk)
+      total_classified += classified
+      logger.info("⏳ Sleeping 30 seconds before next test_transform loop.")
+      time.sleep(30)
+
+    logger.info(f"✅ (TEST) Finished | fetched={fetched_count} | classified_total={total_classified}")

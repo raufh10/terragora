@@ -1,23 +1,24 @@
-import json
+import asyncio
 from collections import defaultdict
+from services.database import db, submissions
 
-path = "data/test.json"
+from logger import start_logger
+logger = start_logger()
 
-with open(path, "r", encoding="utf-8") as f:
-    data = json.load(f)
+data = asyncio.run(submissions.select(db.get_supabase_client(), logger, "Rochester"))
 
 if not isinstance(data, list):
-    raise ValueError("Expected a list in data/test.json")
+    raise ValueError("Expected a list")
 
 total = len(data)
-lead_count = sum(1 for d in data if d.get("data", {}).get("is_lead"))
+lead_count = sum(1 for d in data if d.get("test_data", {}).get("is_lead"))
 nonlead_count = total - lead_count
 
 label_stats = defaultdict(lambda: {"count": 0, "conf_sum": 0})
 confidences = []
 
 for d in data:
-    info = d.get("data", {})
+    info = d.get("test_data", {})
     label = info.get("label", "unknown")
     conf = info.get("confidence", 0)
     label_stats[label]["count"] += 1
