@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" x-data="{ title: '' }">
+  <h2>Todos</h2>
+
+  <form
+    class="row gap"
+    hx-post="/todos"
+    hx-target="#todo-list"
+    hx-swap="innerHTML"
+    @submit.prevent="$el.submit(); title = ''"
+  >
+    <input
+      type="text"
+      name="title"
+      x-model="title"
+      placeholder="Add a task..."
+      required
+      class="input"
+    />
+    <button class="btn">Add</button>
+  </form>
+
+  <div id="todo-list" class="mt">
+    {% include "partials/todo_items.html" %}
+  </div>
+</section>
+{% endblock %}

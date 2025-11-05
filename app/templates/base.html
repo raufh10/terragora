@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" x-data="{ dark: false }" :class="dark ? 'dark' : ''">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ self.title() if self.title is defined else 'App' }}</title>
+
+    <!-- HTMX + Alpine via CDN -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+
+    <link rel="stylesheet" href="/static/styles.css" />
+    <meta name="htmx-config" content='{"refreshOnHistoryMiss": true}' />
+  </head>
+  <body class="min-h-screen bg-surface text-ink">
+    <header class="container">
+      <div class="row between">
+        <h1 class="brand">FastAPI · Jinja2 · HTMX · Alpine</h1>
+        <button class="btn" @click="dark = !dark" x-text="dark ? 'Light' : 'Dark'"></button>
+      </div>
+    </header>
+
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container muted">
+      <p>Served by FastAPI. Updates via HTMX. Sprinkles by Alpine.</p>
+    </footer>
+  </body>
+</html>
