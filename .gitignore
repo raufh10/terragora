@@ -1,0 +1,11 @@
+# Folders
+__pycache__/
+legacy/
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.sh
