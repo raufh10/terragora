@@ -1,60 +1,64 @@
-from enum import Enum
-from typing import Annotated
+from typing import Annotated, List
 from pydantic import BaseModel, Field, ConfigDict
 
-class LeadLabel(str, Enum):
-  # 🏥 Health & Medical Professions
-  personal_trainer = "personal_trainer"
-  nutrition_coach = "nutrition_coach"
-  massage_therapist = "massage_therapist"
-  yoga_instructor = "yoga_instructor"
-  physical_therapist = "physical_therapist"
-  mindfulness_instructor = "mindfulness_instructor"
 
-  # 🚗 Automotive Professions
-  auto_mechanic = "auto_mechanic"
-  car_detailer = "car_detailer"
-
-  # 🏠 Home Services & Improvement Professions
-  landscaper = "landscaper"
-  pressure_washing = "pressure_washing"
-  electrician = "electrician"
-  plumber = "plumber"
-  hvac_technician = "hvac_technician"
-  flooring_installer = "flooring_installer"
-  roofing_specialist = "roofing_specialist"
-
-  # 🏡 Real Estate Professions
-  real_estate_agent = "real_estate_agent"
-
-  # 🗣️ Non-lead General Categories
-  discussion = "discussion"
-  question = "question"
-  help = "help"
-  other = "other"
-
-class PostCategory(BaseModel):
-  is_lead: Annotated[bool, Field(
-    description="True if this post represents a potential business lead; False if it’s general or informational."
-  )]
-
-  label: Annotated[LeadLabel, Field(
-    description=(
-      "If is_lead=True, label corresponds to a business/profession category (e.g., 'plumber', 'landscaper'). "
-      "If is_lead=False, it corresponds to general discussion types (e.g., 'discussion', 'question')."
-    )
+class Category(BaseModel):
+  name: Annotated[str, Field(
+    min_length=2,
+    max_length=60,
+    description="Category name (e.g., 'roof repair contractor', 'community discussion')."
   )]
 
   confidence: Annotated[float, Field(
     ge=0, le=100,
-    description="Confidence score (0–100) reflecting certainty in this classification."
+    description="Confidence score (0–100) estimating how strongly this category applies."
+  )]
+
+  reasoning: Annotated[str, Field(
+    min_length=5, max_length=160,
+    description="One concise sentence explaining the rationale for the categorization."
+  )]
+
+
+class DiscoverCategory(BaseModel):
+  items: Annotated[List[Category], Field(
+    min_length=5,
+    max_length=5,
+    description="Exactly five category interpretations ranked by likelihood or relevance."
   )]
 
   model_config = ConfigDict(
     json_schema_extra={
       "examples": [
-        {"is_lead": True, "label": "plumber", "confidence": 91.8},
-        {"is_lead": False, "label": "discussion", "confidence": 78.4}
+        {
+          "items": [
+            {
+              "name": "roofing_repair_service_request",
+              "confidence": 94.2,
+              "reasoning": "Post asks directly for recommendations for someone to fix a leaking residential roof."
+            },
+            {
+              "name": "storm_damage_home_restoration",
+              "confidence": 89.1,
+              "reasoning": "Mentions recent storm damage and needing repair quotes, suggesting insurance-related home services."
+            },
+            {
+              "name": "local_contractor_comparison",
+              "confidence": 83.7,
+              "reasoning": "User compares two named contractors, indicating active decision-making rather than broad browsing."
+            },
+            {
+              "name": "community_reputation_check",
+              "confidence": 76.4,
+              "reasoning": "Thread tone shows the user is validating trustworthiness rather than negotiating pricing."
+            },
+            {
+              "name": "general_home_maintenance_discussion",
+              "confidence": 64.8,
+              "reasoning": "Some replies shift toward general advice rather than action-focused contractor engagement."
+            }
+          ]
+        }
       ]
     }
   )
