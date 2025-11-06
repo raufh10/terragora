@@ -1,7 +1,7 @@
 from .category import SubmissionCategory
-from .post import PostCategory
+from .discover import DiscoverCategory
 
 __all__ = [
   "SubmissionCategory",
-  "PostCategory"
+  "DiscoverCategory"
 ]
