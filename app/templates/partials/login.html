@@ -1,0 +1,43 @@
+<form
+  class="stack"
+  hx-post="/auth/login"
+  hx-target="#account-panel"
+  hx-swap="innerHTML"
+  hx-indicator="#account-indicator"
+  hx-disabled-elt="find button, find input"
+  @submit.prevent="$el.submit()"
+  x-data="{ show: false }"
+>
+  <h3>Log in</h3>
+
+  <label class="input-block">
+    <span>Email</span>
+    <input type="email" name="email" required class="input" autocomplete="email" />
+  </label>
+
+  <label class="input-block">
+    <span>Password</span>
+    <div class="row gap">
+      <input :type="show ? 'text' : 'password'" name="password" required class="input" autocomplete="current-password" />
+      <button type="button" class="btn" @click="show = !show" x-text="show ? 'Hide' : 'Show'"></button>
+    </div>
+  </label>
+
+  <button class="btn">Sign in</button>
+
+  <p class="muted mt">
+    Forgot your password?
+    <a href="#"
+       hx-get="/auth/partials/forgot"
+       hx-target="#account-panel"
+       hx-swap="innerHTML">Reset it</a>
+  </p>
+
+  <p class="muted">
+    New here?
+    <a href="#"
+       hx-get="/auth/partials/sign-up"
+       hx-target="#account-panel"
+       hx-swap="innerHTML">Create an account</a>
+  </p>
+</form>
