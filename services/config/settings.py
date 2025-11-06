@@ -6,7 +6,7 @@ from pydantic import SecretStr, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from scheduler.actions import do_all
-from scheduler.test_actions import do_test
+#from scheduler.test_actions import do_test
 
 class Settings(BaseSettings):
   model_config = SettingsConfigDict(
@@ -28,12 +28,12 @@ class Settings(BaseSettings):
 
   LIST_RULES: bool = False
   TIME_RULES: List[dict] = [
-    {"start": "00:00", "end": "23:59", "action": "test"},
+    {"start": "00:00", "end": "23:59", "action": "all"},
   ]
 
   ACTION_REGISTRY: Dict[str, Callable[..., None]] = {
     "all": do_all,
-    "test": do_test,
+    #"test": do_test,
   }
 
   @model_validator(mode="after")
