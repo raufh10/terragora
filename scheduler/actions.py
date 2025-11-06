@@ -20,7 +20,7 @@ def _load_prompts_yaml(logger, path: str = PROMPTS_PATH) -> Tuple[str, str]:
   if not isinstance(data, dict):
     raise ValueError(f"Invalid YAML structure in {path}: expected a mapping at top-level")
 
-  block = data.get("submission_category")
+  block = data.get("discover_category")
   if not isinstance(block, dict):
     raise ValueError("Missing required key 'submission_category' (mapping) in prompts YAML")
 
