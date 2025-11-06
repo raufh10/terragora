@@ -191,7 +191,7 @@ async def update_test_data(
   logger.info(f"✅ All submissions updated successfully after retry | total={len(success_ids)}")
   return True
 
-async def update_category(
+async def update_category_data(
   supabase: Client,
   logger,
   data: list

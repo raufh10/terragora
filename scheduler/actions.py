@@ -176,19 +176,13 @@ def _process_agenda(
     pdata = item.get("data") or {}
     title = pdata.get("title", "-") or "-"
     selftext = pdata.get("selftext", "") or ""
-    author = pdata.get("author", "unknown") or "unknown"
-    created_ts = pdata.get("created_utc")
-    created_iso = (
-      datetime.fromtimestamp(created_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
-      if isinstance(created_ts, (int, float)) else "N/A"
-    )
+    link_flair_text = pdata.get("link_flair_text") or ""
 
     user_prompt = user_prompt_tpl.format(
       subreddit=agenda_subreddit,
+      link_flair_text=link_flair_text,
       title=title,
       selftext=selftext,
-      author=author,
-      created_utc=created_iso
     ).strip()
 
     payloads.append({
@@ -225,11 +219,7 @@ def _process_agenda(
     insert_result = {
       "submission_id": sid,
       "to_insert": {
-        "category": data_out["label"],
-        "category_data": {
-          "confidence": data_out.get("confidence"),
-          "rationale": data_out.get("rationale"),
-        }
+        "category_data": data_out
       }
     }
     all_results.append(insert_result)
@@ -239,7 +229,7 @@ def _process_agenda(
     return
 
   try:
-    status = asyncio.run(submissions.update_category(supabase, logger, all_results))
+    status = asyncio.run(submissions.update_category_data(supabase, logger, all_results))
     if status:
       logger.info("📥 Category updates complete")
   except Exception as e:

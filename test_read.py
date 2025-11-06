@@ -5,6 +5,8 @@ from services.database import db, submissions
 from logger import start_logger
 logger = start_logger()
 
+LABEL = "personal_trainer"
+
 def print_overview(data):
   if not isinstance(data, list):
     raise ValueError("Expected a list")
@@ -50,10 +52,9 @@ def print_overview(data):
     print(f"  {rng}: {count} ({pct:.1f}%)")
 
 def print_label(data, label: str):
-
   label = label.lower()
   filtered = [
-    d.get("test_data") for d in data
+    d for d in data
     if isinstance(d.get("test_data"), dict)
     and str(d.get("test_data", {}).get("label", "")).lower() == label
   ]
@@ -62,15 +63,22 @@ def print_label(data, label: str):
     print(f"⚠️ No posts found with label '{label}'")
     return
 
-  confs = [float(d.get("confidence", 0)) for d in filtered]
+  confs = [float(d.get("test_data", {}).get("confidence", 0)) for d in filtered]
   avg_conf = sum(confs) / len(confs)
 
   print(f"\n🎯 Label: {label}")
   print(f"  Count: {len(filtered)}")
   print(f"  Avg confidence: {avg_conf:.2f}")
 
+  for d in filtered:
+    pdata = d.get("data", {}) or {}
+    title = pdata.get("title", "-") or "-"
+    body = pdata.get("selftext", "") or ""
+    body = body.replace("\n", " ").strip()
+    print(f"\n• {title}\n  {body}")
+
 if __name__ == "__main__":
   data = asyncio.run(submissions.select(db.get_supabase_client(), logger, "Rochester"))
 
-  #print_overview(data)
-  print_label(data, "real_estate_agent")
+  print_overview(data)
+  print_label(data, LABEL)

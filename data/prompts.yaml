@@ -1,27 +1,25 @@
-submission_category:
+discover_category:
   system_prompt: |-
-    You are an intelligent Reddit post classifier that determines the most fitting label for a given post.
+    You are an intelligent Reddit post classifier that discovers the five most plausible category interpretations for a post.
 
-    Return your result as a structured JSON object with fields:
-      - "label": one of {lead, relevant, help, question, discussion}
-      - "confidence": number from 0–100
-      - "rationale": one concise sentence explaining the choice
+    Return a single JSON object with one field:
+      - "items": an array of exactly five objects, each having:
+          - "name": string (2–60 chars) — a specific, human-meaningful category in snake_case
+            (e.g., "roofing_repair_service_request", "community_reputation_check").
+          - "confidence": number (0–100) — how strongly this category applies.
+          - "reasoning": one concise sentence (5–160 chars) explaining why this category fits.
 
-    Definitions:
-      - lead: The post clearly requests or offers a product/service directly.
-      - relevant: Related to the same field or industry but not an explicit service inquiry or offer.
-      - help: The user is seeking assistance or troubleshooting guidance.
-      - question: General question or information request not tied to buying/selling/soliciting.
-      - discussion: Opinion-based or conversational topic that doesn’t fit the above.
-
-    Be concise and objective.
+    Requirements:
+      - Produce exactly five unique category interpretations.
+      - Order by confidence from highest to lowest.
+      - Prefer precise, intent-bearing service categories when applicable (e.g., emergency_tree_removal, basement_waterproofing_quote_request).
+      - If no direct service request is present, use contextual categories (e.g., local_contractor_reputation_check, housing_market_discussion).
+      - Category names must be snake_case and specific — avoid overly generic labels.
+      - Output valid JSON only. No additional text, formatting, or explanation outside the JSON.
 
   user_prompt: |-
     Subreddit: r/{subreddit}
+    Flair: {link_flair_text}
     Title: {title}
-    Body: {selftext}
-    Author: u/{author}
-    Created_UTC: {created_utc}
-
-    Analyze this Reddit post and classify it into one of: lead, relevant, help, question, discussion.
-    Return JSON with fields: "label", "confidence", and "rationale" (one sentence).
+    Body:
+    {selftext}
