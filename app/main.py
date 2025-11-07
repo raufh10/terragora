@@ -15,13 +15,25 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 app.mount("/static", StaticFiles(directory=os.path.join(ROOT_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# --- super simple in-memory stores (demo only) ---
+# --- demo data stores ---
 _id_counter = itertools.count(1)
 TODOS: List[Dict] = [
   {"id": next(_id_counter), "title": "Ship MVP", "done": False},
   {"id": next(_id_counter), "title": "Write docs", "done": True},
 ]
-USERS: Dict[str, str] = {}  # email -> password (demo only)
+
+# Auth demo store
+USERS: Dict[str, str] = {}  # email -> password (plain text for demo only)
+CURRENT_EMAIL: Optional[str] = "demo@example.com"  # pretend the user is logged in as this
+
+# Agenda demo store
+TYPE_OPTIONS = ["jobs", "services", "discussion", "announcement"]
+LOCATION_OPTIONS = ["global", "US", "EU", "APAC", "Remote"]
+AGENDA = {
+  "agenda_name": "My Daily Feed",
+  "subreddit": "lakers",
+  "data": {"type": "discussion", "location": "global"},
+}
 
 # --- utilities ---
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -38,6 +50,19 @@ def render_auth_partial(request: Request, partial_name: str, context: Optional[D
     ctx.update(context)
   return templates.TemplateResponse(f"partials/{partial_name}.html", ctx)
 
+def render_settings_partial(request: Request, partial_name: str, context: Optional[Dict] = None) -> HTMLResponse:
+  ctx = {"request": request}
+  # Provide common context for settings screens
+  ctx.update({
+    "current_email": CURRENT_EMAIL,
+    "agenda": AGENDA,
+    "type_options": TYPE_OPTIONS,
+    "location_options": LOCATION_OPTIONS,
+  })
+  if context:
+    ctx.update(context)
+  return templates.TemplateResponse(f"partials/{partial_name}.html", ctx)
+
 # --- pages ---
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -45,8 +70,21 @@ async def home(request: Request):
 
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
-  # account.html should include sign_up partial by default as you provided
   return templates.TemplateResponse("account.html", {"request": request})
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+  # settings.html includes account_settings by default
+  return templates.TemplateResponse(
+    "settings.html",
+    {
+      "request": request,
+      "current_email": CURRENT_EMAIL,
+      "agenda": AGENDA,
+      "type_options": TYPE_OPTIONS,
+      "location_options": LOCATION_OPTIONS,
+    }
+  )
 
 # --- todos: HTMX endpoints ---
 @app.post("/todos", response_class=HTMLResponse)
@@ -71,7 +109,7 @@ async def delete_todo(request: Request, todo_id: int):
     TODOS.pop(idx)
   return render_items_fragment(request)
 
-# --- auth: HTMX partial GETs ---
+# --- auth partials (from your earlier setup) ---
 @app.get("/auth/partials/sign-up", response_class=HTMLResponse)
 async def partial_sign_up(request: Request):
   return render_auth_partial(request, "sign_up")
@@ -84,92 +122,95 @@ async def partial_login(request: Request):
 async def partial_forgot(request: Request):
   return render_auth_partial(request, "forget_password")
 
-# --- auth: HTMX POST handlers (demo) ---
-@app.post("/auth/sign-up", response_class=HTMLResponse)
-async def auth_sign_up(
+# --- settings partials ---
+@app.get("/settings/partials/account", response_class=HTMLResponse)
+async def partial_account_settings(request: Request):
+  return render_settings_partial(request, "account_settings")
+
+@app.get("/settings/partials/agenda", response_class=HTMLResponse)
+async def partial_agenda_settings(request: Request):
+  return render_settings_partial(request, "agenda_settings")
+
+# --- account settings handlers ---
+@app.post("/settings/account/change-email", response_class=HTMLResponse)
+async def settings_change_email(
   request: Request,
-  email: str = Form(...),
-  password: str = Form(...),
+  current_email: Optional[str] = Form(None),
+  new_email: str = Form(...)
+):
+  global CURRENT_EMAIL
+  new_email = new_email.strip().lower()
+  if not EMAIL_RE.match(new_email):
+    return render_settings_partial(request, "account_settings", {"error": "Please enter a valid email address."})
+  if CURRENT_EMAIL and new_email == CURRENT_EMAIL:
+    return render_settings_partial(request, "account_settings", {"error": "New email is the same as current."})
+
+  CURRENT_EMAIL = new_email
+  return render_settings_partial(request, "account_settings", {"success": "Email updated."})
+
+@app.post("/settings/account/change-password", response_class=HTMLResponse)
+async def settings_change_password(
+  request: Request,
+  old_password: str = Form(...),
+  new_password: str = Form(...),
   confirm_password: str = Form(...)
 ):
-  email = email.strip().lower()
-  if not EMAIL_RE.match(email):
-    return render_auth_partial(request, "sign_up", {"error": "Please enter a valid email."})
-  if len(password) < 8:
-    return render_auth_partial(request, "sign_up", {"error": "Password must be at least 8 characters."})
-  if password != confirm_password:
-    return render_auth_partial(request, "sign_up", {"error": "Passwords do not match."})
-  if email in USERS:
-    return render_auth_partial(request, "sign_up", {"error": "Email already registered. Try logging in."})
+  # In a real app, verify current user and hashed password.
+  if len(new_password) < 8:
+    return render_settings_partial(request, "account_settings", {"error": "New password must be at least 8 characters."})
+  if new_password != confirm_password:
+    return render_settings_partial(request, "account_settings", {"error": "Passwords do not match."})
+  # Demo accepts anything for old_password
+  return render_settings_partial(request, "account_settings", {"success": "Password updated."})
 
-  USERS[email] = password  # demo only; do NOT store plain text in real apps
-  # On success, return a small success fragment to swap into #account-panel
-  return HTMLResponse(
-    """
-    <div class="card">
-      <h3>Welcome!</h3>
-      <p class="muted">Account created. You can now log in.</p>
-      <div class="mt">
-        <button class="btn"
-          hx-get="/auth/partials/login"
-          hx-target="#account-panel"
-          hx-swap="innerHTML">Go to login</button>
-      </div>
-    </div>
-    """,
-    status_code=200
-  )
-
-@app.post("/auth/login", response_class=HTMLResponse)
-async def auth_login(
+@app.post("/settings/account/delete", response_class=HTMLResponse)
+async def settings_delete_account(
   request: Request,
-  email: str = Form(...),
-  password: str = Form(...)
+  confirm: Optional[str] = Form(None)
 ):
-  email = email.strip().lower()
-  if not EMAIL_RE.match(email):
-    return render_auth_partial(request, "login", {"error": "Invalid email."})
-  stored = USERS.get(email)
-  if not stored or stored != password:
-    return render_auth_partial(request, "login", {"error": "Email or password is incorrect."})
+  if confirm != "DELETE":
+    return render_settings_partial(request, "account_settings", {"error": "Type DELETE to confirm account deletion."})
+  # Demo: "delete" resets the demo user
+  global CURRENT_EMAIL, USERS, TODOS, AGENDA
+  USERS = {}
+  CURRENT_EMAIL = None
+  TODOS = []  # nuke todos for demo effect
+  AGENDA = {
+    "agenda_name": "My Daily Feed",
+    "subreddit": "lakers",
+    "data": {"type": "discussion", "location": "global"},
+  }
+  return render_settings_partial(request, "account_settings", {"success": "Account deleted (demo)."} )
 
-  return HTMLResponse(
-    """
-    <div class="card">
-      <h3>Signed in</h3>
-      <p class="muted">You’re logged in. This is a demo state only.</p>
-    </div>
-    """,
-    status_code=200
-  )
-
-@app.post("/auth/forgot", response_class=HTMLResponse)
-async def auth_forgot(
+# --- agenda settings handler ---
+@app.post("/settings/agenda/update", response_class=HTMLResponse)
+async def settings_agenda_update(
   request: Request,
-  email: str = Form(...)
+  agenda_name: str = Form(...),
+  subreddit: str = Form(...),
+  data_type: str = Form(...),
+  data_location: str = Form(...)
 ):
-  email = email.strip().lower()
-  if not EMAIL_RE.match(email):
-    return render_auth_partial(request, "forget_password", {"error": "Enter a valid email."})
+  global AGENDA
+  agenda_name = agenda_name.strip()
+  subreddit = subreddit.strip()
+  if not agenda_name:
+    return render_settings_partial(request, "agenda_settings", {"error": "Agenda name is required."})
+  if not subreddit:
+    return render_settings_partial(request, "agenda_settings", {"error": "Subreddit is required."})
+  if data_type not in TYPE_OPTIONS:
+    return render_settings_partial(request, "agenda_settings", {"error": "Invalid type selected."})
+  if data_location not in LOCATION_OPTIONS:
+    return render_settings_partial(request, "agenda_settings", {"error": "Invalid location selected."})
 
-  # Demo: pretend we emailed a reset link
-  return HTMLResponse(
-    f"""
-    <div class="card">
-      <h3>Check your email</h3>
-      <p class="muted">If <strong>{email}</strong> exists, a reset link was sent.</p>
-      <div class="mt">
-        <button class="btn"
-          hx-get="/auth/partials/login"
-          hx-target="#account-panel"
-          hx-swap="innerHTML">Back to login</button>
-      </div>
-    </div>
-    """,
-    status_code=200
-  )
+  AGENDA = {
+    "agenda_name": agenda_name,
+    "subreddit": subreddit,
+    "data": {"type": data_type, "location": data_location},
+  }
+  return render_settings_partial(request, "agenda_settings", {"success": "Agenda updated."})
 
-# --- healthcheck (optional for Railway) ---
+# --- healthcheck ---
 @app.get("/healthz")
 async def healthz():
   return PlainTextResponse("ok")

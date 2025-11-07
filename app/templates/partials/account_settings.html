@@ -1,0 +1,91 @@
+<div class="stack">
+  <h3>Account settings</h3>
+
+  {% if success %}
+    <div class="card" style="border-color:#22c55e">
+      <strong>Success</strong>
+      <p class="muted">{{ success }}</p>
+    </div>
+  {% endif %}
+  {% if error %}
+    <div class="card" style="border-color:#ef4444">
+      <strong>Error</strong>
+      <p class="muted">{{ error }}</p>
+    </div>
+  {% endif %}
+
+  <!-- Change email -->
+  <form
+    class="stack"
+    hx-post="/settings/account/change-email"
+    hx-target="#settings-panel"
+    hx-swap="innerHTML"
+    hx-indicator="#settings-indicator"
+    hx-disabled-elt="find button, find input"
+    @submit.prevent="$el.submit()"
+  >
+    <h4>Change email</h4>
+    <label class="input-block">
+      <span>Current email</span>
+      <input type="email" name="current_email" class="input" value="{{ current_email or '' }}" readonly />
+    </label>
+    <label class="input-block">
+      <span>New email</span>
+      <input type="email" name="new_email" required class="input" autocomplete="email" />
+    </label>
+    <button class="btn">Update email</button>
+  </form>
+
+  <hr />
+
+  <!-- Change password -->
+  <form
+    class="stack"
+    hx-post="/settings/account/change-password"
+    hx-target="#settings-panel"
+    hx-swap="innerHTML"
+    hx-indicator="#settings-indicator"
+    hx-disabled-elt="find button, find input"
+    @submit.prevent="$el.submit()"
+    x-data="{ show: false }"
+  >
+    <h4>Change password</h4>
+    <label class="input-block">
+      <span>Current password</span>
+      <div class="row gap">
+        <input :type="show ? 'text' : 'password'" name="old_password" required class="input" autocomplete="current-password" />
+        <button type="button" class="btn" @click="show = !show" x-text="show ? 'Hide' : 'Show'"></button>
+      </div>
+    </label>
+    <label class="input-block">
+      <span>New password</span>
+      <input :type="show ? 'text' : 'password'" name="new_password" required minlength="8" class="input" autocomplete="new-password" />
+    </label>
+    <label class="input-block">
+      <span>Confirm new password</span>
+      <input :type="show ? 'text' : 'password'" name="confirm_password" required minlength="8" class="input" autocomplete="new-password" />
+    </label>
+    <button class="btn">Update password</button>
+  </form>
+
+  <hr />
+
+  <!-- Delete account -->
+  <form
+    class="stack"
+    hx-post="/settings/account/delete"
+    hx-target="#settings-panel"
+    hx-swap="innerHTML"
+    hx-indicator="#settings-indicator"
+    hx-disabled-elt="find button, find input"
+    @submit.prevent="$el.submit()"
+  >
+    <h4>Delete account</h4>
+    <p class="muted">This is permanent in a real app. Type <code>DELETE</code> to confirm.</p>
+    <label class="input-block">
+      <span>Confirm</span>
+      <input type="text" name="confirm" placeholder="DELETE" class="input" />
+    </label>
+    <button class="danger">Delete account</button>
+  </form>
+</div>

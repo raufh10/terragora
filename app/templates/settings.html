@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" x-data>
+  <h2>Settings</h2>
+
+  <div class="row gap mt">
+    <button class="btn"
+            hx-get="/settings/partials/account"
+            hx-target="#settings-panel"
+            hx-swap="innerHTML">Account</button>
+
+    <button class="btn"
+            hx-get="/settings/partials/agenda"
+            hx-target="#settings-panel"
+            hx-swap="innerHTML">Agenda</button>
+  </div>
+
+  <div id="settings-indicator" class="muted mt" style="display:none">Working…</div>
+
+  <div id="settings-panel" class="mt">
+    {# Default view: account settings #}
+    {% include "partials/account_settings.html" %}
+  </div>
+</section>
+{% endblock %}
