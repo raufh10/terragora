@@ -8,23 +8,21 @@ class Category(BaseModel):
     max_length=60,
     description="Category name (specific interpretation, e.g., 'roofing_repair_service_request')."
   )]
-
   confidence: Annotated[float, Field(
     ge=0, le=100,
     description="Confidence score (0–100) estimating how strongly this category applies."
   )]
-
   reasoning: Annotated[str, Field(
     min_length=5, max_length=160,
     description="One concise sentence explaining the rationale for the categorization."
   )]
 
 class FixedCategory(str, Enum):
-
   real_estate_agent = "real_estate_agent"
   electrician = "electrician"
   roofing = "roofing"
   mechanic = "mechanic"
+  other = "other"
 
 class DiscoverCategory(BaseModel):
   items: Annotated[List[Category], Field(
@@ -32,9 +30,13 @@ class DiscoverCategory(BaseModel):
     max_length=5,
     description="Exactly five category interpretations ranked by likelihood or relevance."
   )]
-
   fixed_category: Annotated[FixedCategory, Field(
-    description="A final simplified category derived from the highest-confidence or most representative item in `items`."
+    description=(
+      "Final simplified category chosen from "
+      "{real_estate_agent, electrician, roofing, mechanic, other}, "
+      "derived from the most representative/highest-confidence item in `items`. "
+      "Use 'other' only if none of the items map clearly to the fixed categories."
+    )
   )]
 
   model_config = ConfigDict(
