@@ -80,5 +80,6 @@ def print_label(data, label: str):
 if __name__ == "__main__":
   data = asyncio.run(submissions.select(db.get_supabase_client(), logger, "Rochester"))
 
+  data = [item for item in data if item.get("test_data")]
   print_overview(data)
-  print_label(data, LABEL)
+  #print_label(data, LABEL)
