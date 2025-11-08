@@ -1,51 +1,51 @@
-<ul class="list" id="feed-list">
-  {% if items and items|length > 0 %}
-    {% for p in items %}
-      <li class="item" x-data="{ busy: false, draft: '' }">
-        <div class="row gap">
-          <div class="grow">
-            <div class="muted text-xs">
-              r/{{ p.subreddit }} • {{ p.author }} • {{ p.created_human }}
-              {% if p.flair %} • <span class="badge">{{ p.flair }}</span>{% endif %}
-              • ▲ {{ p.score }}
-            </div>
-            <div class="mt-1">
-              <a href="{{ p.permalink }}" target="_blank" rel="noopener" class="link">
-                {{ p.title }}
-              </a>
-            </div>
-            {% if p.preview %}
-              <div class="muted text-sm mt-1">{{ p.preview }}</div>
-            {% endif %}
-          </div>
+<ul class="list" id="feed-items">
+  {% for it in items %}
+  <li class="item">
+    <div class="row gap">
+      <div class="pill">{{ it.subreddit }}</div>
+      <div class="pill">by {{ it.author }}</div>
+      <div class="pill">score {{ it.score }}</div>
+      <div class="pill">{{ it.created_human }}</div>
+    </div>
 
-          <div class="row gap">
-            <a class="btn outline" href="{{ p.permalink }}" target="_blank" rel="noopener" title="Open on Reddit">
-              Go to Reddit
-            </a>
+    <h3 class="mt-sm">{{ it.title }}</h3>
+    {% if it.selftext %}
+      <p class="muted">{{ it.selftext }}</p>
+    {% endif %}
 
-            <button
-              class="btn"
-              :disabled="busy"
-              hx-post="/ai/generate"
-              hx-vals='{"id": "{{ p.id }}"}'
-              hx-target="#draft-{{ p.id }}"
-              hx-swap="innerHTML"
-              @htmx:before-request="busy = true"
-              @htmx:after-request="busy = false"
-              title="Generate AI message"
-            >
-              <span x-show="!busy">Generate AI message</span>
-              <span x-show="busy">Generating…</span>
-            </button>
-          </div>
-        </div>
+    {% if it.preview_url %}
+      <div class="mt-sm">
+        <img src="{{ it.preview_url }}" alt="preview" style="max-width:100%;border-radius:.5rem;">
+      </div>
+    {% endif %}
 
-        <div id="draft-{{ p.id }}" class="mt"></div>
-        <hr class="divider">
-      </li>
-    {% endfor %}
-  {% else %}
-    <li class="muted">No posts match your filters.</li>
-  {% endif %}
+    <!-- action buttons at the bottom -->
+    <div class="row gap mt">
+      <a class="btn" href="{{ it.reddit_url }}" target="_blank" rel="noopener">Open on Reddit</a>
+
+      <form
+        class="inline"
+        hx-post="/ai/reply"
+        hx-vals='{"id": "{{ it.id }}"}'
+        hx-target="closest li"
+        hx-swap="afterend"
+      >
+        <button class="btn">Generate AI message</button>
+      </form>
+    </div>
+  </li>
+  {% endfor %}
 </ul>
+
+{% if has_more %}
+  <!-- Auto-scroll pagination trigger -->
+  <div
+    id="more-trigger"
+    class="muted center mt"
+    hx-get="/dashboard/feed?page={{ next_page }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if time_filter %}&time_filter={{ time_filter }}{% endif %}{% if subreddit %}&subreddit={{ subreddit|urlencode }}{% endif %}"
+    hx-trigger="revealed"
+    hx-swap="outerHTML"
+  >
+    Loading more…
+  </div>
+{% endif %}

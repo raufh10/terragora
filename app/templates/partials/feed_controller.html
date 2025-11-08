@@ -1,55 +1,41 @@
 <form
-  id="feed-controls"
+  id="feed-controller"
   class="row gap card"
-  hx-get="/feed"
+  hx-get="/dashboard/feed"
   hx-target="#feed-list"
   hx-swap="innerHTML"
+  hx-push-url="true"
 >
-  <div class="row gap">
-    <label class="input-group">
-      <span>Sort</span>
-      <select name="sort" class="input">
-        <option value="hot" {{ 'selected' if current.sort == 'hot' }}>Hot</option>
-        <option value="new" {{ 'selected' if current.sort == 'new' }}>New</option>
-        <option value="top" {{ 'selected' if current.sort == 'top' }}>Top</option>
-        <option value="rising" {{ 'selected' if current.sort == 'rising' }}>Rising</option>
-      </select>
-    </label>
+  <input
+    type="text"
+    name="q"
+    class="input"
+    placeholder="Search title/author/subreddit…"
+    value="{{ q or '' }}"
+  />
 
-    <label class="input-group">
-      <span>Time</span>
-      <select name="time" class="input">
-        <option value="day" {{ 'selected' if current.time == 'day' }}>Day</option>
-        <option value="week" {{ 'selected' if current.time == 'week' }}>Week</option>
-        <option value="month" {{ 'selected' if current.time == 'month' }}>Month</option>
-        <option value="year" {{ 'selected' if current.time == 'year' }}>Year</option>
-        <option value="all" {{ 'selected' if current.time == 'all' }}>All</option>
-      </select>
-    </label>
+  <select name="sort" class="input">
+    <option value="hot"  {{ 'selected' if (sort or 'hot') == 'hot'  }}>Hot</option>
+    <option value="new"  {{ 'selected' if sort == 'new'  }}>New</option>
+    <option value="top"  {{ 'selected' if sort == 'top'  }}>Top</option>
+    <option value="rising" {{ 'selected' if sort == 'rising' }}>Rising</option>
+  </select>
 
-    <label class="input-group">
-      <span>Subreddit</span>
-      <input type="text" name="subreddit" class="input" placeholder="e.g. jobs" value="{{ current.subreddit or '' }}">
-    </label>
+  <select name="time_filter" class="input">
+    <option value="day"   {{ 'selected' if (time_filter or 'day') == 'day'   }}>Day</option>
+    <option value="week"  {{ 'selected' if time_filter == 'week'  }}>Week</option>
+    <option value="month" {{ 'selected' if time_filter == 'month' }}>Month</option>
+    <option value="year"  {{ 'selected' if time_filter == 'year'  }}>Year</option>
+    <option value="all"   {{ 'selected' if time_filter == 'all'   }}>All</option>
+  </select>
 
-    <label class="input-group">
-      <span>Min score</span>
-      <input type="number" name="min_score" class="input" min="0" step="1" value="{{ current.min_score or 0 }}">
-    </label>
+  <input
+    type="text"
+    name="subreddit"
+    class="input"
+    placeholder="Subreddit (e.g. lakers)"
+    value="{{ subreddit or '' }}"
+  />
 
-    <label class="input-group">
-      <span>Query</span>
-      <input type="text" name="q" class="input" placeholder="Search title…" value="{{ current.q or '' }}">
-    </label>
-  </div>
-
-  <div class="row gap">
-    <button class="btn">Apply</button>
-    <button class="btn outline"
-            hx-get="/feed"
-            hx-target="#feed-list"
-            hx-vals='{"reset": "1"}'
-            hx-swap="innerHTML"
-            type="button">Reset</button>
-  </div>
+  <button class="btn">Apply</button>
 </form>

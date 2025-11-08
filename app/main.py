@@ -215,139 +215,196 @@ async def settings_agenda_update(
 async def healthz():
   return PlainTextResponse("ok")
 
-# --- Add below your existing TODOS code or in a separate section ---
-
+from fastapi import FastAPI, Request, Form, Query
+from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from typing import List, Dict, Tuple
+import os
+import itertools
 from datetime import datetime, timedelta
-from fastapi import Query
-from pydantic import BaseModel
-import random
 
-# ----- Mock Data -----
-def _human(dt: datetime) -> str:
-  return dt.strftime("%Y-%m-%d %H:%M")
+app = FastAPI(title="Dashboard Mock (FastAPI + Jinja2 + HTMX)")
 
-MOCK_POSTS = [
-  {
-    "id": f"t3_{1000+i}",
-    "title": t,
-    "author": f"user{i}",
-    "score": random.randint(0, 1500),
-    "permalink": f"https://reddit.com/r/{sr}/comments/{1000+i}",
-    "created_human": _human(datetime.utcnow() - timedelta(hours=i*3)),
-    "subreddit": sr,
-    "flair": fl,
-    "preview": pv,
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+app.mount("/static", StaticFiles(directory=os.path.join(ROOT_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# --------------------------
+# Mock data & helpers
+# --------------------------
+_id = itertools.count(1)
+
+def _mk_item(title: str, subreddit: str, author: str, score: int, minutes_ago: int, selftext: str = "", preview_url: str = "", permalink: str = "") -> Dict:
+  dt = datetime.utcnow() - timedelta(minutes=minutes_ago)
+  return {
+    "id": next(_id),
+    "title": title,
+    "subreddit": subreddit,
+    "author": author,
+    "score": score,
+    "created_utc": int(dt.timestamp()),
+    "created_human": dt.strftime("%Y-%m-%d %H:%M UTC"),
+    "selftext": selftext,
+    "preview_url": preview_url,
+    "reddit_url": f"https://reddit.com{permalink or '/r/{}/comments/abcdef/mock'.format(subreddit)}",
   }
-  for i, (t, sr, fl, pv) in enumerate([
-    ("Looking for a Python dev for a short contract", "forhire", "Hiring", "We need 2–3 weeks of help on FastAPI."),
-    ("Is anyone using HTMX in prod?", "python", None, "Curious about pros/cons vs SPA."),
-    ("Remote data analyst opening — SQL + Python", "jobs", "Job", "Mid-level role, fully remote."),
-    ("Critique my SaaS landing page?", "Entrepreneur", None, "Would love feedback, thanks!"),
-    ("FastAPI + Jinja templating example?", "learnpython", None, "Want a simple example with templates."),
-  ])
-]
 
-class FeedParams(BaseModel):
-  sort: str = "hot"
-  time: str = "week"
-  subreddit: str | None = None
-  min_score: int = 0
-  q: str | None = None
+MOCK_ITEMS: List[Dict] = [
+  _mk_item("Trade Rumor: Big move incoming?", "lakers", "hoopsfan42", 523, 20, "What do you think about this rumor?"),
+  _mk_item("New build advice: 7800X3D vs 9900K", "buildapc", "techie", 199, 60, preview_url="https://placehold.co/600x300"),
+  _mk_item("AEW show tonight: predictions?", "AEWOfficial", "wrestlebot", 88, 90),
+  _mk_item("Ask HN: Best lightweight job tracker?", "hackernews", "shipit", 151, 120),
+  _mk_item("City guide: food near arena?", "losangeles", "eatlocal", 44, 180, "Looking for recommendations!"),
+  _mk_item("Hot take: top shot selection", "lakers", "x_o_coach", 310, 240),
+  _mk_item("PSA: Hiring data analysts (remote)", "forhire", "hr_wiz", 401, 300),
+  _mk_item("Show & Tell: My CLI Reddit client", "python", "dev_monk", 265, 360, preview_url="https://placehold.co/500x200"),
+  _mk_item("Match thread: Game night chat", "lakers", "modteam", 712, 420),
+  _mk_item("New Mod Tool preview", "ModSupport", "admin", 66, 500, "We’re rolling out a new feature soon."),
+  # Add more if you want longer demo pagination
+] * 2  # duplicate to have more pages
 
-def _apply_filters(items, params: FeedParams):
-  # time filter (mock: no real timestamp math beyond score sorting)
-  filtered = list(items)
+PAGE_SIZE = 6
+
+def paginate(items: List[Dict], page: int) -> Tuple[List[Dict], bool, int]:
+  start = (page - 1) * PAGE_SIZE
+  end = start + PAGE_SIZE
+  chunk = items[start:end]
+  has_more = end < len(items)
+  next_page = page + 1
+  return chunk, has_more, next_page
+
+def filter_and_sort(items: List[Dict], q: str | None, subreddit: str | None, sort: str | None, time_filter: str | None) -> List[Dict]:
+  data = items
+
+  # q filter
+  if q:
+    qlow = q.lower()
+    data = [
+      it for it in data
+      if qlow in it["title"].lower()
+      or qlow in it.get("author","").lower()
+      or qlow in it.get("subreddit","").lower()
+      or qlow in it.get("selftext","").lower()
+    ]
 
   # subreddit filter
-  if params.subreddit:
-    s = params.subreddit.strip().lower()
-    filtered = [p for p in filtered if p["subreddit"].lower() == s]
+  if subreddit:
+    s = subreddit.lower().strip()
+    data = [it for it in data if it["subreddit"].lower() == s]
 
-  # min score
-  if params.min_score and params.min_score > 0:
-    filtered = [p for p in filtered if p["score"] >= params.min_score]
+  # time_filter (simple mock)
+  now = datetime.utcnow().timestamp()
+  if time_filter == "day":
+    cutoff = now - 24*3600
+    data = [it for it in data if it["created_utc"] >= cutoff]
+  elif time_filter == "week":
+    cutoff = now - 7*24*3600
+    data = [it for it in data if it["created_utc"] >= cutoff]
+  elif time_filter == "month":
+    cutoff = now - 30*24*3600
+    data = [it for it in data if it["created_utc"] >= cutoff]
+  # year/all: skip in mock
 
-  # query in title
-  if params.q:
-    q = params.q.strip().lower()
-    filtered = [p for p in filtered if q in p["title"].lower()]
+  # sort mock
+  sort = (sort or "hot").lower()
+  if sort == "new":
+    data = sorted(data, key=lambda it: it["created_utc"], reverse=True)
+  elif sort == "top":
+    data = sorted(data, key=lambda it: it["score"], reverse=True)
+  elif sort == "rising":
+    # crude heuristic: score / age
+    def rising_score(it):
+      age = max(1, int(now - it["created_utc"]))
+      return it["score"] / age
+    data = sorted(data, key=rising_score, reverse=True)
+  else:  # hot (mock): score weighted by recency
+    def hot_score(it):
+      age = max(1, int(now - it["created_utc"]))
+      return it["score"] / (age ** 0.6)
+    data = sorted(data, key=hot_score, reverse=True)
 
-  # sort
-  if params.sort == "new":
-    filtered.sort(key=lambda p: p["id"], reverse=True)
-  elif params.sort == "top":
-    filtered.sort(key=lambda p: p["score"], reverse=True)
-  elif params.sort == "rising":
-    # mock rising: score / index heuristic
-    filtered.sort(key=lambda p: (p["score"]), reverse=True)
-  else:  # hot (default)
-    filtered.sort(key=lambda p: (p["score"]), reverse=True)
+  return data
 
-  return filtered
-
-def _current_params(request: Request) -> FeedParams:
-  return FeedParams(
-    sort=request.query_params.get("sort", "hot"),
-    time=request.query_params.get("time", "week"),
-    subreddit=request.query_params.get("subreddit"),
-    min_score=int(request.query_params.get("min_score", "0") or 0),
-    q=request.query_params.get("q"),
-  )
-
-# ----- Pages -----
+# --------------------------
+# Pages
+# --------------------------
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-  params = _current_params(request)
-  items = _apply_filters(MOCK_POSTS, params)
+async def dashboard(request: Request,
+                    q: str | None = Query(None),
+                    sort: str | None = Query("hot"),
+                    time_filter: str | None = Query("day"),
+                    subreddit: str | None = Query(None),
+                    page: int = Query(1)):
+  filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
+  items, has_more, next_page = paginate(filtered, page)
+
   return templates.TemplateResponse(
     "dashboard.html",
-    {"request": request, "items": items, "current": params.model_dump()}
+    {
+      "request": request,
+      "items": items,
+      "has_more": has_more,
+      "next_page": next_page,
+      "q": q, "sort": sort, "time_filter": time_filter, "subreddit": subreddit,
+    }
   )
 
-@app.get("/dashboard-live-demo", response_class=HTMLResponse)
-async def dashboard_live_demo(request: Request):
-  # For demo, bias to higher scores
-  demo_items = sorted(MOCK_POSTS, key=lambda p: p["score"], reverse=True)[:4]
-  params = _current_params(request)
+@app.get("/dashboard/live-demo", response_class=HTMLResponse)
+async def dashboard_live_demo(request: Request,
+                              q: str | None = Query(None),
+                              sort: str | None = Query("hot"),
+                              time_filter: str | None = Query("day"),
+                              subreddit: str | None = Query(None),
+                              page: int = Query(1)):
+  filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
+  items, has_more, next_page = paginate(filtered, page)
+
   return templates.TemplateResponse(
     "dashboard_live_demo.html",
-    {"request": request, "items": demo_items, "current": params.model_dump()}
+    {
+      "request": request,
+      "items": items,
+      "has_more": has_more,
+      "next_page": next_page,
+      "q": q, "sort": sort, "time_filter": time_filter, "subreddit": subreddit,
+    }
   )
 
-# ----- HTMX fragments -----
-@app.get("/feed", response_class=HTMLResponse)
-async def feed_fragment(
-  request: Request,
-  sort: str = Query("hot"),
-  time: str = Query("week"),
-  subreddit: str | None = Query(None),
-  min_score: int = Query(0),
-  q: str | None = Query(None),
-  reset: str | None = Query(None)
-):
-  params = FeedParams()
-  if not reset:
-    params = FeedParams(sort=sort, time=time, subreddit=subreddit, min_score=min_score, q=q)
-  items = _apply_filters(MOCK_POSTS, params)
+# --------------------------
+# Fragments
+# --------------------------
+@app.get("/dashboard/feed", response_class=HTMLResponse)
+async def feed_fragment(request: Request,
+                        q: str | None = Query(None),
+                        sort: str | None = Query("hot"),
+                        time_filter: str | None = Query("day"),
+                        subreddit: str | None = Query(None),
+                        page: int = Query(1)):
+  filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
+  items, has_more, next_page = paginate(filtered, page)
 
-  # Important: we also need the controller to reflect current state on the main pages,
-  # but for fragment-only updates we just return the list
   return templates.TemplateResponse(
     "partials/feed.html",
-    {"request": request, "items": items, "current": params.model_dump()}
+    {
+      "request": request,
+      "items": items,
+      "has_more": has_more,
+      "next_page": next_page,
+      "q": q, "sort": sort, "time_filter": time_filter, "subreddit": subreddit,
+    }
   )
 
-# ----- AI Draft (mock) -----
-@app.post("/ai/generate", response_class=HTMLResponse)
-async def ai_generate(request: Request, id: str = Form(...)):
-  # Mock draft text
-  draft = f"""
-  <div class="card success">
-    <div class="muted text-xs mb-1">AI Draft for <code>{id}</code></div>
-    <p>Hey there! I saw your post and I can help with this. I’ve built with FastAPI/HTMX/Jinja and can share a quick demo. Want to chat?</p>
-    <div class="row gap mt">
-      <button class="btn outline" onclick="navigator.clipboard.writeText(this.previousElementSibling.previousElementSibling.textContent.trim())">Copy</button>
-    </div>
+# --------------------------
+# AI action (mock)
+# --------------------------
+@app.post("/ai/reply", response_class=HTMLResponse)
+async def ai_reply(id: str = Form(...)):
+  # mock response only
+  return HTMLResponse(f"""
+  <div class="card mt">
+    <strong>AI Draft for post #{id}:</strong>
+    <p class="muted">Hey! Here’s a quick thought — this looks promising. What’s your timeline and budget?</p>
   </div>
-  """
-  return HTMLResponse(draft)
+  """)
