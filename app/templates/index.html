@@ -1,28 +1,162 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card" x-data="{ title: '' }">
-  <h2>Todos</h2>
 
-  <form
-    class="row gap"
-    hx-post="/todos"
-    hx-target="#todo-list"
-    hx-swap="innerHTML"
-    @submit.prevent="$el.submit(); title = ''"
-  >
-    <input
-      type="text"
-      name="title"
-      x-model="title"
-      placeholder="Add a task..."
-      required
-      class="input"
-    />
-    <button class="btn">Add</button>
-  </form>
-
-  <div id="todo-list" class="mt">
-    {% include "partials/todo_items.html" %}
+<!-- Hero -->
+<section class="card" x-data="{ email: '' }">
+  <div class="row" style="align-items:center; gap:1.25rem;">
+    <div style="flex:1;">
+      <h1 style="margin:0 0 .5rem 0;">🚀 Build, Track & Act — Faster</h1>
+      <p class="muted" style="margin:0 0 1rem 0;">
+        A lightweight FastAPI + HTMX + Alpine starter for dashboards, feeds, and account settings.
+        Server-rendered, snappy interactions, and production-ready.
+      </p>
+      <div class="row gap">
+        <a class="btn" href="/dashboard">Open Dashboard</a>
+        <a class="btn outline" href="/settings">Settings</a>
+        <a class="btn ghost" href="/account">Account</a>
+      </div>
+    </div>
+    <div class="card" style="flex:1; min-width:280px;">
+      <h3 style="margin-top:0;">Try it free</h3>
+      <form
+        class="row gap"
+        hx-post="/auth/demo"
+        hx-target="#hero-result"
+        hx-swap="innerHTML"
+        @submit.prevent="$el.submit(); email=''"
+      >
+        <input
+          class="input"
+          type="email"
+          name="email"
+          x-model="email"
+          placeholder="you@example.com"
+          required
+        />
+        <button class="btn" type="submit">Get a Demo</button>
+      </form>
+      <div id="hero-result" class="mt small muted"></div>
+    </div>
   </div>
 </section>
+
+<!-- Social proof / badges (optional placeholders) -->
+<section class="card">
+  <div class="row" style="justify-content:space-between; align-items:center;">
+    <span class="muted small">Built with FastAPI · HTMX · Alpine.js · Jinja2</span>
+    <div class="row gap small">
+      <span class="badge">Minimal JS</span>
+      <span class="badge">Server-Rendered</span>
+      <span class="badge">Instant UX</span>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="card">
+  <h2 style="margin-top:0;">Why you’ll love it</h2>
+  <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
+    <div class="card soft">
+      <h3 style="margin:.25rem 0;">⚡ HTMX Interactions</h3>
+      <p class="muted small">Fast partial updates with no SPA complexity. Swap fragments, handle forms, and paginate seamlessly.</p>
+    </div>
+    <div class="card soft">
+      <h3 style="margin:.25rem 0;">🧩 Jinja2 Templates</h3>
+      <p class="muted small">Composable partials for feeds, settings, and account views. Clear structure for teams.</p>
+    </div>
+    <div class="card soft">
+      <h3 style="margin:.25rem 0;">🪶 Alpine.js Micro-UX</h3>
+      <p class="muted small">Just enough interactivity (toggles, modals, accordions) without heavy frameworks.</p>
+    </div>
+    <div class="card soft">
+      <h3 style="margin:.25rem 0;">🔒 Ready for Auth</h3>
+      <p class="muted small">Drop-in account, login, and settings flows. Wire to your backend when you’re ready.</p>
+    </div>
+  </div>
+  <div class="mt row gap">
+    <a class="btn" href="/dashboard">View Dashboard</a>
+    <a class="btn outline" href="/dashboard-live-demo">Live Demo</a>
+  </div>
+</section>
+
+<!-- Live preview teaser (HTMX swap example) -->
+<section class="card" x-data>
+  <div class="row" style="justify-content:space-between; align-items:center;">
+    <h2 style="margin:0;">Peek the Feed</h2>
+    <button
+      class="btn"
+      hx-get="/partials/feed"
+      hx-target="#feed-preview"
+      hx-swap="innerHTML"
+      title="Load a preview feed"
+      aria-label="Load a preview feed"
+    >
+      Load Preview
+    </button>
+  </div>
+  <div id="feed-preview" class="mt muted small">
+    Click “Load Preview” to fetch a live component via HTMX.
+  </div>
+</section>
+
+<!-- FAQ (Alpine accordion) -->
+<section class="card" x-data="{ open: null }">
+  <h2 style="margin:0 0 .75rem 0;">FAQ</h2>
+
+  <div class="card soft">
+    <button class="row" style="justify-content:space-between; width:100%;"
+            @click="open = open === 1 ? null : 1">
+      <strong>How do I deploy?</strong>
+      <span x-text="open===1 ? '–' : '+'"></span>
+    </button>
+    <div class="mt" x-show="open===1" x-collapse>
+      <p class="muted small">
+        Push to Railway with the provided Dockerfile. Set environment variables, and Railway will provide
+        <code>PORT</code> for your app.
+      </p>
+      <a class="btn ghost small" href="/docs/deploy">Read Deploy Guide</a>
+    </div>
+  </div>
+
+  <div class="card soft mt">
+    <button class="row" style="justify-content:space-between; width:100%;"
+            @click="open = open === 2 ? null : 2">
+      <strong>Can I customize the UI?</strong>
+      <span x-text="open===2 ? '–' : '+'"></span>
+    </button>
+    <div class="mt" x-show="open===2" x-collapse>
+      <p class="muted small">
+        Yes. Edit the Jinja2 templates and partials. Components are small, composable, and easy to restyle.
+      </p>
+    </div>
+  </div>
+
+  <div class="card soft mt">
+    <button class="row" style="justify-content:space-between; width:100%;"
+            @click="open = open === 3 ? null : 3">
+      <strong>Is there a live demo?</strong>
+      <span x-text="open===3 ? '–' : '+'"></span>
+    </button>
+    <div class="mt" x-show="open===3" x-collapse>
+      <p class="muted small">
+        Yep — check <a href="/dashboard-live-demo">Dashboard Live Demo</a> for mock data wired to the same partials.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer CTA -->
+<section class="card">
+  <div class="row" style="justify-content:space-between; align-items:center;">
+    <div>
+      <strong>Ready to roll?</strong>
+      <p class="muted small" style="margin:.25rem 0 0 0;">Spin up your dashboard and ship your MVP today.</p>
+    </div>
+    <div class="row gap">
+      <a class="btn" href="/account">Create Account</a>
+      <a class="btn outline" href="/login">Log In</a>
+    </div>
+  </div>
+</section>
+
 {% endblock %}
