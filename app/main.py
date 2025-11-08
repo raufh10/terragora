@@ -214,3 +214,140 @@ async def settings_agenda_update(
 @app.get("/healthz")
 async def healthz():
   return PlainTextResponse("ok")
+
+# --- Add below your existing TODOS code or in a separate section ---
+
+from datetime import datetime, timedelta
+from fastapi import Query
+from pydantic import BaseModel
+import random
+
+# ----- Mock Data -----
+def _human(dt: datetime) -> str:
+  return dt.strftime("%Y-%m-%d %H:%M")
+
+MOCK_POSTS = [
+  {
+    "id": f"t3_{1000+i}",
+    "title": t,
+    "author": f"user{i}",
+    "score": random.randint(0, 1500),
+    "permalink": f"https://reddit.com/r/{sr}/comments/{1000+i}",
+    "created_human": _human(datetime.utcnow() - timedelta(hours=i*3)),
+    "subreddit": sr,
+    "flair": fl,
+    "preview": pv,
+  }
+  for i, (t, sr, fl, pv) in enumerate([
+    ("Looking for a Python dev for a short contract", "forhire", "Hiring", "We need 2–3 weeks of help on FastAPI."),
+    ("Is anyone using HTMX in prod?", "python", None, "Curious about pros/cons vs SPA."),
+    ("Remote data analyst opening — SQL + Python", "jobs", "Job", "Mid-level role, fully remote."),
+    ("Critique my SaaS landing page?", "Entrepreneur", None, "Would love feedback, thanks!"),
+    ("FastAPI + Jinja templating example?", "learnpython", None, "Want a simple example with templates."),
+  ])
+]
+
+class FeedParams(BaseModel):
+  sort: str = "hot"
+  time: str = "week"
+  subreddit: str | None = None
+  min_score: int = 0
+  q: str | None = None
+
+def _apply_filters(items, params: FeedParams):
+  # time filter (mock: no real timestamp math beyond score sorting)
+  filtered = list(items)
+
+  # subreddit filter
+  if params.subreddit:
+    s = params.subreddit.strip().lower()
+    filtered = [p for p in filtered if p["subreddit"].lower() == s]
+
+  # min score
+  if params.min_score and params.min_score > 0:
+    filtered = [p for p in filtered if p["score"] >= params.min_score]
+
+  # query in title
+  if params.q:
+    q = params.q.strip().lower()
+    filtered = [p for p in filtered if q in p["title"].lower()]
+
+  # sort
+  if params.sort == "new":
+    filtered.sort(key=lambda p: p["id"], reverse=True)
+  elif params.sort == "top":
+    filtered.sort(key=lambda p: p["score"], reverse=True)
+  elif params.sort == "rising":
+    # mock rising: score / index heuristic
+    filtered.sort(key=lambda p: (p["score"]), reverse=True)
+  else:  # hot (default)
+    filtered.sort(key=lambda p: (p["score"]), reverse=True)
+
+  return filtered
+
+def _current_params(request: Request) -> FeedParams:
+  return FeedParams(
+    sort=request.query_params.get("sort", "hot"),
+    time=request.query_params.get("time", "week"),
+    subreddit=request.query_params.get("subreddit"),
+    min_score=int(request.query_params.get("min_score", "0") or 0),
+    q=request.query_params.get("q"),
+  )
+
+# ----- Pages -----
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+  params = _current_params(request)
+  items = _apply_filters(MOCK_POSTS, params)
+  return templates.TemplateResponse(
+    "dashboard.html",
+    {"request": request, "items": items, "current": params.model_dump()}
+  )
+
+@app.get("/dashboard-live-demo", response_class=HTMLResponse)
+async def dashboard_live_demo(request: Request):
+  # For demo, bias to higher scores
+  demo_items = sorted(MOCK_POSTS, key=lambda p: p["score"], reverse=True)[:4]
+  params = _current_params(request)
+  return templates.TemplateResponse(
+    "dashboard_live_demo.html",
+    {"request": request, "items": demo_items, "current": params.model_dump()}
+  )
+
+# ----- HTMX fragments -----
+@app.get("/feed", response_class=HTMLResponse)
+async def feed_fragment(
+  request: Request,
+  sort: str = Query("hot"),
+  time: str = Query("week"),
+  subreddit: str | None = Query(None),
+  min_score: int = Query(0),
+  q: str | None = Query(None),
+  reset: str | None = Query(None)
+):
+  params = FeedParams()
+  if not reset:
+    params = FeedParams(sort=sort, time=time, subreddit=subreddit, min_score=min_score, q=q)
+  items = _apply_filters(MOCK_POSTS, params)
+
+  # Important: we also need the controller to reflect current state on the main pages,
+  # but for fragment-only updates we just return the list
+  return templates.TemplateResponse(
+    "partials/feed.html",
+    {"request": request, "items": items, "current": params.model_dump()}
+  )
+
+# ----- AI Draft (mock) -----
+@app.post("/ai/generate", response_class=HTMLResponse)
+async def ai_generate(request: Request, id: str = Form(...)):
+  # Mock draft text
+  draft = f"""
+  <div class="card success">
+    <div class="muted text-xs mb-1">AI Draft for <code>{id}</code></div>
+    <p>Hey there! I saw your post and I can help with this. I’ve built with FastAPI/HTMX/Jinja and can share a quick demo. Want to chat?</p>
+    <div class="row gap mt">
+      <button class="btn outline" onclick="navigator.clipboard.writeText(this.previousElementSibling.previousElementSibling.textContent.trim())">Copy</button>
+    </div>
+  </div>
+  """
+  return HTMLResponse(draft)

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" x-data>
+  <div class="row between">
+    <h2>Dashboard — Live Demo</h2>
+    <div class="muted">Demo Feed: {{ items|length }} posts</div>
+  </div>
+
+  <div class="mt" id="feed-controls-wrap">
+    {% include "partials/feed_controller.html" %}
+  </div>
+
+  <div class="mt" id="feed-list">
+    {% include "partials/feed.html" %}
+  </div>
+</section>
+{% endblock %}

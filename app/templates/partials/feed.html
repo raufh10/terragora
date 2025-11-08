@@ -1,0 +1,51 @@
+<ul class="list" id="feed-list">
+  {% if items and items|length > 0 %}
+    {% for p in items %}
+      <li class="item" x-data="{ busy: false, draft: '' }">
+        <div class="row gap">
+          <div class="grow">
+            <div class="muted text-xs">
+              r/{{ p.subreddit }} • {{ p.author }} • {{ p.created_human }}
+              {% if p.flair %} • <span class="badge">{{ p.flair }}</span>{% endif %}
+              • ▲ {{ p.score }}
+            </div>
+            <div class="mt-1">
+              <a href="{{ p.permalink }}" target="_blank" rel="noopener" class="link">
+                {{ p.title }}
+              </a>
+            </div>
+            {% if p.preview %}
+              <div class="muted text-sm mt-1">{{ p.preview }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row gap">
+            <a class="btn outline" href="{{ p.permalink }}" target="_blank" rel="noopener" title="Open on Reddit">
+              Go to Reddit
+            </a>
+
+            <button
+              class="btn"
+              :disabled="busy"
+              hx-post="/ai/generate"
+              hx-vals='{"id": "{{ p.id }}"}'
+              hx-target="#draft-{{ p.id }}"
+              hx-swap="innerHTML"
+              @htmx:before-request="busy = true"
+              @htmx:after-request="busy = false"
+              title="Generate AI message"
+            >
+              <span x-show="!busy">Generate AI message</span>
+              <span x-show="busy">Generating…</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="draft-{{ p.id }}" class="mt"></div>
+        <hr class="divider">
+      </li>
+    {% endfor %}
+  {% else %}
+    <li class="muted">No posts match your filters.</li>
+  {% endif %}
+</ul>
