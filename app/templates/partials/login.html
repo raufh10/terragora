@@ -25,21 +25,4 @@
 
   <button class="btn">Sign in</button>
 
-  <p class="muted mt">
-    Forgot your password?
-    <a href="#"
-       @click.prevent
-       hx-get="/auth/partials/forgot"
-       hx-target="#account-panel"
-       hx-swap="innerHTML">Reset it</a>
-  </p>
-
-  <p class="muted">
-    New here?
-    <a href="#"
-       @click.prevent
-       hx-get="/auth/partials/sign-up"
-       hx-target="#account-panel"
-       hx-swap="innerHTML">Create an account</a>
-  </p>
 </form>
