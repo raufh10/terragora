@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card">
+<section class="card" x-data>
   <h2>Dashboard</h2>
-  {% include "partials/feed_controller.html" %}
-</section>
 
-<section class="card mt">
-  <div id="feed-list">
+  {# Controls & filters #}
+  {% include "partials/feed_controller.html" %}
+
+  <div id="feed-list" class="mt">
     {% include "partials/feed.html" %}
   </div>
 </section>

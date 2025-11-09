@@ -1,41 +1,15 @@
-<form
-  id="feed-controller"
-  class="row gap card"
-  hx-get="/dashboard/feed"
-  hx-target="#feed-list"
-  hx-swap="innerHTML"
-  hx-push-url="true"
->
-  <input
-    type="text"
-    name="q"
-    class="input"
-    placeholder="Search title/author/subreddit…"
-    value="{{ q or '' }}"
-  />
+<div class="row between items-center">
+  <h4 class="m-0">Newest posts</h4>
 
-  <select name="sort" class="input">
-    <option value="hot"  {{ 'selected' if (sort or 'hot') == 'hot'  }}>Hot</option>
-    <option value="new"  {{ 'selected' if sort == 'new'  }}>New</option>
-    <option value="top"  {{ 'selected' if sort == 'top'  }}>Top</option>
-    <option value="rising" {{ 'selected' if sort == 'rising' }}>Rising</option>
-  </select>
+  <button
+    class="btn"
+    hx-get="/dashboard/feed"
+    hx-target="#feed-list"
+    hx-swap="innerHTML"
+    hx-indicator="#feed-loading"
+  >
+    Refresh
+  </button>
+</div>
 
-  <select name="time_filter" class="input">
-    <option value="day"   {{ 'selected' if (time_filter or 'day') == 'day'   }}>Day</option>
-    <option value="week"  {{ 'selected' if time_filter == 'week'  }}>Week</option>
-    <option value="month" {{ 'selected' if time_filter == 'month' }}>Month</option>
-    <option value="year"  {{ 'selected' if time_filter == 'year'  }}>Year</option>
-    <option value="all"   {{ 'selected' if time_filter == 'all'   }}>All</option>
-  </select>
-
-  <input
-    type="text"
-    name="subreddit"
-    class="input"
-    placeholder="Subreddit (e.g. lakers)"
-    value="{{ subreddit or '' }}"
-  />
-
-  <button class="btn">Apply</button>
-</form>
+<div id="feed-loading" class="muted mt" style="display:none;">Updating…</div>

@@ -1,51 +1,52 @@
-<ul class="list" id="feed-items">
+<ul class="stack" id="feed-items">
   {% for it in items %}
-  <li class="item">
-    <div class="row gap">
-      <div class="pill">{{ it.subreddit }}</div>
-      <div class="pill">by {{ it.author }}</div>
-      <div class="pill">score {{ it.score }}</div>
-      <div class="pill">{{ it.created_human }}</div>
-    </div>
+  {% set category = it.category or it.guessed_category or 'uncategorized' %}
+  {% set tags = it.tags if it.tags is defined and it.tags else [] %}
 
+  <li class="card p-md" data-id="{{ it.id }}">
+
+    <!-- Title -->
     <h3 class="mt-sm">{{ it.title }}</h3>
-    {% if it.selftext %}
-      <p class="muted">{{ it.selftext }}</p>
-    {% endif %}
 
     {% if it.preview_url %}
-      <div class="mt-sm">
-        <img src="{{ it.preview_url }}" alt="preview" style="max-width:100%;border-radius:.5rem;">
-      </div>
+    <div class="mt-sm">
+      <img src="{{ it.preview_url }}" style="max-width:100%;border-radius:.5rem;">
+    </div>
     {% endif %}
 
-    <!-- action buttons at the bottom -->
-    <div class="row gap mt">
-      <a class="btn" href="{{ it.reddit_url }}" target="_blank" rel="noopener">Open on Reddit</a>
+    <!-- Meta row -->
+    <div class="row wrap gap mt-sm">
+      <span class="pill">{{ it.created_human }}</span>
+      <span class="pill">category: {{ category }}</span>
 
-      <form
-        class="inline"
-        hx-post="/ai/reply"
-        hx-vals='{"id": "{{ it.id }}"}'
-        hx-target="closest li"
-        hx-swap="afterend"
-      >
-        <button class="btn">Generate AI message</button>
-      </form>
+      {% if tags %}
+        {% for tag in tags %}
+          <span class="pill">{{ tag }}</span>
+        {% endfor %}
+      {% else %}
+        <span class="pill muted">no tags</span>
+      {% endif %}
     </div>
+
+    <!-- View button -->
+    <div class="row gap mt">
+      <a class="btn" href="{{ it.reddit_url }}" target="_blank" rel="noopener">
+        View on Reddit
+      </a>
+    </div>
+
   </li>
   {% endfor %}
 </ul>
 
 {% if has_more %}
-  <!-- Auto-scroll pagination trigger -->
-  <div
-    id="more-trigger"
-    class="muted center mt"
-    hx-get="/dashboard/feed?page={{ next_page }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if time_filter %}&time_filter={{ time_filter }}{% endif %}{% if subreddit %}&subreddit={{ subreddit|urlencode }}{% endif %}"
-    hx-trigger="revealed"
-    hx-swap="outerHTML"
-  >
-    Loading more…
-  </div>
+<div
+  id="more-trigger"
+  class="muted center mt"
+  hx-get="/dashboard/feed?page={{ next_page }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if time_filter %}&time_filter={{ time_filter }}{% endif %}{% if subreddit %}&subreddit={{ subreddit|urlencode }}{% endif %}"
+  hx-trigger="revealed"
+  hx-swap="outerHTML"
+>
+  Loading more…
+</div>
 {% endif %}
