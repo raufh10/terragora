@@ -1,36 +1,46 @@
-<form
-  class="stack"
-  hx-post="/auth/sign-up"
-  hx-target="#account-panel"
-  hx-swap="innerHTML"
-  hx-indicator="#account-indicator"
-  hx-disabled-elt="find button, find input"
-  @submit.prevent="$el.submit()"
-  x-data="{ show: false }"
->
-  <h3>Create account</h3>
+<div data-panel="sign-up">
+  <form
+    class="stack"
+    hx-post="/auth/sign-up"
+    hx-target="#account-panel"
+    hx-swap="innerHTML"
+    hx-indicator="#account-indicator"
+    hx-disabled-elt="find button, find input"
+    @submit.prevent="$el.submit()"
+    x-data="{ show: false }"
+  >
+    <h3>Create account</h3>
 
-  <label class="input-block">
-    <span>Email</span>
-    <input type="email" name="email" required class="input" autocomplete="email" />
-  </label>
+    <label class="input-block">
+      <span>Email</span>
+      <input type="email" name="email" required class="input" autocomplete="email" />
+    </label>
 
-  <label class="input-block">
-    <span>Password</span>
-    <div class="row gap">
-      <input :type="show ? 'text' : 'password'" name="password" required minlength="8" class="input" autocomplete="new-password" />
-      <button type="button" class="btn" @click="show = !show" x-text="show ? 'Hide' : 'Show'"></button>
-    </div>
-  </label>
+    <label class="input-block">
+      <span>Password</span>
+      <div class="row gap">
+        <input :type="show ? 'text' : 'password'" name="password" required minlength="8" class="input" autocomplete="new-password" />
+        <button type="button" class="btn" @click="show = !show" x-text="show ? 'Hide' : 'Show'"></button>
+      </div>
+    </label>
 
-  <label class="input-block">
-    <span>Confirm password</span>
-    <input :type="show ? 'text' : 'password'" name="confirm_password" required minlength="8" class="input" autocomplete="new-password" />
-  </label>
+    <label class="input-block">
+      <span>Confirm password</span>
+      <input :type="show ? 'text' : 'password'" name="confirm_password" required minlength="8" class="input" autocomplete="new-password" />
+    </label>
 
-  {# Optional CSRF slot if you use it #}
-  {# <input type="hidden" name="csrf_token" value="{{ csrf_token }}"> #}
+    <!-- Optional CSRF slot -->
+    <!-- <input type="hidden" name="csrf_token" value="{{ csrf_token }}"> -->
 
-  <button class="btn">Create account</button>
+    <button class="btn">Create account</button>
+  </form>
 
-</form>
+  <div class="muted mt center">
+    Already have an account?
+    <a href="#"
+       @click.prevent
+       hx-get="/auth/partials/login"
+       hx-target="#account-panel"
+       hx-swap="innerHTML">Log in</a>
+  </div>
+</div>

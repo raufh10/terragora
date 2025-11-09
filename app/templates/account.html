@@ -1,66 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card"
-         x-data="{ panel: 'login' }"
-         @htmx:afterSwap.window="
-           // detect which partial was loaded
-           if ($event.detail.pathInfo.requestPath.includes('login')) panel = 'login'
-           else if ($event.detail.pathInfo.requestPath.includes('sign-up')) panel = 'sign-up'
-           else if ($event.detail.pathInfo.requestPath.includes('forgot')) panel = 'forgot'
-         ">
+         x-data="{ panel: 'login' }">
+
   <h2>Account</h2>
 
-  <div id="account-panel" class="mt"
+  <!-- Swappable content panel -->
+  <div id="account-panel"
+       class="mt"
        hx-target="#account-panel"
-       hx-swap="innerHTML">
-    {# Default panel is login #}
+       hx-swap="innerHTML"
+       hx-on::after-swap="
+         const p = event.detail?.pathInfo?.requestPath || '';
+         if (p.includes('sign-up'))      panel = 'sign-up';
+         else if (p.includes('forgot'))  panel = 'forgot';
+         else                             panel = 'login';
+       ">
+    {# Default panel #}
     {% include "partials/login.html" %}
   </div>
 
-  <!-- Shared footer (replaces the old text inside forms) -->
-  <div class="muted mt center">
-    <!-- Login panel footer -->
-    <template x-if="panel === 'login'">
-      <p>
-        <a href="#"
-           @click.prevent
-           hx-get="/auth/partials/sign-up"
-           hx-target="#account-panel"
-           hx-swap="innerHTML">Create an account</a>
-        &nbsp;·&nbsp;
-        <a href="#"
-           @click.prevent
-           hx-get="/auth/partials/forgot"
-           hx-target="#account-panel"
-           hx-swap="innerHTML">Forgot password</a>
-      </p>
-    </template>
-
-    <!-- Sign-up panel footer -->
-    <template x-if="panel === 'sign-up'">
-      <p>
-        Already have an account?
-        <a href="#"
-           @click.prevent
-           hx-get="/auth/partials/login"
-           hx-target="#account-panel"
-           hx-swap="innerHTML">Log in</a>
-      </p>
-    </template>
-
-    <!-- Forgot panel footer -->
-    <template x-if="panel === 'forgot'">
-      <p>
-        Remember your password?
-        <a href="#"
-           @click.prevent
-           hx-get="/auth/partials/login"
-           hx-target="#account-panel"
-           hx-swap="innerHTML">Back to log in</a>
-      </p>
-    </template>
-  </div>
-
+  <!-- Loading indicator -->
   <div id="account-indicator" class="muted mt" style="display:none;">Working…</div>
+
 </section>
 {% endblock %}
