@@ -19,25 +19,38 @@
     <label class="input-block">
       <span>Password</span>
       <div class="row gap">
-        <input :type="show ? 'text' : 'password'" name="password" required class="input" autocomplete="current-password" />
+        <input :type="show ? 'text' : 'password'"
+               name="password"
+               required
+               class="input"
+               autocomplete="current-password" />
         <button type="button" class="btn" @click="show = !show" x-text="show ? 'Hide' : 'Show'"></button>
       </div>
     </label>
 
+    <!-- Forgot password moved here -->
+    <p class="muted small">
+      <a href="#"
+         @click.prevent
+         hx-get="/auth/partials/forgot"
+         hx-target="#account-panel"
+         hx-swap="innerHTML">
+        Forgot your password?
+      </a>
+    </p>
+
     <button class="btn">Sign in</button>
   </form>
 
+  <!-- Sign up link only -->
   <div class="muted mt center">
+    New here?
     <a href="#"
        @click.prevent
        hx-get="/auth/partials/sign-up"
        hx-target="#account-panel"
-       hx-swap="innerHTML">Create an account</a>
-    &nbsp;·&nbsp;
-    <a href="#"
-       @click.prevent
-       hx-get="/auth/partials/forgot"
-       hx-target="#account-panel"
-       hx-swap="innerHTML">Forgot password</a>
+       hx-swap="innerHTML">
+      Create an account
+    </a>
   </div>
 </div>

@@ -1,24 +1,50 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card" x-data>
+<section class="card"
+         x-data="{ tab: 'profile' }"
+         @htmx:afterSwap.window="
+           if ($event.detail.target && $event.detail.target.id === 'settings-panel') {
+             const p = $event.detail.pathInfo?.requestPath || '';
+             if (p.includes('/settings/partials/account')) tab = 'profile'
+             else if (p.includes('/settings/partials/agenda')) tab = 'agenda'
+           }
+         ">
+
   <h2>Settings</h2>
 
-  <div class="row gap mt">
-    <button class="btn"
-            hx-get="/settings/partials/account"
-            hx-target="#settings-panel"
-            hx-swap="innerHTML">Account</button>
+  <!-- Tabs -->
+  <nav class="row gap mt" role="tablist" aria-label="Settings tabs">
+    <button
+      role="tab"
+      :aria-selected="tab === 'profile'"
+      :class="tab === 'profile' ? 'btn primary' : 'btn outline'"
+      hx-get="/settings/partials/account"
+      hx-target="#settings-panel"
+      hx-swap="innerHTML"
+      hx-indicator="#settings-indicator"
+      @click="tab = 'profile'">
+      Profile
+    </button>
 
-    <button class="btn"
-            hx-get="/settings/partials/agenda"
-            hx-target="#settings-panel"
-            hx-swap="innerHTML">Agenda</button>
-  </div>
+    <button
+      role="tab"
+      :aria-selected="tab === 'agenda'"
+      :class="tab === 'agenda' ? 'btn primary' : 'btn outline'"
+      hx-get="/settings/partials/agenda"
+      hx-target="#settings-panel"
+      hx-swap="innerHTML"
+      hx-indicator="#settings-indicator"
+      @click="tab = 'agenda'">
+      Agenda
+    </button>
+  </nav>
 
+  <!-- Loading indicator for HTMX -->
   <div id="settings-indicator" class="muted mt" style="display:none">Working…</div>
 
-  <div id="settings-panel" class="mt">
-    {# Default view: account settings #}
+  <!-- Swappable panel -->
+  <div id="settings-panel" class="mt" role="tabpanel" :aria-labelledby="tab">
+    {# Default view: Profile (Account) settings pre-rendered #}
     {% include "partials/account_settings.html" %}
   </div>
 </section>
