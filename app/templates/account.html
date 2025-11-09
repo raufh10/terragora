@@ -4,25 +4,27 @@
   <h2>Account</h2>
 
   <div class="row gap mt">
-    <button class="btn" 
-            hx-get="/auth/partials/sign-up" 
-            hx-target="#account-panel" 
-            hx-swap="innerHTML">Sign up</button>
-    <button class="btn" 
-            hx-get="/auth/partials/login" 
-            hx-target="#account-panel" 
+    <button class="btn"
+            hx-get="/auth/partials/login"
+            hx-target="#account-panel"
             hx-swap="innerHTML">Log in</button>
-    <button class="btn" 
-            hx-get="/auth/partials/forgot" 
-            hx-target="#account-panel" 
+
+    <button class="btn"
+            hx-get="/auth/partials/sign-up"
+            hx-target="#account-panel"
+            hx-swap="innerHTML">Sign up</button>
+
+    <button class="btn"
+            hx-get="/auth/partials/forgot"
+            hx-target="#account-panel"
             hx-swap="innerHTML">Forgot password</button>
   </div>
 
   <div id="account-panel" class="mt">
-    {# default view loads sign up #}
-    {% include "partials/sign_up.html" %}
+    {# default view now loads login instead of sign up #}
+    {% include "partials/login.html" %}
   </div>
 
-  <div class="muted mt" id="account-indicator" style="display:none">Working…</div>
+  <div class="muted mt" id="account-indicator" style="display:none;">Working…</div>
 </section>
 {% endblock %}

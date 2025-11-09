@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" x-data="{ dark: false, showModal:false }" :class="dark ? 'dark' : ''">
+<html lang="en" x-data="{ showModal:false }">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,62 +15,44 @@
   <body class="min-h-screen bg-surface text-ink">
     <header class="container">
       <div class="row between items-center">
-        <h1 class="brand">
-          FastAPI · Jinja2 · HTMX · Alpine
-        </h1>
+        <h1 class="brand">FastAPI · Jinja2 · HTMX · Alpine</h1>
 
+        {% set on_account = request.url.path.startswith('/account') %}
         <div class="row gap">
-          <!-- Theme toggle -->
-          <button class="btn" @click="dark = !dark" x-text="dark ? 'Light' : 'Dark'"></button>
-
-          <!-- If NOT signed in: show Login & Sign Up -->
           {% if not current_email %}
-            <button
-              class="btn outline"
-              @click="showModal = true"
-              hx-get="/auth/partials/login"
-              hx-target="#global-modal-body"
-              hx-swap="innerHTML"
-            >Log in</button>
-
-            <button
-              class="btn"
-              @click="showModal = true"
-              hx-get="/auth/partials/sign-up"
-              hx-target="#global-modal-body"
-              hx-swap="innerHTML"
-            >Sign up</button>
+            {# Not signed in: show Login button unless on /account #}
+            {% if not on_account %}
+              <a class="btn" href="/account">Log in</a>
+            {% endif %}
           {% else %}
-          <!-- If signed in: show Settings menu -->
-            <div class="dropdown" x-data="{ open:false }" @keydown.escape="open=false">
-              <button class="btn" @click="open = !open">
-                Settings ▾
-              </button>
-              <div class="menu" x-show="open" @click.outside="open=false" x-transition>
-                <button
-                  class="menu-item"
-                  @click="open=false; showModal=true"
-                  hx-get="/settings/partials/account"
-                  hx-target="#global-modal-body"
-                  hx-swap="innerHTML"
-                >
-                  Account Settings
-                </button>
-                <button
-                  class="menu-item"
-                  @click="open=false; showModal=true"
-                  hx-get="/settings/partials/agenda"
-                  hx-target="#global-modal-body"
-                  hx-swap="innerHTML"
-                >
-                  Agenda Settings
-                </button>
-                <a class="menu-item" href="/settings">Open full Settings page</a>
+            {# Signed in: show Settings dropdown unless on /account #}
+            {% if not on_account %}
+              <div class="dropdown" x-data="{ open:false }" @keydown.escape="open=false">
+                <button class="btn" @click="open = !open">Settings ▾</button>
+                <div class="menu" x-show="open" @click.outside="open=false" x-transition>
+                  <button
+                    class="menu-item"
+                    @click="open=false; showModal=true"
+                    hx-get="/settings/partials/account"
+                    hx-target="#global-modal-body"
+                    hx-swap="innerHTML"
+                  >
+                    Account Settings
+                  </button>
+                  <button
+                    class="menu-item"
+                    @click="open=false; showModal=true"
+                    hx-get="/settings/partials/agenda"
+                    hx-target="#global-modal-body"
+                    hx-swap="innerHTML"
+                  >
+                    Agenda Settings
+                  </button>
+                  <a class="menu-item" href="/settings">Open full Settings page</a>
+                </div>
               </div>
-            </div>
-
-            <!-- (Optional) tiny avatar / email display -->
-            <span class="muted" title="Signed in as">{{ current_email }}</span>
+              <span class="muted" title="Signed in as">{{ current_email }}</span>
+            {% endif %}
           {% endif %}
         </div>
       </div>
@@ -84,7 +66,7 @@
       <p>Served by FastAPI. Updates via HTMX. Sprinkles by Alpine.</p>
     </footer>
 
-    <!-- Global Modal (reused for login, signup, and settings partials) -->
+    <!-- Global Modal (for settings partials) -->
     <div
       class="modal-backdrop"
       x-show="showModal"
@@ -95,13 +77,17 @@
       <div class="modal card" @click.outside="showModal=false" x-trap.noscroll="showModal">
         <div class="row between items-center mb">
           <h3 class="m-0">Panel</h3>
-          <button class="btn danger" @click="showModal=false">Close</button>
+          <!-- Close button clears modal content as well -->
+          <button
+            class="btn danger"
+            @click="showModal=false; document.getElementById('global-modal-body').innerHTML = ''"
+          >
+            Close
+          </button>
         </div>
 
         <!-- HTMX injects partials here -->
-        <div id="global-modal-body">
-          <!-- Content loaded via hx-get -->
-        </div>
+        <div id="global-modal-body"></div>
       </div>
     </div>
 
