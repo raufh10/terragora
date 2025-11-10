@@ -25,33 +25,22 @@
               <a class="btn" href="/account">Log in</a>
             {% endif %}
           {% else %}
-            {# Signed in: show Settings dropdown unless on /account #}
+            {# Signed in: email acts as the menu trigger; hide on /account #}
             {% if not on_account %}
               <div class="dropdown" x-data="{ open:false }" @keydown.escape="open=false">
-                <button class="btn" @click="open = !open">Settings ▾</button>
+                <button class="btn" @click="open = !open">
+                  {{ current_email }} ▾
+                </button>
                 <div class="menu" x-show="open" @click.outside="open=false" x-transition>
-                  <button
-                    class="menu-item"
-                    @click="open=false; showModal=true"
-                    hx-get="/settings/partials/account"
-                    hx-target="#global-modal-body"
-                    hx-swap="innerHTML"
-                  >
-                    Account Settings
-                  </button>
-                  <button
-                    class="menu-item"
-                    @click="open=false; showModal=true"
-                    hx-get="/settings/partials/agenda"
-                    hx-target="#global-modal-body"
-                    hx-swap="innerHTML"
-                  >
-                    Agenda Settings
-                  </button>
-                  <a class="menu-item" href="/settings">Open full Settings page</a>
+                  <!-- Settings goes to a full page (no HTMX swapping) -->
+                  <a class="menu-item" href="/settings">Settings</a>
+
+                  <!-- Log out: regular POST form (no swapping) -->
+                  <form class="menu-item inline" action="/auth/logout" method="post">
+                    <button type="submit" class="unstyled">Log out</button>
+                  </form>
                 </div>
               </div>
-              <span class="muted" title="Signed in as">{{ current_email }}</span>
             {% endif %}
           {% endif %}
         </div>
@@ -66,7 +55,7 @@
       <p>Served by FastAPI. Updates via HTMX. Sprinkles by Alpine.</p>
     </footer>
 
-    <!-- Global Modal (for settings partials) -->
+    <!-- Global Modal (kept for other uses; not used for Settings anymore) -->
     <div
       class="modal-backdrop"
       x-show="showModal"
@@ -86,7 +75,7 @@
           </button>
         </div>
 
-        <!-- HTMX injects partials here -->
+        <!-- HTMX injects partials here (if you use the modal elsewhere) -->
         <div id="global-modal-body"></div>
       </div>
     </div>
