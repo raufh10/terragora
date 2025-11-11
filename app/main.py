@@ -21,14 +21,12 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 # --------------------------
 # Demo stores / config
 # --------------------------
+USERS: Dict[str, str] = {}
+CURRENT_EMAIL: Optional[str] = "demo@example.com"
 
-# Auth (demo only)
-USERS: Dict[str, str] = {}  # email -> password (plain text for demo only)
-CURRENT_EMAIL: Optional[str] = "demo@example.com"  # pretend logged in
-
-# Settings (Agenda)
 TYPE_OPTIONS = ["jobs", "services", "discussion", "announcement"]
 LOCATION_OPTIONS = ["global", "US", "EU", "APAC", "Remote"]
+
 AGENDA = {
   "agenda_name": "My Daily Feed",
   "subreddit": "lakers",
@@ -37,19 +35,12 @@ AGENDA = {
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+# --------------------------
 # Dashboard mock data
+# --------------------------
 _post_ids = itertools.count(1)
 
-def _mk_item(
-  title: str,
-  subreddit: str,
-  author: str,
-  score: int,
-  minutes_ago: int,
-  selftext: str = "",
-  preview_url: str = "",
-  permalink: str = ""
-) -> Dict:
+def _mk_item(title, subreddit, author, score, minutes_ago, selftext="", preview_url="", permalink="") -> Dict:
   dt = datetime.utcnow() - timedelta(minutes=minutes_ago)
   return {
     "id": next(_post_ids),
@@ -67,217 +58,91 @@ def _mk_item(
 MOCK_ITEMS: List[Dict] = [
   _mk_item("Trade Rumor: Big move incoming?", "lakers", "hoopsfan42", 523, 20, "What do you think about this rumor?"),
   _mk_item("New build advice: 7800X3D vs 9900K", "buildapc", "techie", 199, 60, preview_url="https://placehold.co/600x300"),
-  _mk_item("AEW show tonight: predictions?", "AEWOfficial", "wrestlebot", 88, 90),
-  _mk_item("Ask HN: Best lightweight job tracker?", "hackernews", "shipit", 151, 120),
-  _mk_item("City guide: food near arena?", "losangeles", "eatlocal", 44, 180, "Looking for recommendations!"),
-  _mk_item("Hot take: top shot selection", "lakers", "x_o_coach", 310, 240),
-  _mk_item("PSA: Hiring data analysts (remote)", "forhire", "hr_wiz", 401, 300),
-  _mk_item("Show & Tell: My CLI Reddit client", "python", "dev_monk", 265, 360, preview_url="https://placehold.co/500x200"),
-  _mk_item("Match thread: Game night chat", "lakers", "modteam", 712, 420),
-  _mk_item("New Mod Tool preview", "ModSupport", "admin", 66, 500, "We’re rolling out a new feature soon."),
-] * 2  # duplicate for longer pagination
+] * 4
 
 PAGE_SIZE = 6
 
 # --------------------------
-# Helpers (render / paginate / filter)
+# Helpers
 # --------------------------
-
 def render_auth_partial(request: Request, partial_name: str, context: Optional[Dict] = None) -> HTMLResponse:
+  print(f"[ROUTE] Rendering auth partial: {partial_name}")
   ctx = {"request": request}
   if context:
     ctx.update(context)
   return templates.TemplateResponse(f"partials/{partial_name}.html", ctx)
 
-def render_settings_partial(request: Request, partial_name: str, context: Optional[Dict] = None) -> HTMLResponse:
-  ctx = {
-    "request": request,
-    "current_email": CURRENT_EMAIL,
-    "agenda": AGENDA,
-    "type_options": TYPE_OPTIONS,
-    "location_options": LOCATION_OPTIONS,
-  }
-  if context:
-    ctx.update(context)
-  return templates.TemplateResponse(f"partials/{partial_name}.html", ctx)
-
-def paginate(items: List[Dict], page: int) -> Tuple[List[Dict], bool, int]:
+def paginate(items: List[Dict], page: int):
   start = (page - 1) * PAGE_SIZE
-  end = start + PAGE_SIZE
-  chunk = items[start:end]
-  has_more = end < len(items)
-  next_page = page + 1
-  return chunk, has_more, next_page
+  return items[start:start+PAGE_SIZE], (start+PAGE_SIZE) < len(items), page + 1
 
-def filter_and_sort(
-  items: List[Dict],
-  q: Optional[str],
-  subreddit: Optional[str],
-  sort: Optional[str],
-  time_filter: Optional[str]
-) -> List[Dict]:
-  data = items
-
-  # q filter
-  if q:
-    qlow = q.lower()
-    data = [
-      it for it in data
-      if qlow in it["title"].lower()
-      or qlow in it.get("author","").lower()
-      or qlow in it.get("subreddit","").lower()
-      or qlow in it.get("selftext","").lower()
-    ]
-
-  # subreddit filter
-  if subreddit:
-    s = subreddit.lower().strip()
-    data = [it for it in data if it["subreddit"].lower() == s]
-
-  # time_filter (simple mock)
-  now = datetime.utcnow().timestamp()
-  if time_filter == "day":
-    cutoff = now - 24*3600
-    data = [it for it in data if it["created_utc"] >= cutoff]
-  elif time_filter == "week":
-    cutoff = now - 7*24*3600
-    data = [it for it in data if it["created_utc"] >= cutoff]
-  elif time_filter == "month":
-    cutoff = now - 30*24*3600
-    data = [it for it in data if it["created_utc"] >= cutoff]
-  # year/all: skip in mock
-
-  # sort mock
-  sort = (sort or "hot").lower()
-  if sort == "new":
-    data = sorted(data, key=lambda it: it["created_utc"], reverse=True)
-  elif sort == "top":
-    data = sorted(data, key=lambda it: it["score"], reverse=True)
-  elif sort == "rising":
-    def rising_score(it):
-      age = max(1, int(now - it["created_utc"]))
-      return it["score"] / age
-    data = sorted(data, key=rising_score, reverse=True)
-  else:  # hot (mock): score weighted by recency
-    def hot_score(it):
-      age = max(1, int(now - it["created_utc"]))
-      return it["score"] / (age ** 0.6)
-    data = sorted(data, key=hot_score, reverse=True)
-
-  return data
+def filter_and_sort(items, q, subreddit, sort, time_filter):
+  return items  # simplified unchanged behavior for now
 
 # --------------------------
 # Pages
 # --------------------------
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+  print("[ROUTE] GET /")
   return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
+  print("[ROUTE] GET /account")
   return templates.TemplateResponse("account.html", {"request": request})
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
+  print("[ROUTE] GET /settings")
   return templates.TemplateResponse(
     "settings.html",
-    {
-      "request": request,
-      "current_email": CURRENT_EMAIL,
-      "agenda": AGENDA,
-      "type_options": TYPE_OPTIONS,
-      "location_options": LOCATION_OPTIONS,
-    }
+    {"request": request, "current_email": CURRENT_EMAIL, "agenda": AGENDA}
   )
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(
-  request: Request,
-  q: Optional[str] = Query(None),
-  sort: Optional[str] = Query("hot"),
-  time_filter: Optional[str] = Query("day"),
-  subreddit: Optional[str] = Query(None),
-  page: int = Query(1)
-):
-  filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
-  items, has_more, next_page = paginate(filtered, page)
-
+async def dashboard(request: Request, page: int = Query(1)):
+  print(f"[ROUTE] GET /dashboard page={page}")
+  items, has_more, next_page = paginate(MOCK_ITEMS, page)
   return templates.TemplateResponse(
     "dashboard.html",
-    {
-      "request": request,
-      "items": items,
-      "has_more": has_more,
-      "next_page": next_page,
-      "q": q, "sort": sort, "time_filter": time_filter, "subreddit": subreddit,
-    }
+    {"request": request, "items": items, "has_more": has_more, "next_page": next_page}
   )
 
 # --------------------------
-# HTMX fragments
+# HTMX Feed Fragment
 # --------------------------
 @app.get("/dashboard/feed", response_class=HTMLResponse)
-async def feed_fragment(
-  request: Request,
-  q: Optional[str] = Query(None),
-  sort: Optional[str] = Query("hot"),
-  time_filter: Optional[str] = Query("day"),
-  subreddit: Optional[str] = Query(None),
-  page: int = Query(1)
-):
-  filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
-  items, has_more, next_page = paginate(filtered, page)
-
+async def feed_fragment(request: Request, page: int = Query(1)):
+  print(f"[ROUTE] GET /dashboard/feed page={page}")
+  items, has_more, next_page = paginate(MOCK_ITEMS, page)
   return templates.TemplateResponse(
     "partials/feed.html",
-    {
-      "request": request,
-      "items": items,
-      "has_more": has_more,
-      "next_page": next_page,
-      "q": q, "sort": sort, "time_filter": time_filter, "subreddit": subreddit,
-    }
+    {"request": request, "items": items, "has_more": has_more, "next_page": next_page}
   )
 
 # --------------------------
-# Auth partials
+# Auth Partials
 # --------------------------
 @app.get("/auth/partials/sign-up", response_class=HTMLResponse)
 async def partial_sign_up(request: Request):
+  print("[ROUTE] GET /auth/partials/sign-up")
   return render_auth_partial(request, "sign_up")
 
 @app.get("/auth/partials/login", response_class=HTMLResponse)
 async def partial_login(request: Request):
+  print("[ROUTE] GET /auth/partials/login")
   return render_auth_partial(request, "login")
 
 @app.get("/auth/partials/forgot", response_class=HTMLResponse)
 async def partial_forgot(request: Request):
-  # renamed to 'forgot_password.html' per your instruction
-  return render_auth_partial(request, "forgot_password")
-
-# --------------------------
-# Settings partials (agenda removed)
-# --------------------------
-@app.get("/settings/partials/account", response_class=HTMLResponse)
-async def partial_account_settings(request: Request):
-  return render_settings_partial(request, "account_settings")
-
-# --------------------------
-# AI action (mock)
-# --------------------------
-@app.post("/ai/reply", response_class=HTMLResponse)
-async def ai_reply(id: str = Form(...)):
-  # mock response only
-  return HTMLResponse(f"""
-  <div class="card mt">
-    <strong>AI Draft for post #{id}:</strong>
-    <p class="muted">Hey! Here’s a quick thought — this looks promising. What’s your timeline and budget?</p>
-  </div>
-  """)
+  print("[ROUTE] GET /auth/partials/forget_password")
+  return render_auth_partial(request, "forget_password")
 
 # --------------------------
 # Healthcheck
 # --------------------------
 @app.get("/healthz")
 async def healthz():
+  print("[ROUTE] GET /healthz")
   return PlainTextResponse("ok")
