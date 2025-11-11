@@ -21,12 +21,6 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 # --------------------------
 # Demo stores / config
 # --------------------------
-# Todos
-_todo_ids = itertools.count(1)
-TODOS: List[Dict] = [
-  {"id": next(_todo_ids), "title": "Ship MVP", "done": False},
-  {"id": next(_todo_ids), "title": "Write docs", "done": True},
-]
 
 # Auth (demo only)
 USERS: Dict[str, str] = {}  # email -> password (plain text for demo only)
@@ -88,11 +82,6 @@ PAGE_SIZE = 6
 # --------------------------
 # Helpers (render / paginate / filter)
 # --------------------------
-def render_items_fragment(request: Request) -> HTMLResponse:
-  return templates.TemplateResponse(
-    "partials/todo_items.html",
-    {"request": request, "todos": TODOS}
-  )
 
 def render_auth_partial(request: Request, partial_name: str, context: Optional[Dict] = None) -> HTMLResponse:
   ctx = {"request": request}
@@ -182,8 +171,7 @@ def filter_and_sort(
 # --------------------------
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-  # landing page (your index.html handles the landing content)
-  return templates.TemplateResponse("index.html", {"request": request, "todos": TODOS})
+  return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
@@ -191,7 +179,6 @@ async def account_page(request: Request):
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
-  # settings.html can include account/agenda partials via HTMX
   return templates.TemplateResponse(
     "settings.html",
     {
@@ -226,29 +213,6 @@ async def dashboard(
     }
   )
 
-@app.get("/dashboard/live-demo", response_class=HTMLResponse)
-async def dashboard_live_demo(
-  request: Request,
-  q: Optional[str] = Query(None),
-  sort: Optional[str] = Query("hot"),
-  time_filter: Optional[str] = Query("day"),
-  subreddit: Optional[str] = Query(None),
-  page: int = Query(1)
-):
-  filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
-  items, has_more, next_page = paginate(filtered, page)
-
-  return templates.TemplateResponse(
-    "dashboard_live_demo.html",
-    {
-      "request": request,
-      "items": items,
-      "has_more": has_more,
-      "next_page": next_page,
-      "q": q, "sort": sort, "time_filter": time_filter, "subreddit": subreddit,
-    }
-  )
-
 # --------------------------
 # HTMX fragments
 # --------------------------
@@ -274,31 +238,6 @@ async def feed_fragment(
       "q": q, "sort": sort, "time_filter": time_filter, "subreddit": subreddit,
     }
   )
-
-# --------------------------
-# Todos: HTMX endpoints
-# --------------------------
-@app.post("/todos", response_class=HTMLResponse)
-async def add_todo(request: Request, title: str = Form(...)):
-  title = title.strip()
-  if title:
-    TODOS.append({"id": next(_todo_ids), "title": title, "done": False})
-  return render_items_fragment(request)
-
-@app.post("/todos/{todo_id}/toggle", response_class=HTMLResponse)
-async def toggle_todo(request: Request, todo_id: int):
-  for t in TODOS:
-    if t["id"] == todo_id:
-      t["done"] = not t["done"]
-      break
-  return render_items_fragment(request)
-
-@app.post("/todos/{todo_id}/delete", response_class=HTMLResponse, status_code=status.HTTP_200_OK)
-async def delete_todo(request: Request, todo_id: int):
-  idx = next((i for i, t in enumerate(TODOS) if t["id"] == todo_id), None)
-  if idx is not None:
-    TODOS.pop(idx)
-  return render_items_fragment(request)
 
 # --------------------------
 # Auth partials
