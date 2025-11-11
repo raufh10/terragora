@@ -91,7 +91,6 @@ async def agendas_edit_is_permitted(
   logger.info(f"📥 /agendas/{agenda_id}/is_permitted")
   try:
     payload = payload or {}
-    # accept truthy/falsy forms and cast to bool
     is_permitted = payload.get("is_permitted", None)
     if is_permitted is None:
       raise HTTPException(status_code=400, detail="is_permitted is required")

@@ -2,13 +2,11 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, Body, HTTPException, Depends
 from supabase import Client
 
-from services.database import db
-from services.database import account as account_svc
+from services.database import db, account as account_svc
 
 from logger import start_logger
 logger = start_logger()
 router = APIRouter()
-
 
 @router.post("/account/signup")
 async def account_signup(
@@ -34,7 +32,6 @@ async def account_signup(
   except Exception:
     logger.exception("💥 Unhandled error in /account/signup")
     raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.post("/account/signin")
 async def account_signin(
@@ -78,7 +75,7 @@ async def account_signout(
     logger.exception("💥 Unhandled error in /account/signout")
     raise HTTPException(status_code=500, detail="Internal server error")
 
-
+"""
 @router.post("/account/password/reset")
 async def account_reset_password(
   payload: Optional[Dict[str, Any]] = Body(None),
@@ -204,3 +201,4 @@ async def account_admin_delete_user(
   except Exception:
     logger.exception("💥 Unhandled error in /account/admin/delete")
     raise HTTPException(status_code=500, detail="Internal server error")
+"""
