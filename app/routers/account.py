@@ -141,6 +141,7 @@ async def auth_sign_up(
 
     session = data.get("session", {})
     access_token = session.get("access_token")
+
     if access_token:
       response.set_cookie(
         key="session",
