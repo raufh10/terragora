@@ -28,29 +28,25 @@
       </div>
     </label>
 
-    <!-- Forgot password moved here -->
-    <p class="muted small">
-      <a href="#"
-         @click.prevent
-         hx-get="/auth/partials/forgot"
-         hx-target="#account-panel"
-         hx-swap="innerHTML">
-        Forgot your password?
-      </a>
-    </p>
-
     <button class="btn">Sign in</button>
   </form>
 
-  <!-- Sign up link only -->
+  <div class="muted mt center">
+    <a
+      href="#"
+      hx-get="/auth/partials/forgot"
+      hx-target="#account-panel"
+      hx-swap="innerHTML"
+    >Forgot your password?</a>
+  </div>
+
   <div class="muted mt center">
     New here?
-    <a href="#"
-       @click.prevent
-       hx-get="/auth/partials/sign-up"
-       hx-target="#account-panel"
-       hx-swap="innerHTML">
-      Create an account
-    </a>
+    <a
+      href="#"
+      hx-get="/auth/partials/sign-up"
+      hx-target="#account-panel"
+      hx-swap="innerHTML"
+    >Create an account</a>
   </div>
 </div>
