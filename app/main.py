@@ -84,14 +84,12 @@ PAGE_SIZE = 6
 # --------------------------
 
 def render_auth_partial(request: Request, partial_name: str, context: Optional[Dict] = None) -> HTMLResponse:
-  print(f"[PARTIAL] render_auth_partial -> partials/{partial_name}.html", flush=True)
   ctx = {"request": request}
   if context:
     ctx.update(context)
   return templates.TemplateResponse(f"partials/{partial_name}.html", ctx)
 
 def render_settings_partial(request: Request, partial_name: str, context: Optional[Dict] = None) -> HTMLResponse:
-  print(f"[PARTIAL] render_settings_partial -> partials/{partial_name}.html", flush=True)
   ctx = {
     "request": request,
     "current_email": CURRENT_EMAIL,
@@ -173,17 +171,14 @@ def filter_and_sort(
 # --------------------------
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-  print("[ROUTE] GET / -> index.html", flush=True)
   return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
-  print("[ROUTE] GET /account -> account.html", flush=True)
   return templates.TemplateResponse("account.html", {"request": request})
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
-  print("[ROUTE] GET /settings -> settings.html", flush=True)
   return templates.TemplateResponse(
     "settings.html",
     {
@@ -204,7 +199,6 @@ async def dashboard(
   subreddit: Optional[str] = Query(None),
   page: int = Query(1)
 ):
-  print(f"[ROUTE] GET /dashboard -> q={q} sort={sort} time_filter={time_filter} subreddit={subreddit} page={page}", flush=True)
   filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
   items, has_more, next_page = paginate(filtered, page)
 
@@ -231,7 +225,6 @@ async def feed_fragment(
   subreddit: Optional[str] = Query(None),
   page: int = Query(1)
 ):
-  print(f"[FRAGMENT] GET /dashboard/feed -> q={q} sort={sort} time_filter={time_filter} subreddit={subreddit} page={page}", flush=True)
   filtered = filter_and_sort(MOCK_ITEMS, q, subreddit, sort, time_filter)
   items, has_more, next_page = paginate(filtered, page)
 
@@ -251,113 +244,29 @@ async def feed_fragment(
 # --------------------------
 @app.get("/auth/partials/sign-up", response_class=HTMLResponse)
 async def partial_sign_up(request: Request):
-  print("[PARTIAL] GET /auth/partials/sign-up", flush=True)
   return render_auth_partial(request, "sign_up")
 
 @app.get("/auth/partials/login", response_class=HTMLResponse)
 async def partial_login(request: Request):
-  print("[PARTIAL] GET /auth/partials/login", flush=True)
   return render_auth_partial(request, "login")
 
 @app.get("/auth/partials/forgot", response_class=HTMLResponse)
 async def partial_forgot(request: Request):
-  print("[PARTIAL] GET /auth/partials/forgot", flush=True)
-  return render_auth_partial(request, "forget_password")
+  # renamed to 'forgot_password.html' per your instruction
+  return render_auth_partial(request, "forgot_password")
 
 # --------------------------
-# Settings partials & handlers
+# Settings partials (agenda removed)
 # --------------------------
 @app.get("/settings/partials/account", response_class=HTMLResponse)
 async def partial_account_settings(request: Request):
-  print("[PARTIAL] GET /settings/partials/account", flush=True)
   return render_settings_partial(request, "account_settings")
-
-@app.get("/settings/partials/agenda", response_class=HTMLResponse)
-async def partial_agenda_settings(request: Request):
-  print("[PARTIAL] GET /settings/partials/agenda", flush=True)
-  return render_settings_partial(request, "agenda_settings")
-
-@app.post("/settings/account/change-email", response_class=HTMLResponse)
-async def settings_change_email(
-  request: Request,
-  current_email: Optional[str] = Form(None),
-  new_email: str = Form(...)
-):
-  print(f"[ACTION] POST /settings/account/change-email -> new_email={new_email}", flush=True)
-  global CURRENT_EMAIL
-  new_email = new_email.strip().lower()
-  if not EMAIL_RE.match(new_email):
-    return render_settings_partial(request, "account_settings", {"error": "Please enter a valid email address."})
-  if CURRENT_EMAIL and new_email == CURRENT_EMAIL:
-    return render_settings_partial(request, "account_settings", {"error": "New email is the same as current."})
-
-  CURRENT_EMAIL = new_email
-  return render_settings_partial(request, "account_settings", {"success": "Email updated."})
-
-@app.post("/settings/account/change-password", response_class=HTMLResponse)
-async def settings_change_password(
-  request: Request,
-  old_password: str = Form(...),
-  new_password: str = Form(...),
-  confirm_password: str = Form(...)
-):
-  print("[ACTION] POST /settings/account/change-password (passwords hidden)", flush=True)
-  if len(new_password) < 8:
-    return render_settings_partial(request, "account_settings", {"error": "New password must be at least 8 characters."})
-  if new_password != confirm_password:
-    return render_settings_partial(request, "account_settings", {"error": "Passwords do not match."})
-  return render_settings_partial(request, "account_settings", {"success": "Password updated."})
-
-@app.post("/settings/account/delete", response_class=HTMLResponse)
-async def settings_delete_account(request: Request, confirm: Optional[str] = Form(None)):
-  print(f"[ACTION] POST /settings/account/delete -> confirm={'SET' if confirm else 'EMPTY'}", flush=True)
-  if confirm != "DELETE":
-    return render_settings_partial(request, "account_settings", {"error": "Type DELETE to confirm account deletion."})
-  global CURRENT_EMAIL, USERS, TODOS, AGENDA
-  USERS = {}
-  CURRENT_EMAIL = None
-  TODOS = []  # nuke todos for demo effect
-  AGENDA = {
-    "agenda_name": "My Daily Feed",
-    "subreddit": "lakers",
-    "data": {"type": "discussion", "location": "global"},
-  }
-  return render_settings_partial(request, "account_settings", {"success": "Account deleted (demo)."})
-
-@app.post("/settings/agenda/update", response_class=HTMLResponse)
-async def settings_agenda_update(
-  request: Request,
-  agenda_name: str = Form(...),
-  subreddit: str = Form(...),
-  data_type: str = Form(...),
-  data_location: str = Form(...)
-):
-  print(f"[ACTION] POST /settings/agenda/update -> name={agenda_name} subreddit={subreddit} type={data_type} location={data_location}", flush=True)
-  global AGENDA
-  agenda_name = agenda_name.strip()
-  subreddit = subreddit.strip()
-  if not agenda_name:
-    return render_settings_partial(request, "agenda_settings", {"error": "Agenda name is required."})
-  if not subreddit:
-    return render_settings_partial(request, "agenda_settings", {"error": "Subreddit is required."})
-  if data_type not in TYPE_OPTIONS:
-    return render_settings_partial(request, "agenda_settings", {"error": "Invalid type selected."})
-  if data_location not in LOCATION_OPTIONS:
-    return render_settings_partial(request, "agenda_settings", {"error": "Invalid location selected."})
-
-  AGENDA = {
-    "agenda_name": agenda_name,
-    "subreddit": subreddit,
-    "data": {"type": data_type, "location": data_location},
-  }
-  return render_settings_partial(request, "agenda_settings", {"success": "Agenda updated."})
 
 # --------------------------
 # AI action (mock)
 # --------------------------
 @app.post("/ai/reply", response_class=HTMLResponse)
 async def ai_reply(id: str = Form(...)):
-  print(f"[ACTION] POST /ai/reply -> id={id}", flush=True)
   # mock response only
   return HTMLResponse(f"""
   <div class="card mt">
@@ -371,5 +280,4 @@ async def ai_reply(id: str = Form(...)):
 # --------------------------
 @app.get("/healthz")
 async def healthz():
-  print("[ROUTE] GET /healthz", flush=True)
   return PlainTextResponse("ok")
