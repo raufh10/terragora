@@ -1,39 +1,28 @@
 import streamlit as st
-from modules import DashboardSessionStateBuilder
-from modules.utils.queries import check_query_params
-from modules.sections.dashboard import render_dashboard
+from pages.partials.auth import render_auth
+from pages.partials.settings import render_settings
 
-from logger import start_logger
-logger = start_logger()
+# --- Temporary test variable ---
+# Change this manually to test: "auth" or "settings"
+test_page = "auth"   # or "settings"
 
+# --- Page setup ---
 st.set_page_config(
-  page_title="Solidfit | Job Seeker's Assistant",
+  page_title="Test Page",
   page_icon="🧩",
-  layout="wide",
-  initial_sidebar_state="expanded"
+  layout="centered",
 )
 
-if __name__ == "__main__":
-  try:
+st.title("🧪 Partial Renderer Test")
 
-    qp = st.query_params
-    if qp:
+# --- Conditional rendering ---
+if test_page == "auth":
+  st.info("Rendering AUTH partial (login/signup/forgot).")
+  render_auth()
 
-      logger.info(f"🏁 App start | has query parameter")
-      check_query_params(qp, logger)
+elif test_page == "settings":
+  st.info("Rendering SETTINGS partial.")
+  render_settings()
 
-    else:
-      logger.info("🧭 No task in query params; loading main flow")
-      session = DashboardSessionStateBuilder(logger)
-
-      try:
-        session.build()
-        logger.debug("Session state built successfully")
-      except Exception as e:
-        logger.exception(f"❌ DashboardSessionStateBuilder.build() failed: {e}")
-
-      render_dashboard(logger)
-
-  except Exception as e:
-    logger.critical(f"🛑 Critical failure at app entrypoint: {e}", exc_info=True)
-    st.error("A critical error occurred while starting the app.")
+else:
+  st.warning(f"Unknown test_page: {test_page!r}")
