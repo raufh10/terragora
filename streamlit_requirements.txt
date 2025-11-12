@@ -1,0 +1,4 @@
+requests
+pydantic-settings
+streamlit
+streamlit_cookies_controller
