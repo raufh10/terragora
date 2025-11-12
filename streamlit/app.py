@@ -1,28 +1,36 @@
 import streamlit as st
-from pages.partials.auth import render_auth
-from pages.partials.settings import render_settings
+from pages.partials.auth import (
+  render_login,
+  render_sign_up,
+  render_forgot_password,
+)
+from pages.partials.settings import render_settings  # must exist
 
-# --- Temporary test variable ---
-# Change this manually to test: "auth" or "settings"
-test_page = "auth"   # or "settings"
+# --- Toggle these for testing ---
+test_page = "settings"      # "auth" or "settings"
+auth_panel = "forgot"    # "login" | "sign_up" | "forgot"
 
 # --- Page setup ---
 st.set_page_config(
-  page_title="Test Page",
-  page_icon="🧩",
+  page_title="Partial Test",
+  page_icon="🧪",
   layout="centered",
 )
 
 st.title("🧪 Partial Renderer Test")
 
-# --- Conditional rendering ---
 if test_page == "auth":
-  st.info("Rendering AUTH partial (login/signup/forgot).")
-  render_auth()
+  if auth_panel == "login":
+    render_login()
+  elif auth_panel == "sign_up":
+    render_sign_up()
+  elif auth_panel == "forgot":
+    render_forgot_password()
+  else:
+    st.error(f"Unknown auth_panel: {auth_panel!r}")
 
 elif test_page == "settings":
-  st.info("Rendering SETTINGS partial.")
   render_settings()
 
 else:
-  st.warning(f"Unknown test_page: {test_page!r}")
+  st.error(f"Unknown test_page: {test_page!r}")
