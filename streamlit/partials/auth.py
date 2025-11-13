@@ -1,7 +1,5 @@
 import streamlit as st
-
-# --- Mock auth store for testing ---
-MOCK_USERS = {"demo@example.com": "password123"}
+from modules.mock import MOCK_USERS
 
 def render_login():
   st.header("🔐 Log in")

@@ -1,14 +1,5 @@
 import streamlit as st
-
-# --- Mock data store ---
-MOCK_PROFILE = {"name": "John Doe", "email": "demo@example.com"}
-MOCK_AGENDA = {
-  "agenda_name": "My Daily Feed",
-  "subreddit": "lakers",
-  "data": {"type": "discussion", "location": "global"},
-}
-TYPE_OPTIONS = ["jobs", "services", "discussion", "announcement"]
-LOCATION_OPTIONS = ["global", "US", "EU", "APAC", "Remote"]
+from modules.mock import MOCK_PROFILE, MOCK_AGENDA, TYPE_OPTIONS, LOCATION_OPTIONS
 
 def render_settings():
   st.header("⚙️ Settings")

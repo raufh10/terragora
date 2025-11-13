@@ -1,15 +1,15 @@
 import streamlit as st
-from pages.partials.auth import (
+from partials.auth import (
   render_login,
   render_sign_up,
   render_forgot_password,
 )
-from pages.partials.settings import render_settings
+from partials.settings import render_settings
 from pages.dashboard import render_dashboard
 from pages.home import render_home   # ✅ new import
 
 # --- Toggle these for testing ---
-test_page = "home"          # "auth" | "settings" | "dashboard" | "home"
+test_page = "auth"          # "auth" | "settings" | "dashboard" | "home"
 auth_panel = "forgot"       # "login" | "sign_up" | "forgot"
 
 # --- Page setup ---
