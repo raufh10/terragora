@@ -5,11 +5,12 @@ from pages.partials.auth import (
   render_forgot_password,
 )
 from pages.partials.settings import render_settings
-from pages.dashboard import render_dashboard  # ✅ imported here
+from pages.dashboard import render_dashboard
+from pages.home import render_home   # ✅ new import
 
 # --- Toggle these for testing ---
-test_page = "dashboard"   # "auth", "settings", or "dashboard"
-auth_panel = "forgot"     # "login" | "sign_up" | "forgot"
+test_page = "home"          # "auth" | "settings" | "dashboard" | "home"
+auth_panel = "forgot"       # "login" | "sign_up" | "forgot"
 
 # --- Page setup ---
 st.set_page_config(
@@ -34,7 +35,10 @@ elif test_page == "settings":
   render_settings()
 
 elif test_page == "dashboard":
-  render_dashboard()  # ✅ runs the dashboard feed renderer
+  render_dashboard()
+
+elif test_page == "home":
+  render_home()  # ✅ new page
 
 else:
   st.error(f"Unknown test_page: {test_page!r}")
