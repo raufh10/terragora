@@ -1,5 +1,5 @@
 import streamlit as st
-from modules.flow import run_page_flow
+from modules import SessionStateBuilder, run_page_flow
 
 # Temporary test variables
 test_page = "home"       # "auth" | "settings" | "dashboard" | "home"
