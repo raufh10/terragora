@@ -1,5 +1,9 @@
 import streamlit as st
 from modules import SessionStateBuilder, run_page_flow
+from pages.logout import render_logout
+
+def render_test():
+  st.write("test")
 
 # Temporary test variables
 test_page = "home"       # "auth" | "settings" | "dashboard" | "home"
@@ -9,7 +13,18 @@ st.set_page_config(
   page_title="Partial Test",
   page_icon="🧪",
   layout="centered",
+  initial_sidebar_state="expanded"
 )
+
+pages = {
+  "Your account": [
+    st.Page(render_logout, title="Log Out"),
+    st.Page(render_test, title="Test")
+  ]
+}
+
+pg = st.navigation(pages)
+pg.run()
 
 st.title("🧪 Partial Renderer Test")
 
