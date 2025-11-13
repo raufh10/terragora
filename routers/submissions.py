@@ -4,28 +4,40 @@ from supabase import Client
 
 from services.database import db, submissions
 from logger import start_logger
+
 logger = start_logger()
 router = APIRouter()
 
 @router.post("/submissions/{agenda_id}/feed")
-async def fetch_submissions(
+async def submissions_feed(
   agenda_id: int,
-  payload: Optional[Dict[str, Any]] = Body(None),
   supabase: Client = Depends(db.get_supabase_client),
 ):
-  logger.info(f"📥 /agendas/{agenda_id}/name")
+  logger.info(f"📥 /submissions/{agenda_id}/feed")
   try:
-    payload = payload or {}
-    new_name = str(payload.get("name", "")).strip()
-    if not new_name:
-      raise HTTPException(status_code=400, detail="name is required")
+    if not agenda_id or agenda_id <= 0:
+      raise HTTPException(status_code=400, detail="agenda_id must be a positive integer")
 
-    resp = await agendas_svc.edit_name(supabase, logger, agenda_id, new_name)
-    if not resp.get("ok"):
-      raise HTTPException(status_code=502, detail=resp.get("error", "edit_name failed"))
-    return resp
+    rows = await submissions.select(supabase, logger, agenda_id)
+
+    if rows is None:
+      logger.error(f"⚠️ submissions.select returned None for agenda_id={agenda_id}")
+      raise HTTPException(status_code=502, detail="Failed to load submissions")
+
+    if isinstance(rows, list):
+      count = len(rows)
+    else:
+      count = 1
+
+    return {
+      "ok": True,
+      "agenda_id": agenda_id,
+      "count": count,
+      "data": rows,
+    }
+
   except HTTPException:
     raise
   except Exception:
-    logger.exception("💥 Unhandled error in /agendas/{agenda_id}/name")
+    logger.exception(f"💥 Unhandled error in /submissions/{agenda_id}/feed")
     raise HTTPException(status_code=500, detail="Internal server error")

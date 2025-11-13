@@ -9,7 +9,6 @@ from logger import start_logger
 logger = start_logger()
 router = APIRouter()
 
-
 @router.post("/agendas/{agenda_id}/name")
 async def agendas_edit_name(
   agenda_id: int,
@@ -32,7 +31,6 @@ async def agendas_edit_name(
   except Exception:
     logger.exception("💥 Unhandled error in /agendas/{agenda_id}/name")
     raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.post("/agendas/{agenda_id}/subreddit")
 async def agendas_edit_subreddit(
@@ -57,7 +55,6 @@ async def agendas_edit_subreddit(
     logger.exception("💥 Unhandled error in /agendas/{agenda_id}/subreddit")
     raise HTTPException(status_code=500, detail="Internal server error")
 
-
 @router.post("/agendas/{agenda_id}/data")
 async def agendas_edit_data(
   agenda_id: int,
@@ -80,7 +77,6 @@ async def agendas_edit_data(
   except Exception:
     logger.exception("💥 Unhandled error in /agendas/{agenda_id}/data")
     raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.post("/agendas/{agenda_id}/is_permitted")
 async def agendas_edit_is_permitted(
