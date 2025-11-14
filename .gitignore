@@ -9,4 +9,3 @@ logs/
 # Environment variables
 .env
 .sh
-streamlit/.env
