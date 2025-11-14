@@ -8,12 +8,9 @@ from partials.settings import render_settings
 from pages.dashboard import render_dashboard
 from pages.home import render_home
 
-
-def run_page_flow(test_page: str, auth_panel: str = "login"):
-  """
-  Routes to the correct page renderer based on the test_page and auth_panel.
-  Everything is in 2-space indent.
-  """
+def run_page_flow():
+  test_page = st.session_state["test_page"]
+  auth_panel = st.session_state["auth_panel"]
 
   if test_page == "auth":
     if auth_panel == "login":

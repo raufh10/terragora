@@ -2,24 +2,17 @@ import streamlit as st
 from modules import SessionStateBuilder, run_page_flow
 from pages.logout import render_logout
 
+from logger import start_logger
+logger = start_logger()
+
 def render_test():
-  st.write("test")
+  st.session_state["test_page"] = "settings"
 
-# Temporary test variables
-test_page = "home"       # "auth" | "settings" | "dashboard" | "home"
-auth_panel = "login"     # only used when test_page == "auth"
-
-st.set_page_config(
-  page_title="Partial Test",
-  page_icon="🧪",
-  layout="centered",
-  initial_sidebar_state="expanded"
-)
-
+# Sidebar test pages
 pages = {
   "Your account": [
     st.Page(render_logout, title="Log Out"),
-    st.Page(render_test, title="Test")
+    st.Page(render_test, title="Test"),
   ]
 }
 
@@ -28,5 +21,13 @@ pg.run()
 
 st.title("🧪 Partial Renderer Test")
 
-# Run the unified flow
-run_page_flow(test_page, auth_panel)
+# --- Session initialization logic ---
+if "is_first" not in st.session_state:
+  # First run → build session state
+  builder = SessionStateBuilder(logger)
+  builder.build()
+else:
+  logger.info("➡️ Session state already exists. Skipping builder.")
+
+# --- Run unified flow ---
+run_page_flow()

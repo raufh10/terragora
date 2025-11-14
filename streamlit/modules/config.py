@@ -1,32 +1,22 @@
 import os
-import re
 
 def get_backend_api_endpoint():
-  endpoint = os.getenv("BACKEND_API_ENDPOINT")
+  endpoint = os.getenv("BACKEND_API_ENDPOINT", "http://127.0.0.1:8000")
 
   if not endpoint:
     raise EnvironmentError("Missing required environment variable: API_ENDPOINT")
   return endpoint
 
-def get_clamav_api_endpoint():
-  endpoint = os.getenv("CLAMAV_API_ENDPOINT")
+def get_supabase_url():
+  endpoint = os.getenv("SUPABASE_URL")
 
   if not endpoint:
-    raise EnvironmentError("Missing required environment variable: CLAMAV_API_ENDPOINT")
+    raise EnvironmentError("Missing required environment variable: SUPABASE_URL")
   return endpoint
 
-def get_allowed_mime_types():
-  return (
-    "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  )
+def get_supabase_public_key():
+  endpoint = os.getenv("SUPABASE_KEY")
 
-def get_email_regex():
-  return re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-
-def get_preferences():
-  return {
-    "job_roles": ["data_analyst"],
-    "locations": ["all"],
-    "experience_levels": ["entry_level"]
-  }
+  if not endpoint:
+    raise EnvironmentError("Missing required environment variable: SUPABASE_KEY")
+  return endpoint
