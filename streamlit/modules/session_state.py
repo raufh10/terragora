@@ -1,11 +1,13 @@
 import streamlit as st
+from modules.api import get_supabase_client
 
 class SessionStateBuilder:
   def __init__(self, logger):
     self._defaults = {
-      "test_page": "home",     # "auth" | "settings" | "dashboard" | "home"
-      "auth_panel": "login",   # only used when test_page == "auth"
+      "test_page": "auth",     # "auth" | "settings" | "dashboard" | "home"
+      "auth_panel": "sign_up",   # only used when test_page == "auth"
       "is_first": True,       # NEW
+      "db_client": get_supabase_client()
     }
     self.logger = logger
 

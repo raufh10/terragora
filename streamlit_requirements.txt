@@ -1,4 +1,5 @@
 requests
 pydantic-settings
+supabase
 streamlit
 streamlit_cookies_controller
