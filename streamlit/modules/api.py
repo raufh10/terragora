@@ -43,7 +43,7 @@ def _fail(logger, msg: str, exc: Optional[Exception] = None) -> Dict[str, Any]:
   return {"ok": False, "error": msg}
 
 # ---------- Auth: Basic ----------
-async def sign_up(
+def sign_up(
   supabase: Client,
   logger,
   email: str,
@@ -59,7 +59,7 @@ async def sign_up(
   except Exception as e:
     return _fail(logger, "sign_up failed", e)
 
-async def sign_in(
+def sign_in(
   supabase: Client,
   logger,
   email: str,
@@ -75,7 +75,7 @@ async def sign_in(
   except Exception as e:
     return _fail(logger, "sign_in failed", e)
 
-async def sign_out(
+def sign_out(
   supabase: Client,
   logger
 ) -> Dict[str, Any]:
@@ -87,7 +87,7 @@ async def sign_out(
     return _fail(logger, "sign_out failed", e)
 
 # ---------- Auth: Password Reset ----------
-async def reset_password_for_email(
+def reset_password_for_email(
   supabase: Client,
   logger,
   email: str,
@@ -108,7 +108,7 @@ async def reset_password_for_email(
     return _fail(logger, "reset_password_for_email failed", e)
 
 # ---------- Auth: Session ----------
-async def get_session(
+def get_session(
   supabase: Client,
   logger
 ) -> Dict[str, Any]:
@@ -119,7 +119,7 @@ async def get_session(
   except Exception as e:
     return _fail(logger, "get_session failed", e)
 
-async def refresh_session(
+def refresh_session(
   supabase: Client,
   logger
 ) -> Dict[str, Any]:
@@ -131,7 +131,7 @@ async def refresh_session(
     return _fail(logger, "refresh_session failed", e)
 
 # ---------- Auth: Update User ----------
-async def update_user_email(
+def update_user_email(
   supabase: Client,
   logger,
   new_email: str
@@ -146,7 +146,7 @@ async def update_user_email(
   except Exception as e:
     return _fail(logger, "update_user_email failed", e)
 
-async def update_user_password(
+def update_user_password(
   supabase: Client,
   logger,
   new_password: str

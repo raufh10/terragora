@@ -8,14 +8,14 @@ def get_backend_api_endpoint():
   return endpoint
 
 def get_supabase_url():
-  endpoint = os.getenv("SUPABASE_URL")
+  endpoint = os.getenv("SUPABASE_URL", "https://bmcyccxnavcnhaositeh.supabase.co")
 
   if not endpoint:
     raise EnvironmentError("Missing required environment variable: SUPABASE_URL")
   return endpoint
 
 def get_supabase_public_key():
-  endpoint = os.getenv("SUPABASE_KEY")
+  endpoint = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtY3ljY3huYXZjbmhhb3NpdGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MTAwMjksImV4cCI6MjA2NTM4NjAyOX0.knB-Dj0QeQkCuQ_CJMHaIVo863A7huSezfMZvAInpJs")
 
   if not endpoint:
     raise EnvironmentError("Missing required environment variable: SUPABASE_KEY")

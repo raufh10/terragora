@@ -1,8 +1,16 @@
 import streamlit as st
-from modules.mock import MOCK_USERS
+from modules.api import sign_in, sign_up
 
+# --------------------------
+# LOGIN
+# --------------------------
 def render_login():
   st.header("🔐 Log in")
+
+  supabase = st.session_state.get("db_client")
+  if not supabase:
+    st.error("Supabase client missing: session_state['db_client'] not set.")
+    return
 
   with st.form("login_form"):
     email = st.text_input("Email", key="login_email")
@@ -10,22 +18,41 @@ def render_login():
     submitted = st.form_submit_button("Sign in")
 
     if submitted:
-      if email in MOCK_USERS and MOCK_USERS[email] == password:
+      logger = st.session_state.get("logger")
+      result = sign_in(supabase, logger, email, password)
+
+      st.write(result)
+
+      """
+      if result.get("ok"):
+        # depending on how _ok() is structured in modules.api
+        session = result.get("data", {}) or result.get("session", {})
+        st.session_state["auth_token"] = session.get("access_token")
         st.success(f"Welcome back, **{email}**!")
       else:
-        st.error("Invalid email or password.")
+        st.error(result.get("error", "Login failed."))
+      """
 
   st.divider()
+
   st.caption("Forgot your password?")
-  if st.button("🔁 Reset password (mock)"):
-    st.info("This would open the forgot-password form.")
+  if st.button("🔁 Reset password"):
+    st.session_state["auth_panel"] = "forgot"
 
   st.caption("New here?")
-  if st.button("📝 Create account (mock)"):
-    st.info("This would open the sign-up form.")
+  if st.button("📝 Create account"):
+    st.session_state["auth_panel"] = "sign_up"
 
+# --------------------------
+# SIGN UP
+# --------------------------
 def render_sign_up():
   st.header("📝 Create account")
+
+  supabase = st.session_state.get("db_client")
+  if not supabase:
+    st.error("Supabase client missing: session_state['db_client'] not set.")
+    return
 
   with st.form("signup_form"):
     email = st.text_input("Email", key="signup_email")
@@ -36,12 +63,27 @@ def render_sign_up():
     if submitted:
       if password != confirm:
         st.error("Passwords do not match.")
-      elif not email:
-        st.warning("Please enter your email.")
-      else:
-        MOCK_USERS[email] = password
-        st.success(f"Account created for **{email}** (mock).")
+        return
 
+      logger = st.session_state.get("logger")
+      result = sign_up(supabase, logger, email, password)
+
+      st.write(result)
+
+      """
+      if result.get("ok"):
+        st.success(f"Account created for **{email}**!")
+        st.session_state["auth_panel"] = "login"
+      else:
+        st.error(result.get("error", "Sign up failed."))
+      """
+
+  if st.button("⬅ Back to login"):
+    st.session_state["auth_panel"] = "login"
+
+# --------------------------
+# FORGOT PASSWORD
+# --------------------------
 def render_forgot_password():
   st.header("🔁 Reset password")
   st.write("Enter your email and we’ll send a reset link (mock).")
