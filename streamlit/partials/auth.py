@@ -1,5 +1,5 @@
 import streamlit as st
-from modules.api import sign_in, sign_up
+from modules.api import sign_in, sign_up, reset_password_for_email
 
 # --------------------------
 # LOGIN
@@ -86,14 +86,33 @@ def render_sign_up():
 # --------------------------
 def render_forgot_password():
   st.header("🔁 Reset password")
-  st.write("Enter your email and we’ll send a reset link (mock).")
+  st.write("Enter your email and we’ll send a reset link to your inbox.")
+
+  supabase = st.session_state.get("db_client")
+  logger = st.session_state.get("logger")
+
+  if not supabase:
+    st.error("Supabase client missing: session_state['db_client'] not set.")
+    return
 
   with st.form("forgot_form"):
     email = st.text_input("Email", key="forgot_email")
     submitted = st.form_submit_button("Send reset link")
 
     if submitted:
-      if email in MOCK_USERS:
-        st.info(f"Mock: password reset link sent to **{email}**.")
+      if not email:
+        st.error("Please enter your email address.")
+        return
+
+      # --- call the SYNC API function ---
+      result = reset_password_for_email(
+        supabase=supabase,
+        logger=logger,
+        email=email,
+        redirect_to=None    # 👈 keep redirect None exactly as requested
+      )
+
+      if result.get("ok"):
+        st.success(f"Reset link sent to **{email}**.")
       else:
-        st.error("Email not found.")
+        st.error(result.get("error", "Failed to send reset email."))
