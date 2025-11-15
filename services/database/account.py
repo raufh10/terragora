@@ -1,5 +1,5 @@
 from supabase import Client
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # ---------- Helpers ----------
 def _ok(data: Any = None) -> Dict[str, Any]:

@@ -124,6 +124,29 @@ async def edit_is_permitted(
   except Exception as e:
     return _fail(logger, f"edit_is_permitted failed for id={agenda_id}", e)
 
+async def select(
+  supabase: Client,
+  logger,
+  id: int
+):
+  try:
+
+    response = (
+      supabase.table("agendas")
+      .select("*")
+      .eq("id", id)
+      .execute()
+    )
+
+    if response.data:
+      return response.data[0]
+    else:
+      return None
+
+  except Exception as e:
+    logger.error(f"Failed to fetch agenda based on id: {str(e)}")
+    return None
+
 async def select_subreddit(
   supabase: Client,
   logger,
