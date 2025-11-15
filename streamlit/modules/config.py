@@ -1,7 +1,7 @@
 import os
 
 def get_backend_api_endpoint():
-  endpoint = os.getenv("BACKEND_API_ENDPOINT", "http://127.0.0.1:8000")
+  endpoint = os.getenv("BACKEND_API_ENDPOINT", "http://127.0.0.1:8000/")
 
   if not endpoint:
     raise EnvironmentError("Missing required environment variable: API_ENDPOINT")

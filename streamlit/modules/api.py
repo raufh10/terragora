@@ -160,3 +160,26 @@ def update_user_password(
     return _ok(resp)
   except Exception as e:
     return _fail(logger, "update_user_password failed", e)
+
+# ---------- Agendas: Select by user_id via BACKEND_API ----------
+def select_agenda_by_user_id(
+  logger,
+  user_id: str
+) -> Dict[str, Any]:
+  """Call backend route POST /agendas/select. """
+  if not user_id:
+    return _fail(logger, "select_agenda_by_user_id requires non-empty user_id")
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/agendas/select",
+      json={"user_id": user_id},
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"agendas/select failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "select_agenda_by_user_id request failed", e)

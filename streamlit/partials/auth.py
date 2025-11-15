@@ -1,4 +1,6 @@
+import time
 import streamlit as st
+from streamlit_cookies_controller import CookieController
 from modules.api import sign_in, sign_up, reset_password_for_email
 from modules.setter import PageSetter
 
@@ -8,9 +10,11 @@ from modules.setter import PageSetter
 def render_login():
   st.header("🔐 Log in")
 
+  cookie_ctrl = CookieController()
+
   supabase = st.session_state.get("db_client")
   if not supabase:
-    st.error("Supabase client missing: session_state['db_client'] not set.")
+    st.error("Supabase client missing.")
     return
 
   with st.form("login_form"):
@@ -23,24 +27,24 @@ def render_login():
       result = sign_in(supabase, logger, email, password)
 
       if result.get("ok"):
-        auth_resp = result.get("data")  # this is the AuthResponse(...)
+        auth_resp = result.get("data")
         if auth_resp is None:
-          st.error("Login succeeded but no auth data returned.")
+          st.error("Login succeeded but no auth data.")
           return
 
-        # AuthResponse has .session and .user attributes
         session_obj = getattr(auth_resp, "session", None)
         user_obj = getattr(auth_resp, "user", None)
 
         if session_obj is None:
-          st.error("Login succeeded but no session in response.")
+          st.error("Login succeeded but missing session.")
           return
 
-        # Store useful bits in session_state
+        # Store session info
         st.session_state["auth_token"] = getattr(session_obj, "access_token", None)
         st.session_state["refresh_token"] = getattr(session_obj, "refresh_token", None)
         st.session_state["session_expires_at"] = getattr(session_obj, "expires_at", None)
 
+        # Store user info
         if user_obj is not None:
           st.session_state["user_id"] = getattr(user_obj, "id", None)
           st.session_state["user_email"] = getattr(user_obj, "email", email)
@@ -48,11 +52,46 @@ def render_login():
           st.session_state["user_id"] = None
           st.session_state["user_email"] = email
 
+        # --------------------------
+        # Set cookies (dev mode)
+        # --------------------------
+        expires_at = st.session_state.get("session_expires_at")
+
+        # simple expiration calculation
+        max_age = None
+        if isinstance(expires_at, (int, float)):
+          delta = int(expires_at - time.time())
+          if delta > 0:
+            max_age = delta
+
+        user_id = st.session_state.get("user_id")
+        user_email = st.session_state.get("user_email")
+        auth_token = st.session_state.get("auth_token")
+        refresh_token = st.session_state.get("refresh_token")
+
+        # Basic user cookies
+        if user_id:
+          cookie_ctrl.set("user_id", user_id, path="/", max_age=max_age, same_site="lax", secure=False)
+        if user_email:
+          cookie_ctrl.set("user_email", user_email, path="/", max_age=max_age, same_site="lax", secure=False)
+
+        # Simple login marker
+        cookie_ctrl.set("has_session", "1", path="/", max_age=max_age, same_site="lax", secure=False)
+
+        # Dev-only tokens in cookies
+        if auth_token:
+          cookie_ctrl.set("access_token", auth_token, path="/", max_age=max_age, same_site="lax", secure=False)
+        if refresh_token:
+          cookie_ctrl.set("refresh_token", refresh_token, path="/", max_age=max_age, same_site="lax", secure=False)
+
+        if expires_at:
+          cookie_ctrl.set("session_expires_at", str(expires_at), path="/", max_age=max_age, same_site="lax", secure=False)
+
+        # Mark logged in and switch page
         st.session_state["is_login"] = True
         PageSetter.set_dashboard()
         st.rerun()
 
-        st.success(f"Welcome back, **{email}**!")
       else:
         st.error(result.get("error", "Login failed."))
 
