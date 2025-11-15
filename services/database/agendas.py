@@ -127,14 +127,14 @@ async def edit_is_permitted(
 async def select(
   supabase: Client,
   logger,
-  id: int
+  user_id: str
 ):
   try:
 
     response = (
       supabase.table("agendas")
       .select("*")
-      .eq("id", id)
+      .eq("user_id", user_id)
       .execute()
     )
 
