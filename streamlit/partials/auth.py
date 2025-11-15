@@ -21,9 +21,6 @@ def render_login():
       logger = st.session_state.get("logger")
       result = sign_in(supabase, logger, email, password)
 
-      st.write(result)
-
-      """
       if result.get("ok"):
         # depending on how _ok() is structured in modules.api
         session = result.get("data", {}) or result.get("session", {})
@@ -31,7 +28,6 @@ def render_login():
         st.success(f"Welcome back, **{email}**!")
       else:
         st.error(result.get("error", "Login failed."))
-      """
 
   st.divider()
 
@@ -68,15 +64,11 @@ def render_sign_up():
       logger = st.session_state.get("logger")
       result = sign_up(supabase, logger, email, password)
 
-      st.write(result)
-
-      """
       if result.get("ok"):
         st.success(f"Account created for **{email}**!")
         st.session_state["auth_panel"] = "login"
       else:
         st.error(result.get("error", "Sign up failed."))
-      """
 
   if st.button("⬅ Back to login"):
     st.session_state["auth_panel"] = "login"
