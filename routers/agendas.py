@@ -8,15 +8,18 @@ from logger import start_logger
 logger = start_logger()
 router = APIRouter()
 
-@router.post("/agendas/{agenda_id}")
+@router.post("/agendas/edit")
 async def agendas_edit(
-  agenda_id: int,
   payload: Optional[Dict[str, Any]] = Body(None),
   supabase: Client = Depends(db.get_supabase_client),
 ):
-  logger.info(f"📥 /agendas/{agenda_id} (edit)")
+  logger.info("📥 /agendas/edit")
   try:
     payload = payload or {}
+
+    agenda_id = payload.get("agenda_id")
+    if not isinstance(agenda_id, int) or agenda_id <= 0:
+      raise HTTPException(status_code=400, detail="agenda_id must be a positive integer")
 
     has_name = "name" in payload
     has_subreddit = "subreddit" in payload
@@ -74,18 +77,22 @@ async def agendas_edit(
   except HTTPException:
     raise
   except Exception:
-    logger.exception(f"💥 Unhandled error in /agendas/{agenda_id} (edit)")
+    logger.exception("💥 Unhandled error in /agendas/edit")
     raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.post("/agendas/{agenda_id}/is_permitted")
+@router.post("/agendas/is_permitted")
 async def agendas_edit_is_permitted(
-  agenda_id: int,
   payload: Optional[Dict[str, Any]] = Body(None),
   supabase: Client = Depends(db.get_supabase_client),
 ):
-  logger.info(f"📥 /agendas/{agenda_id}/is_permitted")
+  logger.info("📥 /agendas/is_permitted")
   try:
     payload = payload or {}
+
+    agenda_id = payload.get("agenda_id")
+    if not isinstance(agenda_id, int) or agenda_id <= 0:
+      raise HTTPException(status_code=400, detail="agenda_id must be a positive integer")
+
     is_permitted = payload.get("is_permitted", None)
     if is_permitted is None:
       raise HTTPException(status_code=400, detail="is_permitted is required")
@@ -97,5 +104,37 @@ async def agendas_edit_is_permitted(
   except HTTPException:
     raise
   except Exception:
-    logger.exception("💥 Unhandled error in /agendas/{agenda_id}/is_permitted")
+    logger.exception("💥 Unhandled error in /agendas/is_permitted")
+    raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/agendas/select")
+async def agendas_select_by_user(
+  payload: Optional[Dict[str, Any]] = Body(None),
+  supabase: Client = Depends(db.get_supabase_client),
+):
+  logger.info("📥 /agendas/select (by user_id)")
+  try:
+    payload = payload or {}
+
+    user_id = str(payload.get("user_id", "")).strip()
+    if not user_id:
+      raise HTTPException(status_code=400, detail="user_id is required")
+
+    row = await agendas_svc.select(supabase, logger, user_id)
+    if row is None:
+      return {
+        "ok": False,
+        "data": None,
+        "error": f"No agenda found for user_id={user_id}"
+      }
+
+    return {
+      "ok": True,
+      "data": row
+    }
+
+  except HTTPException:
+    raise
+  except Exception:
+    logger.exception("💥 Unhandled error in /agendas/select (by user_id)")
     raise HTTPException(status_code=500, detail="Internal server error")
