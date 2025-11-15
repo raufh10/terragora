@@ -33,6 +33,7 @@ def feed():
 
   chunk, has_more, next_page = _paginate(items, page)
 
+  st.write(st.session_state["auth_token"])
   for it in chunk:
     with st.container(border=True):
       st.markdown(f"### {it['title']}")

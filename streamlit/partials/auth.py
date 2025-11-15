@@ -1,5 +1,6 @@
 import streamlit as st
 from modules.api import sign_in, sign_up, reset_password_for_email
+from modules.setter import PageSetter
 
 # --------------------------
 # LOGIN
@@ -22,9 +23,35 @@ def render_login():
       result = sign_in(supabase, logger, email, password)
 
       if result.get("ok"):
-        # depending on how _ok() is structured in modules.api
-        session = result.get("data", {}) or result.get("session", {})
-        st.session_state["auth_token"] = session.get("access_token")
+        auth_resp = result.get("data")  # this is the AuthResponse(...)
+        if auth_resp is None:
+          st.error("Login succeeded but no auth data returned.")
+          return
+
+        # AuthResponse has .session and .user attributes
+        session_obj = getattr(auth_resp, "session", None)
+        user_obj = getattr(auth_resp, "user", None)
+
+        if session_obj is None:
+          st.error("Login succeeded but no session in response.")
+          return
+
+        # Store useful bits in session_state
+        st.session_state["auth_token"] = getattr(session_obj, "access_token", None)
+        st.session_state["refresh_token"] = getattr(session_obj, "refresh_token", None)
+        st.session_state["session_expires_at"] = getattr(session_obj, "expires_at", None)
+
+        if user_obj is not None:
+          st.session_state["user_id"] = getattr(user_obj, "id", None)
+          st.session_state["user_email"] = getattr(user_obj, "email", email)
+        else:
+          st.session_state["user_id"] = None
+          st.session_state["user_email"] = email
+
+        st.session_state["is_login"] = True
+        PageSetter.set_dashboard()
+        st.rerun()
+
         st.success(f"Welcome back, **{email}**!")
       else:
         st.error(result.get("error", "Login failed."))
