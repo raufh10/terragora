@@ -6,8 +6,9 @@ class SessionStateBuilder:
     self._defaults = {
       "test_page": "auth",     # "auth" | "settings" | "dashboard" | "home"
       "auth_panel": "sign_up",   # only used when test_page == "auth"
-      "is_first": True,       # NEW
-      "db_client": get_supabase_client()
+      "initiated": True,       # NEW
+      "db_client": get_supabase_client(),
+      "is_login": False
     }
     self.logger = logger
 
