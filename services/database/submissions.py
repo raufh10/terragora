@@ -38,7 +38,18 @@ async def select(
     response = (
       supabase
       .table("submissions")
-      .select("id, data, category")
+      .select(
+        "id, "
+        "subreddit, "
+        "category, "
+        "data->title, "
+        "data->link_flair_text, "
+        "data->num_comments, "
+        "data->created_utc, "
+        "data->is_self, "
+        "data->selftext, "
+        "data->url"
+      )
       .eq("subreddit", subreddit)
       .eq("category", category)
       .order("data->created_utc", desc=desc_flag)
