@@ -29,6 +29,10 @@ class PageSetter:
   def set_dashboard():
     st.session_state["test_page"] = "dashboard"
 
+  @staticmethod
+  def set_onboarding():
+    st.session_state["test_page"] = "onboarding"
+
   # ---------- Pages dict for st.navigation ----------
 
   @classmethod

@@ -3,6 +3,7 @@ from partials.auth import (
   render_login,
   render_sign_up,
   render_forgot_password,
+  render_onboarding
 )
 from partials.settings import render_settings
 from pages.dashboard import render_dashboard
@@ -24,6 +25,9 @@ def run_page_flow():
 
   elif test_page == "settings":
     render_settings()
+
+  elif test_page == "onboarding":
+    render_onboarding()
 
   elif test_page == "dashboard":
     render_dashboard()

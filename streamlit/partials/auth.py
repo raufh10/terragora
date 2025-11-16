@@ -1,8 +1,9 @@
 import time
 import streamlit as st
 from streamlit_cookies_controller import CookieController
-from modules.api import sign_in, sign_up, reset_password_for_email, select_agenda_by_user_id
+from modules.api import sign_in, sign_up, reset_password_for_email, select_agenda_by_user_id, create_agenda
 from modules.setter import PageSetter
+from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
 # --------------------------
 # LOGIN
@@ -215,8 +216,11 @@ def render_sign_up():
       result = sign_up(supabase, logger, email, password)
 
       if result.get("ok"):
-        st.success(f"Account created for **{email}**!")
-        st.session_state["auth_panel"] = "login"
+        st.write("🧭 Calling PageSetter.set_onboarding()")
+
+        PageSetter.set_onboarding()
+        st.rerun()
+
       else:
         st.error(result.get("error", "Sign up failed."))
 
@@ -258,3 +262,107 @@ def render_forgot_password():
         st.success(f"Reset link sent to **{email}**.")
       else:
         st.error(result.get("error", "Failed to send reset email."))
+
+def render_onboarding():
+  st.header("🎉 Welcome! Let's set up your first agenda.")
+
+  st.write("🧪 render_onboarding() started")
+
+  user_id = st.session_state.get("user_id")
+  logger = st.session_state.get("logger")
+
+  st.write("👤 user_id detected:", user_id)
+  st.write("📝 logger exists:", bool(logger))
+
+  if not user_id:
+    st.error("Missing user ID. Please log in again.")
+    return
+
+  # -------------------------
+  # FORM
+  # -------------------------
+  with st.form("onboarding_form"):
+    st.subheader("👤 Your Name")
+    user_name = st.text_input("Your Name")
+
+    st.subheader("🗓️ Agenda Setup")
+
+    agenda_name = st.text_input("Agenda name")
+    subreddit = st.text_input("Subreddit")
+
+    st.write("📌 select Type")
+    type_choice = st.selectbox("Type", TYPE_OPTIONS)
+
+    st.write("📌 select Location")
+    location_choice = st.selectbox("Location", LOCATION_OPTIONS)
+
+    submitted = st.form_submit_button("Create agenda")
+
+  # -------------------------
+  # ON SUBMIT
+  # -------------------------
+  if submitted:
+    st.write("📨 Onboarding form submitted")
+    st.write("➡️ user_name:", user_name)
+    st.write("➡️ agenda_name:", agenda_name)
+    st.write("➡️ subreddit:", subreddit)
+    st.write("➡️ type:", type_choice)
+    st.write("➡️ location:", location_choice)
+
+    if not user_name or not agenda_name or not subreddit:
+      st.error("All fields are required.")
+      return
+
+    payload_data = {
+      "type": type_choice,
+      "location": location_choice
+    }
+
+    st.write("📦 Sending payload to create_agenda():")
+    st.json({
+      "subreddit": subreddit,
+      "user_id": user_id,
+      "name": agenda_name,
+      "user_name": user_name,
+      "data": payload_data
+    })
+
+    result = create_agenda(
+      logger=logger,
+      subreddit=subreddit,
+      user_id=user_id,
+      name=agenda_name,
+      user_name=user_name,
+      data=payload_data
+    )
+
+    st.write("📬 create_agenda() result:")
+    st.write(result)
+
+    if not result.get("ok"):
+      st.error(result.get("error", "Failed to create agenda."))
+      return
+
+    # -------------------------
+    # SAVE DATA TO SESSION STATE
+    # -------------------------
+    row = result.get("data") or {}
+
+    st.write("🧩 Saving returned agenda data:", row)
+
+    st.session_state["agenda_id"] = row.get("id")
+    st.session_state["agenda_name"] = row.get("name")
+    st.session_state["agenda_subreddit"] = row.get("subreddit")
+    st.session_state["agenda_type"] = row.get("data", {}).get("type")
+    st.session_state["agenda_location"] = row.get("data", {}).get("location")
+    st.session_state["user_name"] = row.get("user_name")
+
+    st.write("🔐 Marking session_state['is_login'] = True")
+    st.session_state["is_login"] = True
+
+    st.success("🎉 Agenda created! Redirecting to dashboard...")
+
+    st.write("🧭 Calling PageSetter.set_dashboard()")
+    PageSetter.set_dashboard()
+
+    st.rerun()
