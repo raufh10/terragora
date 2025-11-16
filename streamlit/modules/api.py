@@ -130,6 +130,22 @@ def refresh_session(
   except Exception as e:
     return _fail(logger, "refresh_session failed", e)
 
+def set_session_from_tokens(
+  supabase: Client,
+  logger,
+  access_token: str,
+  refresh_token: str
+) -> Dict[str, Any]:
+  """Set the current auth session from existing access/refresh tokens."""
+  if not access_token or not refresh_token:
+    return _fail(logger, "set_session_from_tokens requires non-empty access_token and refresh_token")
+
+  try:
+    resp = supabase.auth.set_session(access_token, refresh_token)
+    return _ok(resp)
+  except Exception as e:
+    return _fail(logger, "set_session_from_tokens failed", e)
+
 # ---------- Auth: Update User ----------
 def update_user_email(
   supabase: Client,
