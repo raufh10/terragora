@@ -40,13 +40,17 @@ class PageSetter:
   def get_pages(cls) -> dict:
 
     is_login = st.session_state.get("is_login", False)
+    is_onboarding = st.session_state.get("is_onboarding", False)
 
     pages = []
 
     if not is_login:
-      pages.append(st.Page(cls.set_home, title="Home"))
-      pages.append(st.Page(cls.set_login, title="Log in"))
-      pages.append(st.Page(cls.set_sign_up, title="Sign up"))
+      if is_onboarding:
+        pages.append(st.Page(cls.set_onboarding, title="Onboarding"))
+      else:
+        pages.append(st.Page(cls.set_home, title="Home"))
+        pages.append(st.Page(cls.set_login, title="Log in"))
+        pages.append(st.Page(cls.set_sign_up, title="Sign up"))
     else:
       pages.append(st.Page(cls.set_dashboard, title="Dashboard"))
       pages.append(st.Page(cls.set_settings, title="Settings"))

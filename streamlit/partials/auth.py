@@ -256,6 +256,10 @@ def render_sign_up():
         st.write("👤 user_id:", st.session_state["user_id"])
         st.write("👤 user_email:", st.session_state["user_email"])
 
+        # Mark is_onboarding
+        st.write("🔓 Marking session_state['is_onboarding'] = True")
+        st.session_state["is_onboarding"] = True
+
         # Then go to onboarding
         st.write("🧭 Calling PageSetter.set_onboarding()")
         PageSetter.set_onboarding()
