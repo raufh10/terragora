@@ -1,7 +1,8 @@
 import streamlit as st
 from modules.api import select_agenda_by_user_id
-from modules.mock import TYPE_OPTIONS, LOCATION_OPTIONS
 
+TYPE_OPTIONS = ["real_estate_agent", "electrician", "mechanic"]
+LOCATION_OPTIONS = ["global", "US"]
 
 def render_settings():
   st.header("⚙️ Settings")
@@ -27,8 +28,8 @@ def render_settings():
         name_val = row.get("user_name", "") or ""
         agenda_name_val = row.get("name", "") or ""
         subreddit_val = row.get("subreddit", "") or ""
-        #data_type_val = row.get("data_type", data_type_val) or data_type_val
-        #location_val = row.get("location", location_val) or location_val
+        data_type_val = row.get("data_type", data_type_val) or data_type_val
+        location_val = row.get("location", location_val) or location_val
         if logger:
           logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id}")
       else:
