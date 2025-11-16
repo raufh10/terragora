@@ -96,6 +96,7 @@ else:
   st.write("ℹ️ No valid restoration cookies: has_session!=1 or missing token(s).")
 
 # --- Navigation ---
+st.write(st.session_state)
 st.write("🧭 Loading pages from PageSetter...")
 pages = PageSetter.get_pages()
 pg = st.navigation(pages)
