@@ -138,3 +138,52 @@ async def agendas_select_by_user(
   except Exception:
     logger.exception("💥 Unhandled error in /agendas/select (by user_id)")
     raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/agendas/create")
+async def agendas_create(
+  payload: Optional[Dict[str, Any]] = Body(None),
+  supabase: Client = Depends(db.get_supabase_client),
+):
+  logger.info("📥 /agendas/create")
+  try:
+    payload = payload or {}
+
+    subreddit = str(payload.get("subreddit", "")).strip()
+    user_id = str(payload.get("user_id", "")).strip()
+    name = str(payload.get("name", "")).strip()
+    user_name = str(payload.get("user_name", "")).strip()
+    data_field = payload.get("data")
+
+    if not subreddit:
+      raise HTTPException(status_code=400, detail="subreddit is required")
+    if not user_id:
+      raise HTTPException(status_code=400, detail="user_id is required")
+    if not name:
+      raise HTTPException(status_code=400, detail="name is required")
+    if not user_name:
+      raise HTTPException(status_code=400, detail="user_name is required")
+    if not isinstance(data_field, dict):
+      raise HTTPException(status_code=400, detail="data must be a JSON object")
+
+    insert_payload = {
+      "subreddit": subreddit,
+      "user_id": user_id,
+      "name": name,
+      "user_name": user_name,
+      "data": data_field,
+    }
+
+    row = await agendas_svc.insert(supabase, logger, insert_payload)
+    if not row:
+      raise HTTPException(status_code=502, detail="Failed to insert agenda")
+
+    return {
+      "ok": True,
+      "data": row,
+    }
+
+  except HTTPException:
+    raise
+  except Exception:
+    logger.exception("💥 Unhandled error in /agendas/create")
+    raise HTTPException(status_code=500, detail="Internal server error")
