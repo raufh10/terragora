@@ -133,7 +133,7 @@ async def select(
 
     response = (
       supabase.table("agendas")
-      .select("*")
+      .select("name, user_name, subreddit, data->data_type, data->location")
       .eq("user_id", user_id)
       .execute()
     )
