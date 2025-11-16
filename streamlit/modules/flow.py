@@ -20,14 +20,13 @@ def run_page_flow():
       render_sign_up()
     elif auth_panel == "forgot":
       render_forgot_password()
+    elif auth_panel == "onboarding":
+      render_onboarding()
     else:
       st.error(f"Unknown auth_panel: {auth_panel!r}")
 
   elif test_page == "settings":
     render_settings()
-
-  elif test_page == "onboarding":
-    render_onboarding()
 
   elif test_page == "dashboard":
     render_dashboard()

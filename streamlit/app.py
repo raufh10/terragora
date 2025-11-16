@@ -25,6 +25,7 @@ cookies = cookie_ctrl.getAll() or {}
 
 st.write("🍪 Cookies found:", cookies)
 
+"""
 has_session = cookies.get("has_session")
 user_id = cookies.get("user_id")
 user_email = cookies.get("user_email")
@@ -47,6 +48,7 @@ if has_session and user_id:
 
 else:
   st.write("ℹ️ No valid restoration cookies: has_session falsy or missing user_id.")
+"""
 
 # --- Navigation ---
 st.write("📦 Current session_state snapshot:")

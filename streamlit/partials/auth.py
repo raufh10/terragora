@@ -216,8 +216,48 @@ def render_sign_up():
       result = sign_up(supabase, logger, email, password)
 
       if result.get("ok"):
-        st.write("🧭 Calling PageSetter.set_onboarding()")
+        # --- New block: mirror login's auth/session handling ---
+        st.write("✅ sign_up returned ok")
 
+        auth_resp = result.get("data")
+        st.write("📦 auth_resp present:", auth_resp is not None)
+
+        if auth_resp is None:
+          st.error("Sign up succeeded but no auth data.")
+          return
+
+        session_obj = getattr(auth_resp, "session", None)
+        user_obj = getattr(auth_resp, "user", None)
+
+        st.write("📦 session_obj present:", session_obj is not None)
+        st.write("📦 user_obj present:", user_obj is not None)
+
+        if session_obj is None:
+          st.error("Sign up succeeded but missing session.")
+          return
+
+        # Store session info in session_state only (no tokens in cookies)
+        st.session_state["auth_token"] = getattr(session_obj, "access_token", None)
+        st.session_state["refresh_token"] = getattr(session_obj, "refresh_token", None)
+        st.session_state["session_expires_at"] = getattr(session_obj, "expires_at", None)
+
+        st.write("🔑 auth_token exists:", bool(st.session_state["auth_token"]))
+        st.write("🔄 refresh_token exists:", bool(st.session_state["refresh_token"]))
+        st.write("⏳ session_expires_at:", st.session_state["session_expires_at"])
+
+        # Store user info
+        if user_obj is not None:
+          st.session_state["user_id"] = getattr(user_obj, "id", None)
+          st.session_state["user_email"] = getattr(user_obj, "email", email)
+        else:
+          st.session_state["user_id"] = None
+          st.session_state["user_email"] = email
+
+        st.write("👤 user_id:", st.session_state["user_id"])
+        st.write("👤 user_email:", st.session_state["user_email"])
+
+        # Then go to onboarding
+        st.write("🧭 Calling PageSetter.set_onboarding()")
         PageSetter.set_onboarding()
         st.rerun()
 
