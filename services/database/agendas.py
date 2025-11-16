@@ -156,16 +156,16 @@ async def select_subreddit(
 
     response = (
       supabase.table("agendas")
-      .select("subreddit")
+      .select("subreddit, data->type")
       .eq("id", id)
       .execute()
     )
 
     if response.data:
-      return response.data[0]["subreddit"]
+      return response.data[0]["subreddit"], response.data[0]["type"]
     else:
-      return None
+      return None, None
 
   except Exception as e:
-    logger.error(f"Failed to fetch agenda subreddit based on id: {str(e)}")
-    return None
+    logger.error(f"Failed to fetch agenda subreddit and type based on id: {str(e)}")
+    return None, None

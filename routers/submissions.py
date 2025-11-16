@@ -11,6 +11,7 @@ router = APIRouter()
 @router.post("/submissions/{agenda_id}/feed")
 async def submissions_feed(
   agenda_id: int,
+  payload: Optional[Dict[str, Any]] = Body(None),
   supabase: Client = Depends(db.get_supabase_client),
 ):
   logger.info(f"📥 /submissions/{agenda_id}/feed")
@@ -18,7 +19,31 @@ async def submissions_feed(
     if not agenda_id or agenda_id <= 0:
       raise HTTPException(status_code=400, detail="agenda_id must be a positive integer")
 
-    rows = await submissions.select(supabase, logger, agenda_id)
+    payload = payload or {}
+    page = payload.get("page", 1)
+    per_page = payload.get("per_page", 10)
+    sort = payload.get("sort", "desc")
+
+    try:
+      page_int = int(page)
+    except Exception:
+      page_int = 1
+
+    try:
+      per_page_int = int(per_page)
+    except Exception:
+      per_page_int = 10
+
+    sort_str = str(sort or "desc").lower()
+
+    rows = await submissions.select(
+      supabase,
+      logger,
+      agenda_id,
+      page=page_int,
+      per_page=per_page_int,
+      sort=sort_str,
+    )
 
     if rows is None:
       logger.error(f"⚠️ submissions.select returned None for agenda_id={agenda_id}")
@@ -32,6 +57,9 @@ async def submissions_feed(
     return {
       "ok": True,
       "agenda_id": agenda_id,
+      "page": page_int,
+      "per_page": per_page_int,
+      "sort": sort_str,
       "count": count,
       "data": rows,
     }
