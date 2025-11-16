@@ -177,12 +177,12 @@ def update_user_password(
   except Exception as e:
     return _fail(logger, "update_user_password failed", e)
 
-# ---------- Agendas: Select by user_id via BACKEND_API ----------
+# ---------- Agendas: via BACKEND_API ----------
 def select_agenda_by_user_id(
   logger,
   user_id: str
 ) -> Dict[str, Any]:
-  """Call backend route POST /agendas/select. """
+  """Call backend route POST /agendas/select."""
   if not user_id:
     return _fail(logger, "select_agenda_by_user_id requires non-empty user_id")
 
@@ -199,3 +199,47 @@ def select_agenda_by_user_id(
     return resp.json()
   except Exception as e:
     return _fail(logger, "select_agenda_by_user_id request failed", e)
+
+def edit_agenda(
+  logger,
+  agenda_id: int,
+  name: Optional[str] = None,
+  subreddit: Optional[str] = None,
+  data: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /agendas/edit.
+
+  Mirrors the FastAPI endpoint:
+    - agenda_id: required, positive int
+    - name / subreddit / data: optional fields to update
+  """
+  if not isinstance(agenda_id, int) or agenda_id <= 0:
+    return _fail(logger, "edit_agenda requires a positive integer agenda_id")
+
+  payload: Dict[str, Any] = {"agenda_id": agenda_id}
+
+  if name is not None:
+    payload["name"] = name
+  if subreddit is not None:
+    payload["subreddit"] = subreddit
+  if data is not None:
+    payload["data"] = data
+
+  # Ensure at least one field besides agenda_id is being updated
+  if len(payload) == 1:
+    return _fail(logger, "edit_agenda requires at least one of name, subreddit, or data")
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/agendas/edit",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"agendas/edit failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "edit_agenda request failed", e)

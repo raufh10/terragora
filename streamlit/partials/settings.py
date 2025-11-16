@@ -1,5 +1,5 @@
 import streamlit as st
-from modules.api import select_agenda_by_user_id
+from modules.api import select_agenda_by_user_id, edit_agenda
 
 TYPE_OPTIONS = ["real_estate_agent", "electrician", "mechanic"]
 LOCATION_OPTIONS = ["global", "US"]
@@ -17,21 +17,24 @@ def render_settings():
   subreddit_val = ""
   data_type_val = TYPE_OPTIONS[0] if TYPE_OPTIONS else ""
   location_val = LOCATION_OPTIONS[0] if LOCATION_OPTIONS else ""
+  agenda_id_val = None
 
   # ---- Fetch agenda/profile from backend ----
   if user_id:
     try:
       result = select_agenda_by_user_id(logger, user_id)
-      st.write(result)
+      st.write(result)  # keep for debugging
       if result.get("ok") and result.get("data"):
         row = result["data"]
+        # assuming backend returns these keys
+        agenda_id_val = row.get("id") or row.get("agenda_id")
         name_val = row.get("user_name", "") or ""
         agenda_name_val = row.get("name", "") or ""
         subreddit_val = row.get("subreddit", "") or ""
         data_type_val = row.get("data_type", data_type_val) or data_type_val
         location_val = row.get("location", location_val) or location_val
         if logger:
-          logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id}")
+          logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id} agenda_id={agenda_id_val}")
       else:
         if logger:
           logger.warning(f"[SETTINGS] select_agenda_by_user_id not ok: {result}")
@@ -83,8 +86,33 @@ def render_settings():
     submitted = st.form_submit_button("Save changes")
 
     if submitted:
-      # Again, just mock feedback for now
-      st.success("Agenda updated (not yet wired to backend).")
+      if not agenda_id_val:
+        st.error("No agenda loaded from backend; cannot update agenda (missing agenda_id).")
+        if logger:
+          logger.warning("[SETTINGS] Save agenda clicked but agenda_id is missing")
+      else:
+        payload_data = {
+          "type": data_type,
+          "location": location,
+        }
+        if logger:
+          logger.info(
+            f"[SETTINGS] Submitting edit_agenda for agenda_id={agenda_id_val} "
+            f"name={agenda_name!r} subreddit={subreddit!r} data={payload_data!r}"
+          )
+
+        result = edit_agenda(
+          logger=logger,
+          agenda_id=agenda_id_val,
+          name=agenda_name,
+          subreddit=subreddit,
+          data=payload_data,
+        )
+
+        if result.get("ok"):
+          st.success("Agenda updated.")
+        else:
+          st.error(result.get("error", "Failed to update agenda."))
 
   st.divider()
 
