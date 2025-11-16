@@ -169,3 +169,24 @@ async def select_subreddit(
   except Exception as e:
     logger.error(f"Failed to fetch agenda subreddit and type based on id: {str(e)}")
     return None, None
+
+async def insert(
+  supabase: Client,
+  logger,
+  data: dict
+):
+
+  try:
+    response = (
+      supabase
+      .table("agendas")
+      .insert(data)
+      .execute()
+    )
+
+    if response.data:
+      return response.data[0]
+
+  except Exception as e:
+    logger.error(f"Exception inserting agendas: {e}")
+    return {}
