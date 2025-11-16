@@ -244,6 +244,54 @@ def edit_agenda(
   except Exception as e:
     return _fail(logger, "edit_agenda request failed", e)
 
+def create_agenda(
+  logger,
+  subreddit: str,
+  user_id: str,
+  name: str,
+  user_name: str,
+  data: Dict[str, Any]
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /agendas/create.
+
+  Mirrors FastAPI endpoint:
+
+    @router.post("/agendas/create")
+  """
+  if not subreddit:
+    return _fail(logger, "create_agenda requires non-empty subreddit")
+  if not user_id:
+    return _fail(logger, "create_agenda requires non-empty user_id")
+  if not name:
+    return _fail(logger, "create_agenda requires non-empty name")
+  if not user_name:
+    return _fail(logger, "create_agenda requires non-empty user_name")
+  if not isinstance(data, dict):
+    return _fail(logger, "create_agenda requires data to be a JSON-serializable dict")
+
+  payload = {
+    "subreddit": subreddit,
+    "user_id": user_id,
+    "name": name,
+    "user_name": user_name,
+    "data": data,
+  }
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/agendas/create",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"agendas/create failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "create_agenda request failed", e)
+
 # ---------- Dashboard: Submissions feed via BACKEND_API ----------
 def fetch_submissions_feed(
   logger,

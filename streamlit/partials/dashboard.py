@@ -1,9 +1,7 @@
 import streamlit as st
 from datetime import datetime
 from modules.api import fetch_submissions_feed
-
-PAGE_SIZE = 10  # as used by backend
-
+from modules.config import PAGE_SIZE
 
 # --------------------------
 # Internal feed state helper

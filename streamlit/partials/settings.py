@@ -1,8 +1,6 @@
 import streamlit as st
 from modules.api import select_agenda_by_user_id, edit_agenda
-
-TYPE_OPTIONS = ["real_estate_agent", "electrician", "mechanic"]
-LOCATION_OPTIONS = ["global", "US"]
+from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
 def render_settings():
   st.header("⚙️ Settings")

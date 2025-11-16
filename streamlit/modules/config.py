@@ -1,5 +1,9 @@
 import os
 
+PAGE_SIZE = 10
+TYPE_OPTIONS = ["real_estate_agent", "electrician", "mechanic"]
+LOCATION_OPTIONS = ["global", "US"]
+
 def get_backend_api_endpoint():
   endpoint = os.getenv("BACKEND_API_ENDPOINT", "http://127.0.0.1:8000/")
 
