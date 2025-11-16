@@ -243,3 +243,41 @@ def edit_agenda(
     return resp.json()
   except Exception as e:
     return _fail(logger, "edit_agenda request failed", e)
+
+# ---------- Dashboard: Submissions feed via BACKEND_API ----------
+def fetch_submissions_feed(
+  logger,
+  agenda_id: int,
+  page: int = 1,
+  per_page: int = 10,
+  sort: str = "desc"
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /submissions/{agenda_id}/feed.
+
+  Mirrors FastAPI endpoint:
+
+    @router.post("/submissions/{agenda_id}/feed")
+  """
+  if not isinstance(agenda_id, int) or agenda_id <= 0:
+    return _fail(logger, "fetch_submissions_feed requires a positive integer agenda_id")
+
+  payload = {
+    "page": page,
+    "per_page": per_page,
+    "sort": sort,
+  }
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/submissions/{agenda_id}/feed",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"submissions/{agenda_id}/feed failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "fetch_submissions_feed request failed", e)

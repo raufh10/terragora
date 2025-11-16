@@ -1,7 +1,7 @@
 import time
 import streamlit as st
 from streamlit_cookies_controller import CookieController
-from modules.api import sign_in, sign_up, reset_password_for_email
+from modules.api import sign_in, sign_up, reset_password_for_email, select_agenda_by_user_id
 from modules.setter import PageSetter
 
 # --------------------------
@@ -77,6 +77,33 @@ def render_login():
 
         st.write("👤 user_id:", st.session_state["user_id"])
         st.write("👤 user_email:", st.session_state["user_email"])
+
+        # ---- Fetch agenda/profile from backend ----
+        user_id = st.session_state.get("user_id")
+        if user_id:
+          try:
+            result = select_agenda_by_user_id(logger, user_id)
+            st.write(result)  # keep for debugging
+            if result.get("ok") and result.get("data"):
+              st.session_state["agenda_id"]  = row.get("id")
+              st.session_state["user_name"] = row.get("user_name", "")
+              st.session_state["agenda_name"] = row.get("name", "")
+              st.session_state["agenda_subreddit"] = row.get("subreddit", "")
+              st.session_state["agenda_type"] = row.get("type")
+              st.session_state["agenda_location"] = row.get("location")
+
+              if logger:
+                logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id}")
+              else:
+                if logger:
+                  logger.warning(f"[SETTINGS] select_agenda_by_user_id not ok: {result}")
+          except Exception as e:
+            if logger:
+              logger.exception(f"[SETTINGS] Error calling select_agenda_by_user_id: {e}")
+              st.warning(f"Could not load agenda from backend; using defaults. {e}")
+        else:
+          if logger:
+            logger.info("[SETTINGS] Missing user_id; using defaults")
 
         # --------------------------
         # Set cookies (no tokens, no expiry cookie)

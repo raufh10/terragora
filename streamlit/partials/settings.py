@@ -12,39 +12,12 @@ def render_settings():
   user_email = st.session_state.get("user_email", "")
 
   # ---- Defaults ----
-  name_val = ""
-  agenda_name_val = ""
-  subreddit_val = ""
-  data_type_val = TYPE_OPTIONS[0] if TYPE_OPTIONS else ""
-  location_val = LOCATION_OPTIONS[0] if LOCATION_OPTIONS else ""
-  agenda_id_val = None
-
-  # ---- Fetch agenda/profile from backend ----
-  if user_id:
-    try:
-      result = select_agenda_by_user_id(logger, user_id)
-      st.write(result)  # keep for debugging
-      if result.get("ok") and result.get("data"):
-        row = result["data"]
-        # assuming backend returns these keys
-        agenda_id_val = row.get("id") or row.get("agenda_id")
-        name_val = row.get("user_name", "") or ""
-        agenda_name_val = row.get("name", "") or ""
-        subreddit_val = row.get("subreddit", "") or ""
-        data_type_val = row.get("data_type", data_type_val) or data_type_val
-        location_val = row.get("location", location_val) or location_val
-        if logger:
-          logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id} agenda_id={agenda_id_val}")
-      else:
-        if logger:
-          logger.warning(f"[SETTINGS] select_agenda_by_user_id not ok: {result}")
-    except Exception as e:
-      if logger:
-        logger.exception(f"[SETTINGS] Error calling select_agenda_by_user_id: {e}")
-      st.warning(f"Could not load agenda from backend; using defaults. {e}")
-  else:
-    if logger:
-      logger.info("[SETTINGS] Missing user_id; using defaults")
+  name_val = st.session_state.get("user_name")
+  agenda_name_val = st.session_state.get("agenda_name")
+  subreddit_val = st.session_state.get("agenda_subreddit")
+  data_type_val = st.session_state.get("agenda_type")
+  location_val = st.session_state.get("agenda_location")
+  agenda_id_val = st.session_state.get("agenda_id")
 
   # ==========================
   # 1) PROFILE
