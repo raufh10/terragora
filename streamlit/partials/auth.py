@@ -58,7 +58,7 @@ def render_login():
           st.error("Login succeeded but missing session.")
           return
 
-        # Store session info in session_state only (no cookies)
+        # Store session info in session_state only (no tokens in cookies)
         st.session_state["auth_token"] = getattr(session_obj, "access_token", None)
         st.session_state["refresh_token"] = getattr(session_obj, "refresh_token", None)
         st.session_state["session_expires_at"] = getattr(session_obj, "expires_at", None)
@@ -80,30 +80,46 @@ def render_login():
 
         # ---- Fetch agenda/profile from backend ----
         user_id = st.session_state.get("user_id")
+        st.write("🔍 Using user_id for agenda fetch:", user_id)
+
         if user_id:
           try:
-            result = select_agenda_by_user_id(logger, user_id)
-            st.write(result)  # keep for debugging
-            if result.get("ok") and result.get("data"):
-              st.session_state["agenda_id"]  = row.get("id")
+            st.write("➡️ Calling select_agenda_by_user_id()...")
+            agenda_result = select_agenda_by_user_id(logger, user_id)
+            st.write("📬 select_agenda_by_user_id() raw result:", agenda_result)
+
+            if agenda_result.get("ok") and agenda_result.get("data"):
+              row = agenda_result["data"]
+              st.write("✅ Agenda row loaded:", row)
+
+              st.session_state["agenda_id"] = row.get("id")
               st.session_state["user_name"] = row.get("user_name", "")
               st.session_state["agenda_name"] = row.get("name", "")
               st.session_state["agenda_subreddit"] = row.get("subreddit", "")
               st.session_state["agenda_type"] = row.get("type")
               st.session_state["agenda_location"] = row.get("location")
 
+              st.write("🧩 agenda_id:", st.session_state.get("agenda_id"))
+              st.write("🧩 user_name:", st.session_state.get("user_name"))
+              st.write("🧩 agenda_name:", st.session_state.get("agenda_name"))
+              st.write("🧩 agenda_subreddit:", st.session_state.get("agenda_subreddit"))
+              st.write("🧩 agenda_type:", st.session_state.get("agenda_type"))
+              st.write("🧩 agenda_location:", st.session_state.get("agenda_location"))
+
               if logger:
                 logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id}")
-              else:
-                if logger:
-                  logger.warning(f"[SETTINGS] select_agenda_by_user_id not ok: {result}")
+            else:
+              st.write("⚠️ select_agenda_by_user_id returned not ok or no data")
+              if logger:
+                logger.warning(f"[SETTINGS] select_agenda_by_user_id not ok: {agenda_result}")
           except Exception as e:
             if logger:
               logger.exception(f"[SETTINGS] Error calling select_agenda_by_user_id: {e}")
-              st.warning(f"Could not load agenda from backend; using defaults. {e}")
+            st.warning(f"Could not load agenda from backend; using defaults. {e}")
         else:
           if logger:
             logger.info("[SETTINGS] Missing user_id; using defaults")
+          st.write("⚠️ No user_id in session_state; skipping agenda fetch")
 
         # --------------------------
         # Set cookies (no tokens, no expiry cookie)
