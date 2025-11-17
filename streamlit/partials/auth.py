@@ -1,6 +1,5 @@
 import time
 import streamlit as st
-from streamlit_cookies_controller import CookieController
 from modules.api import sign_in, sign_up, reset_password_for_email, select_agenda_by_user_id, create_agenda
 from modules.setter import PageSetter
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
@@ -12,9 +11,6 @@ def render_login():
   st.header("🔐 Log in")
 
   st.write("🧪 render_login() started")
-
-  cookie_ctrl = CookieController()
-  st.write("🍪 CookieController initialized")
 
   supabase = st.session_state.get("db_client")
   st.write("🔌 Supabase client exists:", bool(supabase))
@@ -125,44 +121,6 @@ def render_login():
         # --------------------------
         # Set cookies (no tokens, no expiry cookie)
         # --------------------------
-        st.write("🍪 Preparing to set cookies (user_id, user_email, has_session only)...")
-        expires_at = st.session_state.get("session_expires_at")
-
-        # simple expiration calculation, still used for user_id/email/has_session
-        max_age = None
-        if isinstance(expires_at, (int, float)):
-          delta = int(expires_at - time.time())
-          st.write("⏳ Raw delta until expiry (seconds):", delta)
-          if delta > 0:
-            max_age = delta
-
-        st.write("⏳ max_age to use for cookies:", max_age)
-
-        user_id = st.session_state.get("user_id")
-        user_email = st.session_state.get("user_email")
-
-        st.write("📦 Cookie payloads → user_id:", user_id)
-        st.write("📦 Cookie payloads → user_email:", user_email)
-
-        # Basic user cookies
-        if user_id:
-          st.write("🍪 Setting cookie user_id")
-          cookie_ctrl.set("user_id", user_id, path="/", max_age=max_age, same_site="lax", secure=False)
-        else:
-          st.write("⚠️ user_id missing, not setting user_id cookie")
-
-        if user_email:
-          st.write("🍪 Setting cookie user_email")
-          cookie_ctrl.set("user_email", user_email, path="/", max_age=max_age, same_site="lax", secure=False)
-        else:
-          st.write("⚠️ user_email missing, not setting user_email cookie")
-
-        # Simple login marker
-        st.write("🍪 Setting cookie has_session=1")
-        cookie_ctrl.set("has_session", "1", path="/", max_age=max_age, same_site="lax", secure=False)
-
-        # ⚠️ Removed: access_token / refresh_token / session_expires_at cookies
-        st.write("❌ Skipping token + expiry cookies (Chrome-token issue workaround)")
 
         # Mark logged in and switch page
         st.write("🔓 Marking session_state['is_login'] = True")

@@ -25,31 +25,6 @@ cookies = cookie_ctrl.getAll() or {}
 
 st.write("🍪 Cookies found:", cookies)
 
-"""
-has_session = cookies.get("has_session")
-user_id = cookies.get("user_id")
-user_email = cookies.get("user_email")
-
-st.write("🔍 has_session =", has_session, "| type:", type(has_session))
-st.write("🔍 user_id (cookie) =", user_id)
-st.write("🔍 user_email (cookie) =", user_email)
-
-# ✅ Looser condition: any truthy has_session + user_id present
-if has_session and user_id:
-  st.write("🍪✔ Valid session cookies detected. Rebuilding session_state from cookies...")
-
-  st.session_state["user_id"] = user_id
-  st.session_state["user_email"] = user_email
-  st.session_state["is_login"] = True
-
-  st.write("✅ session_state.user_id set:", st.session_state["user_id"])
-  st.write("✅ session_state.user_email set:", st.session_state["user_email"])
-  st.write("✅ session_state.is_login set to True")
-
-else:
-  st.write("ℹ️ No valid restoration cookies: has_session falsy or missing user_id.")
-"""
-
 # --- Navigation ---
 st.write("📦 Current session_state snapshot:")
 st.write(st.session_state)
