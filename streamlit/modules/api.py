@@ -396,3 +396,96 @@ def cookies_select(
     return resp.json()
   except Exception as e:
     return _fail(logger, "cookies_select request failed", e)
+
+# ---------- Account Admin: via BACKEND_API ----------
+def admin_delete_user(
+  logger,
+  user_id: str
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /account/admin/delete.
+  """
+  if not user_id:
+    return _fail(logger, "admin_delete_user requires non-empty user_id")
+
+  payload = {"user_id": user_id}
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/account/admin/delete",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"account/admin/delete failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "admin_delete_user request failed", e)
+
+
+def admin_update_user_email(
+  logger,
+  user_id: str,
+  new_email: str
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /account/admin/update-email.
+  """
+  if not user_id:
+    return _fail(logger, "admin_update_user_email requires non-empty user_id")
+  if not new_email:
+    return _fail(logger, "admin_update_user_email requires non-empty new_email")
+
+  payload = {
+    "user_id": user_id,
+    "new_email": new_email,
+  }
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/account/admin/update-email",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"account/admin/update-email failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "admin_update_user_email request failed", e)
+
+
+def admin_update_user_password(
+  logger,
+  user_id: str,
+  new_password: str
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /account/admin/update-password.
+  """
+  if not user_id:
+    return _fail(logger, "admin_update_user_password requires non-empty user_id")
+  if not new_password:
+    return _fail(logger, "admin_update_user_password requires non-empty new_password")
+
+  payload = {
+    "user_id": user_id,
+    "new_password": new_password,
+  }
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/account/admin/update-password",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"account/admin/update-password failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "admin_update_user_password request failed", e)
