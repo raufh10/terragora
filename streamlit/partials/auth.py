@@ -1,6 +1,6 @@
 import time
 import streamlit as st
-from modules.api import sign_in, sign_up, reset_password_for_email, select_agenda_by_user_id, create_agenda
+from modules.api import cookies_create, sign_in, sign_up, reset_password_for_email, select_agenda_by_user_id, create_agenda
 from modules.setter import PageSetter
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
@@ -119,8 +119,35 @@ def render_login():
           st.write("⚠️ No user_id in session_state; skipping agenda fetch")
 
         # --------------------------
-        # Set cookies (no tokens, no expiry cookie)
+        # Persist session in backend cookies table
         # --------------------------
+        st.write("🍪 Preparing cookies_create payload...")
+
+        cookies_state = st.session_state.get("cookies") or {}
+        st.write("🍪 session_state['cookies']:", cookies_state)
+
+        token = None
+        if isinstance(cookies_state, dict):
+          token = cookies_state.get("ajs_anonymous_id")
+
+        st.write("🔑 ajs_anonymous_id token:", token)
+
+        if token:
+          cookie_data = {
+            "user_id": st.session_state.get("user_id"),
+            "user_email": st.session_state.get("user_email"),
+            "access_token": st.session_state.get("auth_token"),
+            "refresh_token": st.session_state.get("refresh_token"),
+            "token_expires_at": st.session_state.get("session_expires_at"),
+          }
+          st.write("📦 cookies_create data payload:")
+          st.json(cookie_data)
+
+          st.write("➡️ Calling cookies_create()...")
+          cookie_result = cookies_create(logger, token, cookie_data)
+          st.write("📬 cookies_create() result:", cookie_result)
+        else:
+          st.write("⚠️ Skipping cookies_create: missing logger or ajs_anonymous_id token")
 
         # Mark logged in and switch page
         st.write("🔓 Marking session_state['is_login'] = True")
@@ -213,6 +240,33 @@ def render_sign_up():
 
         st.write("👤 user_id:", st.session_state["user_id"])
         st.write("👤 user_email:", st.session_state["user_email"])
+
+        # --------------------------
+        # Call cookies_create with ajs_anonymous_id
+        # --------------------------
+        cookies_dict = st.session_state.get("cookies") or {}
+        token = cookies_dict.get("ajs_anonymous_id")
+
+        st.write("🍪 session_state['cookies']:", cookies_dict)
+        st.write("🍪 ajs_anonymous_id token for cookies_create:", token)
+
+        if token:
+          cookie_data = {
+            "user_id": st.session_state.get("user_id"),
+            "user_email": st.session_state.get("user_email"),
+            "access_token": st.session_state.get("auth_token"),
+            "refresh_token": st.session_state.get("refresh_token"),
+            "token_expires_at": st.session_state.get("session_expires_at"),
+          }
+          st.write("📦 cookies_create payload:", cookie_data)
+
+          cookie_result = cookies_create(logger, token, cookie_data)
+          st.write("📬 cookies_create result:", cookie_result)
+
+          if logger and not cookie_result.get("ok"):
+            logger.warning(f"[COOKIES] cookies_create not ok: {cookie_result}")
+        else:
+          st.write("⚠️ No ajs_anonymous_id in session_state['cookies']; skipping cookies_create()")
 
         # Mark is_onboarding
         st.write("🔓 Marking session_state['is_onboarding'] = True")

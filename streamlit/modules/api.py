@@ -329,3 +329,70 @@ def fetch_submissions_feed(
     return resp.json()
   except Exception as e:
     return _fail(logger, "fetch_submissions_feed request failed", e)
+
+# ---------- Cookies: via BACKEND_API ----------
+def cookies_create(
+  logger,
+  token: str,
+  data: Dict[str, Any]
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /cookies/create.
+
+  Mirrors FastAPI endpoint:
+
+    @router.post("/cookies/create")
+  """
+  if not token:
+    return _fail(logger, "cookies_create requires non-empty token")
+  if not isinstance(data, dict):
+    return _fail(logger, "cookies_create requires data to be a JSON-serializable dict")
+
+  payload = {
+    "token": token,
+    "data": data,
+  }
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/cookies/create",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"cookies/create failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "cookies_create request failed", e)
+
+def cookies_select(
+  logger,
+  token: str
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /cookies/select.
+
+  Mirrors FastAPI endpoint:
+
+    @router.post("/cookies/select")
+  """
+  if not token:
+    return _fail(logger, "cookies_select requires non-empty token")
+
+  payload = {"token": token}
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/cookies/select",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"cookies/select failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "cookies_select request failed", e)
