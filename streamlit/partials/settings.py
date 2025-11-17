@@ -1,5 +1,10 @@
 import streamlit as st
-from modules.api import select_agenda_by_user_id, edit_agenda
+from modules.api import (
+  select_agenda_by_user_id,
+  edit_agenda,
+  set_session_from_tokens,
+  update_user_email,
+)
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
 def render_settings():
@@ -9,7 +14,7 @@ def render_settings():
   user_id = st.session_state.get("user_id")
   user_email = st.session_state.get("user_email", "")
 
-  # ---- Defaults ----
+  # ---- Defaults pulled from session_state ----
   name_val = st.session_state.get("user_name")
   agenda_name_val = st.session_state.get("agenda_name")
   subreddit_val = st.session_state.get("agenda_subreddit")
@@ -27,8 +32,54 @@ def render_settings():
     submitted = st.form_submit_button("Save profile")
 
     if submitted:
-      # For now, just acknowledge; wiring to backend can come later
-      st.success("Profile saved (not yet wired to backend).")
+      # Always update local name in session_state
+      st.session_state["user_name"] = name
+
+      # Only attempt Supabase email update if the email actually changed
+      if email != user_email:
+        supabase = st.session_state.get("db_client")
+        access_token = st.session_state.get("auth_token")
+        refresh_token = st.session_state.get("refresh_token")
+
+        if not supabase or not access_token or not refresh_token:
+          st.error("Missing Supabase client or auth tokens; cannot update email.")
+          if logger:
+            logger.warning(
+              "[SETTINGS] Email change requested but db_client/auth tokens missing"
+            )
+        else:
+          # 1) Restore Supabase auth session from tokens
+          if logger:
+            logger.info("[SETTINGS] Calling set_session_from_tokens before email update")
+
+          sess_result = set_session_from_tokens(
+            supabase=supabase,
+            logger=logger,
+            access_token=access_token,
+            refresh_token=refresh_token,
+          )
+
+          if not sess_result.get("ok"):
+            st.error(sess_result.get("error", "Failed to restore session before updating email."))
+          else:
+            # 2) Actually update email in Supabase
+            if logger:
+              logger.info(f"[SETTINGS] Calling update_user_email with new_email={email!r}")
+
+            upd_result = update_user_email(
+              supabase=supabase,
+              logger=logger,
+              new_email=email,
+            )
+
+            if upd_result.get("ok"):
+              st.session_state["user_email"] = email
+              st.success("Profile and email updated.")
+            else:
+              st.error(upd_result.get("error", "Failed to update email."))
+      else:
+        # Name changed but email stayed the same
+        st.success("Profile updated.")
 
   st.divider()
 

@@ -40,7 +40,7 @@ if token:
     st.write("📬 cookies_select() response:", cookie_resp)
 
     if cookie_resp.get("ok") and cookie_resp.get("data"):
-      data = cookie_resp["data"]  # expected keys: user_id, user_email, access_token, refresh_token, token_expires_at
+      data = cookie_resp["data"]["data"]  # expected keys: user_id, user_email, access_token, refresh_token, token_expires_at
       st.write("✅ Cookie data payload:", data)
 
       st.session_state["user_id"] = data.get("user_id")
