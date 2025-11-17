@@ -173,8 +173,7 @@ def render_settings():
     with st.form("delete_form"):
       confirm = st.text_input("Type DELETE to confirm")
       submitted = st.form_submit_button(
-        "Confirm delete",
-        disabled=(confirm != "DELETE")
+        "Confirm delete"
       )
 
       if submitted:
