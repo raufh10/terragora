@@ -4,6 +4,8 @@ from modules.api import (
   edit_agenda,
   set_session_from_tokens,
   update_user_email,
+  admin_delete_user,
+  admin_update_user_email
 )
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
@@ -35,48 +37,29 @@ def render_settings():
       # Always update local name in session_state
       st.session_state["user_name"] = name
 
-      # Only attempt Supabase email update if the email actually changed
+      # Only attempt backend email update if the email actually changed
       if email != user_email:
-        supabase = st.session_state.get("db_client")
-        access_token = st.session_state.get("auth_token")
-        refresh_token = st.session_state.get("refresh_token")
-
-        if not supabase or not access_token or not refresh_token:
-          st.error("Missing Supabase client or auth tokens; cannot update email.")
+        if not user_id:
+          st.error("Missing user_id; cannot update email.")
           if logger:
-            logger.warning(
-              "[SETTINGS] Email change requested but db_client/auth tokens missing"
-            )
+            logger.warning("[SETTINGS] Email change requested but user_id is missing")
         else:
-          # 1) Restore Supabase auth session from tokens
           if logger:
-            logger.info("[SETTINGS] Calling set_session_from_tokens before email update")
+            logger.info(
+              f"[SETTINGS] Calling admin_update_user_email for user_id={user_id} new_email={email!r}"
+            )
 
-          sess_result = set_session_from_tokens(
-            supabase=supabase,
+          result = admin_update_user_email(
             logger=logger,
-            access_token=access_token,
-            refresh_token=refresh_token,
+            user_id=user_id,
+            new_email=email,
           )
 
-          if not sess_result.get("ok"):
-            st.error(sess_result.get("error", "Failed to restore session before updating email."))
+          if result.get("ok"):
+            st.session_state["user_email"] = email
+            st.success("Profile and email updated.")
           else:
-            # 2) Actually update email in Supabase
-            if logger:
-              logger.info(f"[SETTINGS] Calling update_user_email with new_email={email!r}")
-
-            upd_result = update_user_email(
-              supabase=supabase,
-              logger=logger,
-              new_email=email,
-            )
-
-            if upd_result.get("ok"):
-              st.session_state["user_email"] = email
-              st.success("Profile and email updated.")
-            else:
-              st.error(upd_result.get("error", "Failed to update email."))
+            st.error(result.get("error", "Failed to update email."))
       else:
         # Name changed but email stayed the same
         st.success("Profile updated.")
@@ -152,15 +135,46 @@ def render_settings():
 
   st.divider()
 
-  # ==========================
-  # 4) DELETE ACCOUNT
-  # ==========================
-  st.subheader("🗑️ Delete account")
-  open_delete = st.checkbox("Show delete confirmation")
-  if open_delete:
-    with st.form("delete_form"):
-      confirm = st.text_input("Type DELETE to confirm")
-      submitted = st.form_submit_button("Confirm delete", disabled=confirm != "DELETE")
+# ==========================
+# 4) DELETE ACCOUNT
+# ==========================
+st.subheader("🗑️ Delete account")
 
-      if submitted:
-        st.error("Account deleted (mock; wire to backend delete endpoint).")
+open_delete = st.checkbox("Show delete confirmation")
+
+if open_delete:
+  with st.form("delete_form"):
+    confirm = st.text_input("Type DELETE to confirm")
+    submitted = st.form_submit_button(
+      "Confirm delete",
+      disabled=(confirm != "DELETE")
+    )
+
+    if submitted:
+      if not user_id:
+        st.error("Missing user_id — cannot delete account.")
+        if logger:
+          logger.error("[SETTINGS] Delete account clicked, but user_id missing")
+      else:
+        if logger:
+          logger.info(f"[SETTINGS] Calling admin_delete_user for user_id={user_id}")
+
+        resp = admin_delete_user(logger, user_id)
+
+        if not resp.get("ok"):
+          st.error(resp.get("error", "Failed to delete account."))
+        else:
+          st.success("Your account has been permanently deleted.")
+
+          # Clear session state
+          for key in [
+            "auth_token", "refresh_token", "session_expires_at",
+            "user_id", "user_email", "user_name",
+            "agenda_id", "agenda_name", "agenda_subreddit",
+            "agenda_type", "agenda_location",
+            "is_login"
+          ]:
+            st.session_state.pop(key, None)
+
+          st.info("Session cleared. Please close the app or refresh.")
+          st.rerun()
