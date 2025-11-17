@@ -5,7 +5,8 @@ from modules.api import (
   set_session_from_tokens,
   update_user_email,
   admin_delete_user,
-  admin_update_user_email
+  admin_update_user_email,
+  admin_update_user_password
 )
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
@@ -121,19 +122,49 @@ def render_settings():
 
   st.divider()
 
-  # ==========================
-  # 3) PASSWORD RESET
+# ==========================
+  # 3) PASSWORD (direct change via admin API)
   # ==========================
   st.subheader("🔑 Password")
-  with st.form("reset_form"):
-    email_display = user_email
-    email = st.text_input("Email", value=email_display, disabled=True)
-    submitted = st.form_submit_button("Send reset link")
+
+  with st.form("password_form"):
+    confirm_email = st.text_input(
+      "Type your account email to confirm",
+      value="",
+      placeholder="your@email.com",
+    )
+    new_password = st.text_input(
+      "New password",
+      type="password",
+      placeholder="Enter a new password",
+    )
+    submitted = st.form_submit_button("Change password")
 
     if submitted:
-      st.info(f"Reset link request sent for **{email}** (hook up to supabase reset API).")
+      if not user_id:
+        st.error("Cannot update password: missing user_id in session.")
+        if logger:
+          logger.warning("[SETTINGS] Password change requested but user_id is missing")
+      elif not confirm_email:
+        st.error("Please type your email to confirm.")
+      elif confirm_email.strip() != (user_email or "").strip():
+        st.error("Entered email does not match your current account email.")
+      elif not new_password:
+        st.error("Please enter a new password.")
+      else:
+        if logger:
+          logger.info("[SETTINGS] Calling admin_update_user_password via backend API")
 
-  st.divider()
+        resp = admin_update_user_password(
+          logger=logger,
+          user_id=user_id,
+          new_password=new_password,
+        )
+
+        if resp.get("ok"):
+          st.success("Password updated successfully.")
+        else:
+          st.error(resp.get("error", "Failed to update password."))
 
 # ==========================
 # 4) DELETE ACCOUNT
