@@ -187,3 +187,38 @@ async def agendas_create(
   except Exception:
     logger.exception("💥 Unhandled error in /agendas/create")
     raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/agendas/edit_user_name")
+async def agendas_edit_user_name(
+  payload: Optional[Dict[str, Any]] = Body(None),
+  supabase: Client = Depends(db.get_supabase_client),
+):
+  logger.info("📥 /agendas/edit_user_name")
+  try:
+    payload = payload or {}
+
+    agenda_id = payload.get("agenda_id")
+    if not isinstance(agenda_id, int) or agenda_id <= 0:
+      raise HTTPException(status_code=400, detail="agenda_id must be a positive integer")
+
+    new_user_name = str(payload.get("user_name", "")).strip()
+    if not new_user_name:
+      raise HTTPException(status_code=400, detail="user_name cannot be empty")
+
+    resp = await agendas_svc.edit_user_name(supabase, logger, agenda_id, new_user_name)
+    if not resp.get("ok"):
+      raise HTTPException(status_code=502, detail=resp.get("error", "edit_user_name failed"))
+
+    return {
+      "ok": True,
+      "agenda_id": agenda_id,
+      "updated_fields": ["user_name"],
+      "data": resp.get("data"),
+    }
+
+  except HTTPException:
+    raise
+  except Exception:
+    logger.exception("💥 Unhandled error in /agendas/edit_user_name")
+    raise HTTPException(status_code=500, detail="Internal server error")
+
