@@ -1,6 +1,6 @@
 # pages/home.py
 import streamlit as st
-from pages.dashboard import render_dashboard
+from renders.dashboard import render_dashboard
 
 def render_home():
   st.header("🚀 Build, Track & Act — Faster")

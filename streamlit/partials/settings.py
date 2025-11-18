@@ -10,12 +10,12 @@ from modules.api import (
 )
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
-
 def render_profile():
   logger = st.session_state.get("logger")
   user_id = st.session_state.get("user_id")
   user_email = st.session_state.get("user_email", "")
   name_val = st.session_state.get("user_name")
+  agenda_id_val = st.session_state.get("agenda_id")
 
   st.subheader("👤 Profile")
 
@@ -24,37 +24,77 @@ def render_profile():
     email = st.text_input("Email", value=user_email)
     submitted = st.form_submit_button("Save profile")
 
-    if submitted:
-      # Always update local name
-      st.session_state["user_name"] = name
+    if not submitted:
+      return
 
-      # Only try to update email if changed
-      if email != user_email:
-        if not user_id:
-          st.error("Missing user_id; cannot update email.")
-          if logger:
-            logger.warning("[SETTINGS] Email change requested but user_id missing")
-        else:
-          if logger:
-            logger.info(
-              f"[SETTINGS] Calling admin_update_user_email for user_id={user_id} "
-              f"new_email={email!r}"
-            )
+    # Always update local name
+    st.session_state["user_name"] = name
 
-          result = admin_update_user_email(
-            logger=logger,
-            user_id=user_id,
-            new_email=email,
+    name_changed = name != name_val
+    email_changed = email != user_email
+
+    name_update_ok = True
+    email_update_ok = True
+
+    # --- Update agenda user_name if it changed ---
+    if name_changed:
+      if not agenda_id_val:
+        name_update_ok = False
+        st.error("No agenda loaded from backend; cannot sync name to agenda (missing agenda_id).")
+        if logger:
+          logger.warning("[SETTINGS] Name change requested but agenda_id is missing")
+      else:
+        if logger:
+          logger.info(
+            f"[SETTINGS] Calling edit_agenda_user_name for agenda_id={agenda_id_val} "
+            f"user_name={name!r}"
           )
 
-          if result.get("ok"):
-            st.session_state["user_email"] = email
-            st.success("Profile and email updated.")
-          else:
-            st.error(result.get("error", "Failed to update email."))
-      else:
-        st.success("Profile updated.")
+        name_result = edit_agenda_user_name(
+          logger=logger,
+          agenda_id=agenda_id_val,
+          user_name=name,
+        )
 
+        if not name_result.get("ok"):
+          name_update_ok = False
+          st.error(name_result.get("error", "Failed to update agenda user name."))
+
+    # --- Update email via admin API if it changed ---
+    if email_changed:
+      if not user_id:
+        email_update_ok = False
+        st.error("Missing user_id; cannot update email.")
+        if logger:
+          logger.warning("[SETTINGS] Email change requested but user_id missing")
+      else:
+        if logger:
+          logger.info(
+            f"[SETTINGS] Calling admin_update_user_email for user_id={user_id} "
+            f"new_email={email!r}"
+          )
+
+        email_result = admin_update_user_email(
+          logger=logger,
+          user_id=user_id,
+          new_email=email,
+        )
+
+        if email_result.get("ok"):
+          st.session_state["user_email"] = email
+        else:
+          email_update_ok = False
+          st.error(email_result.get("error", "Failed to update email."))
+
+    # --- Success messages ---
+    if name_changed or email_changed:
+      if name_update_ok and email_update_ok:
+        if email_changed:
+          st.success("Profile and email updated.")
+        else:
+          st.success("Profile updated.")
+    else:
+      st.info("No changes to save.")
 
 def render_agenda():
   logger = st.session_state.get("logger")

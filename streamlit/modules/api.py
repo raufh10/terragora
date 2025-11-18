@@ -86,27 +86,6 @@ def sign_out(
   except Exception as e:
     return _fail(logger, "sign_out failed", e)
 
-# ---------- Auth: Password Reset ----------
-def reset_password_for_email(
-  supabase: Client,
-  logger,
-  email: str,
-  redirect_to: Optional[str] = None
-) -> Dict[str, Any]:
-  """Send a password reset email with optional redirect URL."""
-  if not email:
-    return _fail(logger, "reset_password_for_email requires non-empty email")
-
-  options = {}
-  if redirect_to:
-    options["redirect_to"] = redirect_to
-
-  try:
-    resp = supabase.auth.reset_password_for_email(email, options)
-    return _ok(resp)
-  except Exception as e:
-    return _fail(logger, "reset_password_for_email failed", e)
-
 # ---------- Auth: Session ----------
 def get_session(
   supabase: Client,
@@ -243,6 +222,42 @@ def edit_agenda(
     return resp.json()
   except Exception as e:
     return _fail(logger, "edit_agenda request failed", e)
+
+def edit_agenda_user_name(
+  logger,
+  agenda_id: int,
+  user_name: str
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /agendas/edit_user_name.
+
+  Mirrors FastAPI endpoint:
+
+    @router.post("/agendas/edit_user_name")
+  """
+  if not isinstance(agenda_id, int) or agenda_id <= 0:
+    return _fail(logger, "edit_agenda_user_name requires a positive integer agenda_id")
+  if not user_name:
+    return _fail(logger, "edit_agenda_user_name requires non-empty user_name")
+
+  payload = {
+    "agenda_id": agenda_id,
+    "user_name": user_name,
+  }
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/agendas/edit_user_name",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"agendas/edit_user_name failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+  except Exception as e:
+    return _fail(logger, "edit_agenda_user_name request failed", e)
 
 def create_agenda(
   logger,
