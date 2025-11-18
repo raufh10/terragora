@@ -40,6 +40,33 @@ async def edit_name(
   except Exception as e:
     return _fail(logger, f"edit_name failed for id={agenda_id}", e)
 
+async def edit_user_name(
+  supabase: Client,
+  logger,
+  agenda_id: int,
+  new_name: str
+) -> Dict[str, Any]:
+  """Update the 'user_name' field of an agenda."""
+  if not agenda_id or not new_name:
+    return _fail(logger, "edit_name requires agenda_id and new_name")
+
+  try:
+    response = (
+      supabase
+      .table("agendas")
+      .update({"user_name": new_name})
+      .eq("id", agenda_id)
+      .execute()
+    )
+
+    if response.data:
+      logger.info(f"✅ Updated agenda user_name | id={agenda_id}")
+      return _ok(response.data)
+    return _fail(logger, f"⚠️ No rows updated for id={agenda_id}")
+
+  except Exception as e:
+    return _fail(logger, f"edit_name failed for id={agenda_id}", e)
+
 # ---------- Update column: subreddit ----------
 async def edit_subreddit(
   supabase: Client,
