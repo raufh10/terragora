@@ -8,23 +8,19 @@ class PageSetter:
 
   @staticmethod
   def set_login():
-    st.session_state["test_page"] = "auth"
-    st.session_state["auth_panel"] = "login"
+    st.session_state["test_page"] = "login"
 
   @staticmethod
   def set_sign_up():
-    st.session_state["test_page"] = "auth"
-    st.session_state["auth_panel"] = "sign_up"
+    st.session_state["test_page"] = "sign_up"
 
   @staticmethod
   def set_onboarding():
-    st.session_state["test_page"] = "auth"
-    st.session_state["auth_panel"] = "onboarding"
+    st.session_state["test_page"] = "onboarding"
 
   @staticmethod
   def set_forgot():
-    st.session_state["test_page"] = "auth"
-    st.session_state["auth_panel"] = "forgot"
+    st.session_state["test_page"] = "forgot"
 
   @staticmethod
   def set_settings():

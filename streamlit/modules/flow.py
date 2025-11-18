@@ -5,25 +5,24 @@ from partials.auth import (
   render_forgot_password,
   render_onboarding
 )
-from partials.settings import render_settings
-from pages.dashboard import render_dashboard
-from pages.home import render_home
+from renders.settings import render_settings
+from renders.dashboard import render_dashboard
+from renders.home import render_home
 
 def run_page_flow():
   test_page = st.session_state["test_page"]
-  auth_panel = st.session_state["auth_panel"]
 
-  if test_page == "auth":
-    if auth_panel == "login":
-      render_login()
-    elif auth_panel == "sign_up":
-      render_sign_up()
-    elif auth_panel == "forgot":
-      render_forgot_password()
-    elif auth_panel == "onboarding":
-      render_onboarding()
-    else:
-      st.error(f"Unknown auth_panel: {auth_panel!r}")
+  if test_page == "login":
+    render_login()
+
+  elif test_page  == "sign_up":
+    render_sign_up()
+
+  elif test_page == "forgot":
+    render_forgot_password()
+
+  elif test_page == "onboarding":
+    render_onboarding()
 
   elif test_page == "settings":
     render_settings()

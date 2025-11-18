@@ -11,24 +11,12 @@ from modules.api import (
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
 
-def render_settings():
-  st.header("⚙️ Settings")
-
+def render_profile():
   logger = st.session_state.get("logger")
   user_id = st.session_state.get("user_id")
   user_email = st.session_state.get("user_email", "")
-
-  # ---- Defaults pulled from session_state ----
   name_val = st.session_state.get("user_name")
-  agenda_name_val = st.session_state.get("agenda_name")
-  subreddit_val = st.session_state.get("agenda_subreddit")
-  data_type_val = st.session_state.get("agenda_type")
-  location_val = st.session_state.get("agenda_location")
-  agenda_id_val = st.session_state.get("agenda_id")
 
-  # ==========================
-  # 1) PROFILE
-  # ==========================
   st.subheader("👤 Profile")
 
   with st.form("profile_form"):
@@ -49,7 +37,8 @@ def render_settings():
         else:
           if logger:
             logger.info(
-              f"[SETTINGS] Calling admin_update_user_email for user_id={user_id} new_email={email!r}"
+              f"[SETTINGS] Calling admin_update_user_email for user_id={user_id} "
+              f"new_email={email!r}"
             )
 
           result = admin_update_user_email(
@@ -66,11 +55,15 @@ def render_settings():
       else:
         st.success("Profile updated.")
 
-  st.divider()
 
-  # ==========================
-  # 2) AGENDA
-  # ==========================
+def render_agenda():
+  logger = st.session_state.get("logger")
+  agenda_name_val = st.session_state.get("agenda_name")
+  subreddit_val = st.session_state.get("agenda_subreddit")
+  data_type_val = st.session_state.get("agenda_type")
+  location_val = st.session_state.get("agenda_location")
+  agenda_id_val = st.session_state.get("agenda_id")
+
   st.subheader("🗓️ Agenda")
 
   with st.form("agenda_form"):
@@ -79,7 +72,9 @@ def render_settings():
 
     # Safe defaults
     type_index = TYPE_OPTIONS.index(data_type_val) if data_type_val in TYPE_OPTIONS else 0
-    location_index = LOCATION_OPTIONS.index(location_val) if location_val in LOCATION_OPTIONS else 0
+    location_index = (
+      LOCATION_OPTIONS.index(location_val) if location_val in LOCATION_OPTIONS else 0
+    )
 
     data_type = st.selectbox("Type", TYPE_OPTIONS, index=type_index)
     location = st.selectbox("Location", LOCATION_OPTIONS, index=location_index)
@@ -116,11 +111,12 @@ def render_settings():
         else:
           st.error(result.get("error", "Failed to update agenda."))
 
-  st.divider()
 
-  # ==========================
-  # 3) PASSWORD (Admin API)
-  # ==========================
+def render_change_password():
+  logger = st.session_state.get("logger")
+  user_id = st.session_state.get("user_id")
+  user_email = st.session_state.get("user_email", "")
+
   st.subheader("🔑 Password")
 
   with st.form("password_form"):
@@ -132,7 +128,7 @@ def render_settings():
     new_password = st.text_input(
       "New password",
       type="password",
-      placeholder="Enter a new password"
+      placeholder="Enter a new password",
     )
     submitted = st.form_submit_button("Change password")
 
@@ -152,7 +148,7 @@ def render_settings():
         resp = admin_update_user_password(
           logger=logger,
           user_id=user_id,
-          new_password=new_password
+          new_password=new_password,
         )
 
         if resp.get("ok"):
@@ -160,11 +156,11 @@ def render_settings():
         else:
           st.error(resp.get("error", "Failed to update password."))
 
-  st.divider()
 
-  # ==========================
-  # 4) DELETE ACCOUNT
-  # ==========================
+def render_delete_account():
+  logger = st.session_state.get("logger")
+  user_id = st.session_state.get("user_id")
+
   st.subheader("🗑️ Delete account")
 
   open_delete = st.checkbox("Show delete confirmation")
@@ -172,9 +168,7 @@ def render_settings():
   if open_delete:
     with st.form("delete_form"):
       confirm = st.text_input("Type DELETE to confirm")
-      submitted = st.form_submit_button(
-        "Confirm delete"
-      )
+      submitted = st.form_submit_button("Confirm delete")
 
       if submitted:
         if not user_id:
@@ -198,7 +192,7 @@ def render_settings():
               "user_id", "user_email", "user_name",
               "agenda_id", "agenda_name", "agenda_subreddit",
               "agenda_type", "agenda_location",
-              "is_login"
+              "is_login",
             ]:
               st.session_state.pop(key, None)
 
