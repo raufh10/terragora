@@ -5,7 +5,8 @@ TYPE_OPTIONS = ["real_estate_agent", "electrician", "mechanic"]
 LOCATION_OPTIONS = ["global", "US"]
 
 def get_backend_api_endpoint():
-  endpoint = os.getenv("BACKEND_API_ENDPOINT", "http://127.0.0.1:8000/")
+  #endpoint = os.getenv("BACKEND_API_ENDPOINT", "http://127.0.0.1:8000/")
+  endpoint = os.getenv("BACKEND_API_ENDPOINT", "http://leaddits_api.railway.internal:8080")
 
   if not endpoint:
     raise EnvironmentError("Missing required environment variable: API_ENDPOINT")
