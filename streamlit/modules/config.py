@@ -1,7 +1,29 @@
 import os
 
 PAGE_SIZE = 10
-TYPE_OPTIONS = ["real_estate_agent", "electrician", "mechanic"]
+TYPE_OPTIONS = [
+  "stats",
+  "insights",
+  "highlights",
+  "tickets_related",
+  "interaction",
+  "praises",
+  "critics",
+  "meme",
+  "player_stats",
+  "lineups",
+  "trade",
+  "free_agency",
+  "performance",
+  "chemistry",
+  "g_league",
+  "podcast",
+  "press_conference",
+  "sports_panel",
+  "other_teams",
+  "throwback",
+  "misc_talk",
+]
 LOCATION_OPTIONS = ["global", "US"]
 
 def get_backend_api_endpoint():

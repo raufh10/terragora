@@ -277,7 +277,7 @@ def render_onboarding():
     subreddit = st.text_input("Subreddit")
 
     st.write("📌 Select Type")
-    type_choice = st.selectbox("Type", TYPE_OPTIONS)
+    type_choice = st.multiselect("Type", TYPE_OPTIONS)
 
     st.write("📌 Select Location")
     location_choice = st.selectbox("Location", LOCATION_OPTIONS)

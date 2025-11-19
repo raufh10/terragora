@@ -117,7 +117,7 @@ def render_agenda():
       LOCATION_OPTIONS.index(location_val) if location_val in LOCATION_OPTIONS else 0
     )
 
-    data_type = st.selectbox("Type", TYPE_OPTIONS, index=type_index)
+    data_type = st.multiselect("Type", TYPE_OPTIONS, default=data_type_val)
     location = st.selectbox("Location", LOCATION_OPTIONS, index=location_index)
 
     submitted = st.form_submit_button("Save changes")
