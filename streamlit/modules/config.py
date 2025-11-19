@@ -20,7 +20,7 @@ def get_supabase_url():
   return endpoint
 
 def get_supabase_public_key():
-  endpoint = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtY3ljY3huYXZjbmhhb3NpdGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MTAwMjksImV4cCI6MjA2NTM4NjAyOX0.knB-Dj0QeQkCuQ_CJMHaIVo863A7huSezfMZvAInpJs")
+  endpoint = os.getenv("SUPABASE_PUBLIC_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtY3ljY3huYXZjbmhhb3NpdGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MTAwMjksImV4cCI6MjA2NTM4NjAyOX0.knB-Dj0QeQkCuQ_CJMHaIVo863A7huSezfMZvAInpJs")
 
   if not endpoint:
     raise EnvironmentError("Missing required environment variable: SUPABASE_KEY")
