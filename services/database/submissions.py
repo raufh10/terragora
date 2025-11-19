@@ -11,7 +11,10 @@ async def insert(
     response = (
       supabase
       .table("submissions")
-      .insert(data)
+      .upsert(
+        data,
+        on_conflict="reddit_id",
+      )
       .execute()
     )
 

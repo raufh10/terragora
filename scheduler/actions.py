@@ -135,8 +135,11 @@ def _process_agenda(
           if not isinstance(post, dict):
             continue
           rid = post.get("id")
-          if not rid or rid in existing_ids:
-            continue
+
+          # Duplicate Remover
+          #if not rid or rid in existing_ids:
+            #continue
+
           new_post = dict(post)
           new_post.pop("id", None)
           all_insert_data.append({
@@ -144,6 +147,7 @@ def _process_agenda(
             "subreddit": agenda_subreddit,
             "data": new_post
           })
+
   except requests.RequestException as e:
     logger.exception(f"❌ Request error calling fetch endpoint: {e}")
 
