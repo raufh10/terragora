@@ -4,7 +4,6 @@ from modules.api import (
   cookies_create,
   sign_in,
   sign_up,
-  reset_password_for_email,
   select_agenda_by_user_id,
   create_agenda,
 )
@@ -233,6 +232,7 @@ def render_forgot_password():
     email = st.text_input("Email", key="forgot_email")
     submitted = st.form_submit_button("Send reset link")
 
+    """
     if submitted:
       if not email:
         st.error("Please enter your email address.")
@@ -249,7 +249,7 @@ def render_forgot_password():
         st.success(f"Reset link sent to **{email}**.")
       else:
         st.error(result.get("error", "Failed to send reset email."))
-
+    """
 
 # --------------------------
 # ONBOARDING
@@ -324,6 +324,9 @@ def render_onboarding():
 
     st.session_state["is_login"] = True
     st.success("🎉 Agenda created! Redirecting to dashboard...")
+
+    # Mark is_onboarding
+    st.session_state["is_onboarding"] = False
 
     PageSetter.set_dashboard()
     st.rerun()

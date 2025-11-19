@@ -6,7 +6,8 @@ from modules.api import (
   update_user_email,
   admin_delete_user,
   admin_update_user_email,
-  admin_update_user_password
+  admin_update_user_password,
+  edit_agenda_user_name
 )
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS
 
