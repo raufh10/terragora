@@ -207,51 +207,6 @@ def render_change_password():
   user_email = st.session_state.get("user_email", "")
 
   st.subheader("🔑 Password")
-  open_change_password = st.checkbox("Change Password confirmation")
-
-  with st.form("password_form"):
-    confirm_email = st.text_input(
-      "Type your account email to confirm",
-      value="",
-      placeholder="your@email.com",
-    )
-    new_password = st.text_input(
-      "New password",
-      type="password",
-      placeholder="Enter a new password",
-    )
-    submitted = st.form_submit_button("Change password")
-
-    if submitted:
-      if not user_id:
-        st.error("Cannot update password: missing user_id in session.")
-      elif not confirm_email:
-        st.error("Please type your email to confirm.")
-      elif confirm_email.strip() != (user_email or "").strip():
-        st.error("Entered email does not match your current account email.")
-      elif not new_password:
-        st.error("Please enter a new password.")
-      else:
-        if logger:
-          logger.info("[SETTINGS] Calling admin_update_user_password")
-
-        resp = admin_update_user_password(
-          logger=logger,
-          user_id=user_id,
-          new_password=new_password,
-        )
-
-        if resp.get("ok"):
-          st.success("Password updated successfully.")
-        else:
-          st.error(resp.get("error", "Failed to update password."))
-
-def render_change_password():
-  logger = st.session_state.get("logger")
-  user_id = st.session_state.get("user_id")
-  user_email = st.session_state.get("user_email", "")
-
-  st.subheader("🔑 Password")
 
   open_change_password = st.checkbox("Change Password confirmation")
 
