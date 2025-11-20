@@ -58,7 +58,7 @@ async def select(
       )
       .eq("subreddit", subreddit)
       .order("data->created_utc", desc=desc_flag)
-      .range(start, end)
+      #.range(start, end)
       .execute()
     )
 
