@@ -61,7 +61,6 @@ async def select(
       .range(start, end)
       .execute()
     )
-    print(response.data)
 
     if response.data:
       return [item for item in response.data if has_accepted_subcategory(item.get("category_data", []), category)]
