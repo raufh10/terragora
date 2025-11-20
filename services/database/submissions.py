@@ -60,7 +60,7 @@ async def select_to_label(
       .select("*")
       .eq("subreddit", subreddit)
       .is_("category_data", "null")
-      .order("data->created_utc", desc=desc_flag)
+      .order("data->created_utc", desc="desc")
       .execute()
     )
 
