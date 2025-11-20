@@ -1,6 +1,9 @@
 from supabase import Client
 from services.database.agendas import select_subreddit
 
+def has_accepted_subcategory(data, accepted):
+  return any(item.get("subcategory") in accepted for item in data)
+
 async def select(
   supabase: Client,
   logger,
@@ -41,7 +44,7 @@ async def select(
       .select(
         "id, "
         "subreddit, "
-        "category, "
+        "category_data, "
         "data->title, "
         "data->link_flair_text, "
         "data->num_comments, "
@@ -51,14 +54,13 @@ async def select(
         "data->url"
       )
       .eq("subreddit", subreddit)
-      .eq("category", category)
       .order("data->created_utc", desc=desc_flag)
       .range(start, end)
       .execute()
     )
 
     if response.data:
-      return response.data
+      return [item for item in response.data if has_accepted_subcategory(item.get("category_data", []), category)]
     else:
       return []
 
