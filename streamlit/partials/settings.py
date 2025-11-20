@@ -197,6 +197,47 @@ def render_change_password():
         else:
           st.error(resp.get("error", "Failed to update password."))
 
+@st.dialog("Delete your account")
+def render_delete_account_form():
+  logger = st.session_state.get("logger")
+  user_id = st.session_state.get("user_id")
+
+  with st.form("delete_form"):
+    confirm = st.text_input("Type DELETE to confirm")
+    submitted = st.form_submit_button("Confirm delete")
+
+    if submitted:
+      if not user_id:
+        st.error("Missing user_id — cannot delete account.")
+        if logger:
+          logger.error("[SETTINGS] Delete clicked but user_id missing")
+        return
+
+      # Call backend delete API
+      if logger:
+        logger.info(f"[SETTINGS] Calling admin_delete_user for user_id={user_id}")
+
+      resp = admin_delete_user(logger, user_id)
+
+      if not resp.get("ok"):
+        st.error(resp.get("error", "Failed to delete account."))
+        return
+
+      # SUCCESS
+      st.success("Your account has been permanently deleted.")
+
+      # Clear local session_state
+      for key in [
+        "auth_token", "refresh_token", "session_expires_at",
+        "user_id", "user_email", "user_name",
+        "agenda_id", "agenda_name", "agenda_subreddit",
+        "agenda_type", "agenda_location",
+        "is_login",
+      ]:
+        st.session_state.pop(key, None)
+
+      st.info("Session cleared. Please refresh.")
+      st.rerun()
 
 def render_delete_account():
   logger = st.session_state.get("logger")
@@ -239,3 +280,10 @@ def render_delete_account():
 
             st.info("Session cleared. Please refresh.")
             st.rerun()
+
+def render_delete_account():
+  st.subheader("🗑️ Delete account")
+
+  open_delete = st.checkbox("Show delete confirmation")
+  if open_delete:
+    render_delete_account_form()
