@@ -152,6 +152,54 @@ def render_agenda():
         else:
           st.error(result.get("error", "Failed to update agenda."))
 
+@st.dialog("Change your password")
+def render_password_form(logger, user_id, user_email):
+  with st.form("password_form"):
+    confirm_email = st.text_input(
+      "Type your account email to confirm",
+      value="",
+      placeholder=user_email or "your@email.com",
+    )
+    new_password = st.text_input(
+      "New password",
+      type="password",
+      placeholder="Enter a new password",
+    )
+    submitted = st.form_submit_button("Change password")
+
+    if submitted:
+      if not user_id:
+        st.error("Cannot update password: missing user_id in session.")
+        if logger:
+          logger.warning("[SETTINGS] Missing user_id during password change")
+        return
+
+      if not confirm_email:
+        st.error("Please type your email to confirm.")
+        return
+
+      if confirm_email.strip() != (user_email or "").strip():
+        st.error("Entered email does not match your current account email.")
+        return
+
+      if not new_password:
+        st.error("Please enter a new password.")
+        return
+
+      # Call backend
+      if logger:
+        logger.info("[SETTINGS] Calling admin_update_user_password")
+
+      resp = admin_update_user_password(
+        logger=logger,
+        user_id=user_id,
+        new_password=new_password,
+      )
+
+      if resp.get("ok"):
+        st.success("Password updated successfully.")
+      else:
+        st.error(resp.get("error", "Failed to update password."))
 
 def render_change_password():
   logger = st.session_state.get("logger")
@@ -159,6 +207,7 @@ def render_change_password():
   user_email = st.session_state.get("user_email", "")
 
   st.subheader("🔑 Password")
+  open_change_password = st.checkbox("Change Password confirmation")
 
   with st.form("password_form"):
     confirm_email = st.text_input(
@@ -196,6 +245,18 @@ def render_change_password():
           st.success("Password updated successfully.")
         else:
           st.error(resp.get("error", "Failed to update password."))
+
+def render_change_password():
+  logger = st.session_state.get("logger")
+  user_id = st.session_state.get("user_id")
+  user_email = st.session_state.get("user_email", "")
+
+  st.subheader("🔑 Password")
+
+  open_change_password = st.checkbox("Change Password confirmation")
+
+  if open_change_password:
+    render_password_form(logger, user_id, user_email)
 
 @st.dialog("Delete your account")
 def render_delete_account_form():
@@ -238,48 +299,6 @@ def render_delete_account_form():
 
       st.info("Session cleared. Please refresh.")
       st.rerun()
-
-def render_delete_account():
-  logger = st.session_state.get("logger")
-  user_id = st.session_state.get("user_id")
-
-  st.subheader("🗑️ Delete account")
-
-  open_delete = st.checkbox("Show delete confirmation")
-
-  if open_delete:
-    with st.form("delete_form"):
-      confirm = st.text_input("Type DELETE to confirm")
-      submitted = st.form_submit_button("Confirm delete")
-
-      if submitted:
-        if not user_id:
-          st.error("Missing user_id — cannot delete account.")
-          if logger:
-            logger.error("[SETTINGS] Delete clicked but user_id missing")
-        else:
-          if logger:
-            logger.info(f"[SETTINGS] Calling admin_delete_user for user_id={user_id}")
-
-          resp = admin_delete_user(logger, user_id)
-
-          if not resp.get("ok"):
-            st.error(resp.get("error", "Failed to delete account."))
-          else:
-            st.success("Your account has been permanently deleted.")
-
-            # Clear local session_state
-            for key in [
-              "auth_token", "refresh_token", "session_expires_at",
-              "user_id", "user_email", "user_name",
-              "agenda_id", "agenda_name", "agenda_subreddit",
-              "agenda_type", "agenda_location",
-              "is_login",
-            ]:
-              st.session_state.pop(key, None)
-
-            st.info("Session cleared. Please refresh.")
-            st.rerun()
 
 def render_delete_account():
   st.subheader("🗑️ Delete account")
