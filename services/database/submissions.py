@@ -2,7 +2,10 @@ from supabase import Client
 from services.database.agendas import select_subreddit
 
 def has_accepted_subcategory(data, accepted):
-  return any(item.get("subcategory") in accepted for item in data)
+  if data is None:
+    return False
+  else:
+    return any(item.get("subcategory") in accepted for item in data)
 
 async def select(
   supabase: Client,
@@ -58,6 +61,7 @@ async def select(
       .range(start, end)
       .execute()
     )
+    print(response.data)
 
     if response.data:
       return [item for item in response.data if has_accepted_subcategory(item.get("category_data", []), category)]
