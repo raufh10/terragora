@@ -118,7 +118,7 @@ def feed():
       with meta_cols[0]:
         st.caption(human_time)
       with meta_cols[1]:
-        st.caption(f"category: {it.get('category','unknown')}")
+        st.caption(f"category: {it.get('category_data','unknown')}")
       with meta_cols[2]:
         flair = it.get("link_flair_text") or "no flair"
         st.caption(f"flair: {flair}")
