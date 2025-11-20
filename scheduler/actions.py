@@ -175,7 +175,7 @@ def _process_agenda(
     if submissions_data is None:
       submissions_data = []
 
-  submissions_data = submissions_data[:5]
+  submissions_data = submissions_data[:25]
   payloads: List[Dict[str, Any]] = []
   for item in submissions_data:
     pdata = item.get("data") or {}

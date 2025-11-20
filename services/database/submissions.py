@@ -59,7 +59,8 @@ async def select_to_label(
       .table("submissions")
       .select("*")
       .eq("subreddit", subreddit)
-      .is_("category", "null")
+      .is_("category_data", "null")
+      .order("data->created_utc", desc=desc_flag)
       .execute()
     )
 
