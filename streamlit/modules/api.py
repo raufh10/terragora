@@ -580,10 +580,11 @@ def admin_delete_user(
 def admin_update_user_email(
   logger,
   user_id: str,
-  new_email: str
+  new_email: str,
+  supabase: Optional[Client] = None
 ) -> Dict[str, Any]:
   """
-  Call backend route POST /account/admin/update-email.
+  Update user email via backend API with automatic token refresh + retry.
   """
   if not user_id:
     return _fail(logger, "admin_update_user_email requires non-empty user_id")
@@ -595,19 +596,61 @@ def admin_update_user_email(
     "new_email": new_email,
   }
 
-  try:
-    resp = requests.post(
-      f"{get_backend_api_endpoint()}/account/admin/update-email",
-      json=payload,
-      timeout=15
-    )
-    if resp.status_code >= 400:
-      msg = f"account/admin/update-email failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+  # --- Internal helper: performs the actual HTTP call ---
+  def _do_request():
+    try:
+      resp = requests.post(
+        f"{get_backend_api_endpoint()}/account/admin/update-email",
+        json=payload,
+        timeout=15
+      )
+      if resp.status_code >= 400:
+        msg = f"account/admin/update-email failed with status {resp.status_code}: {resp.text}"
+        return _fail(logger, msg)
+      return resp.json()
+    except Exception as e:
+      return _fail(logger, "admin_update_user_email request failed", e)
 
-    return resp.json()
-  except Exception as e:
-    return _fail(logger, "admin_update_user_email request failed", e)
+  # --- First attempt ---
+  result = _do_request()
+
+  if result.get("ok"):
+    return result
+
+  # ----------------------------------------------------
+  # If request FAILS → try refresh session automatically
+  # ----------------------------------------------------
+  if logger:
+    logger.warning("[AUTH] Email update failed — attempting refresh_session()")
+
+  if not supabase:
+    return result  # cannot refresh without supabase client
+
+  # 1) Try refresh_session()
+  refresh_res = refresh_session(supabase, logger)
+  if refresh_res.get("ok"):
+    if logger:
+      logger.info("[AUTH] refresh_session() succeeded — retrying email update")
+    retry_res = _do_request()
+    if retry_res.get("ok"):
+      return retry_res
+
+  # 2) If refresh_session failed, try set_session_from_tokens()
+  access = st.session_state.get("auth_token")
+  refresh = st.session_state.get("refresh_token")
+
+  if access and refresh:
+    if logger:
+      logger.info("[AUTH] refresh_session failed — trying set_session_from_tokens()")
+
+    set_res = set_session_from_tokens(supabase, logger, access, refresh)
+
+    if set_res.get("ok"):
+      retry2 = _do_request()
+      return retry2
+
+  # If all recovery attempts fail → return original failure
+  return result
 
 def admin_update_user_password(
   logger,
