@@ -55,24 +55,25 @@ async def submissions_feed(
       count = 1
 
     new_rows = []
+
     if rows:
       user_id = await agendas.select_user_id(supabase, logger, agenda_id)
       collected_submission_ids = [item["id"] for item in rows]
+      angles_result = await angles.select(supabase, logger, user_id, collected_submission_ids) or []
 
-      angles_result = await angles.select(supabase, logger, user_id, collected_submission_ids)
-      if angles_result:
+      angles_by_sub_id = {
+        item.get("submission_id"): item.get("data")
+        for item in angles_result
+          if item.get("submission_id") is not None
+      }
 
-        for item_result in angles_result
-          angles_sub_id = item_result.get("submission_id", None)
-          angles_data = item_result.get("data", [])
+      for item in rows:
+        row = dict(item)
+        sub_id = row.get("id")
+        row["angles_data"] = angles_by_sub_id.get(sub_id)
+        new_rows.append(row)
 
-            for item in rows:
-              item["angles_data"] = None
-
-              if item["id"] == angles_sub_id:
-                item["angles_data"] = angles_data
-              new_rows.append(item)
-
+    print(new_rows[0])
     return {
       "ok": True,
       "agenda_id": agenda_id,
