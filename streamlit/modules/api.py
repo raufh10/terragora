@@ -412,6 +412,37 @@ def cookies_select(
   except Exception as e:
     return _fail(logger, "cookies_select request failed", e)
 
+def cookies_delete(
+  logger,
+  token: str
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /cookies/delete.
+
+  Mirrors FastAPI endpoint:
+
+    @router.post("/cookies/delete")
+  """
+  if not token:
+    return _fail(logger, "cookies_delete requires non-empty token")
+
+  payload = {"token": token}
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/cookies/delete",
+      json=payload,
+      timeout=15
+    )
+    if resp.status_code >= 400:
+      msg = f"cookies/delete failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+
+  except Exception as e:
+    return _fail(logger, "cookies_delete request failed", e)
+
 # ---------- Account Admin: via BACKEND_API ----------
 def admin_delete_user(
   logger,
@@ -472,7 +503,6 @@ def admin_update_user_email(
   except Exception as e:
     return _fail(logger, "admin_update_user_email request failed", e)
 
-
 def admin_update_user_password(
   logger,
   user_id: str,
@@ -504,3 +534,41 @@ def admin_update_user_password(
     return resp.json()
   except Exception as e:
     return _fail(logger, "admin_update_user_password request failed", e)
+
+# ---------- Angles: via BACKEND_API ----------
+def run_suggest(
+  logger,
+  user_id: str,
+  submission_id: int
+) -> Dict[str, Any]:
+  """
+  Call backend route POST /suggest/run.
+
+  Payload:
+    - user_id
+    - submission_id
+  """
+  if not user_id:
+    return _fail(logger, "run_suggest requires non-empty user_id")
+  if not submission_id:
+    return _fail(logger, "run_suggest requires non-empty submission_id")
+
+  payload = {
+    "user_id": user_id,
+    "submission_id": submission_id,
+  }
+
+  try:
+    resp = requests.post(
+      f"{get_backend_api_endpoint()}/suggest/run",
+      json=payload,
+      timeout=120
+    )
+    if resp.status_code >= 400:
+      msg = f"suggest/run failed with status {resp.status_code}: {resp.text}"
+      return _fail(logger, msg)
+
+    return resp.json()
+
+  except Exception as e:
+    return _fail(logger, "run_suggest request failed", e)
