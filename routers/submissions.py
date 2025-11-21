@@ -2,7 +2,7 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, Body, HTTPException, Depends
 from supabase import Client
 
-from services.database import db, submissions
+from services.database import db, submissions, angles, agendas
 from logger import start_logger
 
 logger = start_logger()
@@ -54,6 +54,25 @@ async def submissions_feed(
     else:
       count = 1
 
+    new_rows = []
+    if rows:
+      user_id = await agendas.select_user_id(supabase, logger, agenda_id)
+      collected_submission_ids = [item["id"] for item in rows]
+
+      angles_result = await angles.select(supabase, logger, user_id, collected_submission_ids)
+      if angles_result:
+
+        for item_result in angles_result
+          angles_sub_id = item_result.get("submission_id", None)
+          angles_data = item_result.get("data", [])
+
+            for item in rows:
+              item["angles_data"] = None
+
+              if item["id"] == angles_sub_id:
+                item["angles_data"] = angles_data
+              new_rows.append(item)
+
     return {
       "ok": True,
       "agenda_id": agenda_id,
@@ -61,7 +80,7 @@ async def submissions_feed(
       "per_page": per_page_int,
       "sort": sort_str,
       "count": count,
-      "data": rows,
+      "data": new_rows,
     }
 
   except HTTPException:

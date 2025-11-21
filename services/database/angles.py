@@ -25,7 +25,7 @@ async def select(
   supabase: Client,
   logger,
   user_id: str,
-  submission_id: int
+  submission_ids
 ):
   try:
 
@@ -33,7 +33,7 @@ async def select(
       supabase.table("angles")
       .select("*")
       .eq("user_id", user_id)
-      .eq("submission_id", submission_id)
+      .in_("submission_id", submission_ids)
       .execute()
     )
 

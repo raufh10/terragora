@@ -197,6 +197,29 @@ async def select_subreddit(
     logger.error(f"Failed to fetch agenda subreddit and type based on id: {str(e)}")
     return None, None
 
+async def select_user_id(
+  supabase: Client,
+  logger,
+  agenda_id: int
+):
+  try:
+
+    response = (
+      supabase.table("agendas")
+      .select("user_id")
+      .eq("id", agenda_id)
+      .execute()
+    )
+
+    if response.data:
+      return response.data[0]["user_id"]
+    else:
+      return None
+
+  except Exception as e:
+    logger.error(f"Failed to fetch user_id based on agenda id: {str(e)}")
+    return None
+
 async def insert(
   supabase: Client,
   logger,
