@@ -94,10 +94,11 @@ async def run_suggest(
 
   try:
     payload = payload or {}
+    user_id = payload.get("user_id", "")
     submission_id = payload.get("submission_id", None)
 
-    if not submission_id:
-      raise HTTPException(status_code=400, detail="submission_id is required")
+    if not user_id or not submission_id:
+      raise HTTPException(status_code=400, detail="ids is required")
 
     data = submissions.simple_select(supabase, logger, submission_data)
     if not data:
