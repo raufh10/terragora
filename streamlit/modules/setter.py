@@ -1,4 +1,5 @@
 import streamlit as st
+from modules.api import cookies_delete
 
 class PageSetter:
 
@@ -30,6 +31,12 @@ class PageSetter:
   def set_dashboard():
     st.session_state["test_page"] = "dashboard"
 
+  @staticmethod
+  def set_logout():
+    logger = st.session_state.get("logger")
+    token = st.session_state.get("cookie", {}).get("ajs_anonymous_id", "")
+    cookies_delete(logger, token)
+
   # ---------- Pages dict for st.navigation ----------
 
   @classmethod
@@ -54,5 +61,6 @@ class PageSetter:
       st.write("is_login")
       pages.append(st.Page(cls.set_dashboard, title="Dashboard"))
       pages.append(st.Page(cls.set_settings, title="Settings"))
+      pages.append(st.Page(cls.set_logout, title="Log Out"))
 
     return pages

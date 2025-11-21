@@ -557,6 +557,8 @@ def admin_delete_user(
 ) -> Dict[str, Any]:
   """
   Call backend route POST /account/admin/delete.
+  If successful, also delete the related cookies (backend + browser)
+  via cookies_delete().
   """
   if not user_id:
     return _fail(logger, "admin_delete_user requires non-empty user_id")
@@ -573,7 +575,30 @@ def admin_delete_user(
       msg = f"account/admin/delete failed with status {resp.status_code}: {resp.text}"
       return _fail(logger, msg)
 
-    return resp.json()
+    result = resp.json()
+
+    # If account deletion succeeded, attempt to delete cookies as well
+    if result.get("ok"):
+      try:
+        # Expect ajs_anonymous_id to be stored in session_state["cookies"]
+        cookie_state = st.session_state.get("cookies") or {}
+        token = cookie_state.get("ajs_anonymous_id")
+
+        if token:
+          cookies_delete(logger, token)
+        elif logger:
+          logger.warning(
+            "[ACCOUNT] User deleted but no ajs_anonymous_id token found; "
+            "skipping cookies_delete()"
+          )
+      except Exception as ce:
+        if logger:
+          logger.warning(
+            f"[ACCOUNT] User deleted but cookies_delete() raised an error: {ce}"
+          )
+
+    return result
+
   except Exception as e:
     return _fail(logger, "admin_delete_user request failed", e)
 
