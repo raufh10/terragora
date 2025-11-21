@@ -70,3 +70,37 @@ async def select(
   except Exception as e:
     logger.error(f"Failed to fetch Submissions based on agenda id: {str(e)}")
     return None
+
+async def simple_select(
+  supabase: Client,
+  logger,
+  submission_id: int
+):
+  try:
+
+    response = (
+      supabase.table("submissions")
+      .select(
+        "id, "
+        "subreddit, "
+        "category_data, "
+        "data->title, "
+        "data->link_flair_text, "
+        "data->num_comments, "
+        "data->created_utc, "
+        "data->is_self, "
+        "data->selftext, "
+        "data->url"
+      )
+      .eq("id", submission_id)
+      .execute()
+    )
+
+    if response.data:
+      return response.data[0]
+    else:
+      return None
+
+  except Exception as e:
+    logger.error(f"Failed to fetch submissions based on submission_id: {str(e)}")
+    return None

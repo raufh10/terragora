@@ -185,3 +185,54 @@ class NBAThreadCategory(BaseModel):
       ]
     }
   )
+
+class ReplyIdea(BaseModel):
+  idea: Annotated[str, Field(
+    min_length=5,
+    max_length=200,
+    description="A single actionable reply idea responding directly to the user's question or topic."
+  )]
+
+  confidence: Annotated[float, Field(
+    ge=0, le=100,
+    description="Confidence score (0–100) estimating how helpful or relevant this reply idea is."
+  )]
+
+  reasoning: Annotated[str, Field(
+    min_length=5,
+    max_length=200,
+    description="One concise sentence explaining why this reply idea would be appropriate or helpful."
+  )]
+
+class RedditReplyIdeas(BaseModel):
+  ideas: Annotated[List[ReplyIdea], Field(
+    min_length=3,
+    max_length=10,
+    description="List of suggested reply ideas tailored to the post's content."
+  )]
+
+  model_config = ConfigDict(
+    json_schema_extra={
+      "examples": [
+        {
+          "ideas": [
+            {
+              "idea": "Suggest checking the player’s on/off metrics to deepen the discussion.",
+              "confidence": 91.4,
+              "reasoning": "The OP is asking why the team performs better when a specific player sits."
+            },
+            {
+              "idea": "Explain how the current defensive scheme affects the player's impact.",
+              "confidence": 87.2,
+              "reasoning": "OP is confused about defensive rotations, so scheme context adds clarity."
+            },
+            {
+              "idea": "Provide a comparison with similar players around the league.",
+              "confidence": 82.9,
+              "reasoning": "The OP is comparing performance, so league-wide benchmarks help frame it."
+            }
+          ]
+        }
+      ]
+    }
+  )
