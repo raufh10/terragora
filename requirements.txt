@@ -13,6 +13,7 @@ openai
 httpx
 
 # Misc
+pyyaml
 pydantic-settings
 python-multipart
 supabase

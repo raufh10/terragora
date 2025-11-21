@@ -82,16 +82,10 @@ async def simple_select(
     response = (
       supabase.table("submissions")
       .select(
-        "id, "
         "subreddit, "
-        "category_data, "
         "data->title, "
         "data->link_flair_text, "
-        "data->num_comments, "
-        "data->created_utc, "
-        "data->is_self, "
-        "data->selftext, "
-        "data->url"
+        "data->selftext"
       )
       .eq("id", submission_id)
       .execute()
