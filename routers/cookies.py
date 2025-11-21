@@ -77,3 +77,36 @@ async def cookies_select(
   except Exception:
     logger.exception("💥 Unhandled error in /cookies/select")
     raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/cookies/delete")
+async def cookies_delete(
+  payload: Optional[Dict[str, Any]] = Body(None),
+  supabase: Client = Depends(db.get_supabase_client),
+):
+  logger.info("📥 /cookies/delete")
+  try:
+    payload = payload or {}
+
+    token = str(payload.get("token", "")).strip()
+    if not token:
+      raise HTTPException(status_code=400, detail="token is required")
+
+    row = await cookies_svc.delete(supabase, logger, token)
+
+    if row is None:
+      return {
+        "ok": False,
+        "data": None,
+        "error": f"No cookie found (or deleted) for token={token}"
+      }
+
+    return {
+      "ok": True,
+      "data": row
+    }
+
+  except HTTPException:
+    raise
+  except Exception:
+    logger.exception("💥 Unhandled error in /cookies/delete")
+    raise HTTPException(status_code=500, detail="Internal server error")
