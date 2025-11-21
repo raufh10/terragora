@@ -4,6 +4,7 @@ import requests
 import streamlit as st
 from supabase import Client, create_client
 from typing import List, Dict, Optional, Tuple, Any
+
 from modules.config import (
   get_backend_api_endpoint,
   get_supabase_url,
@@ -41,6 +42,81 @@ def _fail(logger, msg: str, exc: Optional[Exception] = None) -> Dict[str, Any]:
   else:
     logger.error(msg)
   return {"ok": False, "error": msg}
+
+def _sync_session_into_cookies(logger, auth_resp):
+  """
+  Given a Supabase auth response (with `.session` and `.user`),
+  extract tokens + user info, update session_state, and
+  call cookies_create() using the ajs_anonymous_id cookie.
+  """
+  if auth_resp is None:
+    if logger:
+      logger.warning("[AUTH] _sync_session_into_cookies called with auth_resp=None")
+    return
+
+  # Supabase auth response typically has .session and .user
+  session_obj = getattr(auth_resp, "session", None)
+  user_obj = getattr(auth_resp, "user", None)
+
+  if session_obj is None:
+    if logger:
+      logger.warning("[AUTH] _sync_session_into_cookies: missing session object")
+    return
+
+  # --- Extract tokens from session branch ---
+  access = getattr(session_obj, "access_token", None)
+  refresh = getattr(session_obj, "refresh_token", None)
+  expires = getattr(session_obj, "expires_at", None)
+
+  # --- Extract user info from user branch (if present) ---
+  user_id = None
+  user_email = None
+  if user_obj is not None:
+    user_id = getattr(user_obj, "id", None)
+    user_email = getattr(user_obj, "email", None)
+
+  # Fall back to existing session_state if user info not on response
+  if user_id is None:
+    user_id = st.session_state.get("user_id")
+  if user_email is None:
+    user_email = st.session_state.get("user_email")
+
+  # --- Persist into session_state for later use ---
+  if access is not None:
+    st.session_state["auth_token"] = access
+  if refresh is not None:
+    st.session_state["refresh_token"] = refresh
+  if expires is not None:
+    st.session_state["session_expires_at"] = expires
+  if user_id is not None:
+    st.session_state["user_id"] = user_id
+  if user_email is not None:
+    st.session_state["user_email"] = user_email
+
+  # --- Read ajs_anonymous_id from cookies snapshot in session_state ---
+  cookie_state = st.session_state.get("cookies") or {}
+  token = cookie_state.get("ajs_anonymous_id")
+
+  if not token:
+    if logger:
+      logger.warning("[AUTH] Cannot sync cookies: missing ajs_anonymous_id")
+    return
+
+  payload = {
+    "user_id": user_id,
+    "user_email": user_email,
+    "access_token": access,
+    "refresh_token": refresh,
+    "token_expires_at": expires,
+  }
+
+  if logger:
+    logger.info(f"[AUTH] Syncing auth response → cookies_create() for token={token}")
+
+  resp = cookies_create(logger, token, payload)
+
+  if logger and not resp.get("ok"):
+    logger.warning(f"[AUTH] cookies_create failed during session sync: {resp}")
 
 # ---------- Auth: Basic ----------
 def sign_up(
@@ -86,28 +162,40 @@ def sign_out(
   except Exception as e:
     return _fail(logger, "sign_out failed", e)
 
-# ---------- Auth: Session ----------
+# ---------- Auth: Session (Auto-Sync to backend cookies table) ----------
 def get_session(
   supabase: Client,
   logger
 ) -> Dict[str, Any]:
-  """Get the current auth session (if any)."""
+  """Get the current auth session (if any) and sync into cookies table."""
   try:
     resp = supabase.auth.get_session()
-    return _ok(resp)
+    result = _ok(resp)
+
+    # resp now holds both .session and .user branches
+    _sync_session_into_cookies(logger, resp)
+
+    return result
   except Exception as e:
     return _fail(logger, "get_session failed", e)
+
 
 def refresh_session(
   supabase: Client,
   logger
 ) -> Dict[str, Any]:
-  """Refresh the current auth session tokens."""
+  """Refresh tokens, then sync to cookies table."""
   try:
     resp = supabase.auth.refresh_session()
-    return _ok(resp)
+    result = _ok(resp)
+
+    # resp now holds both .session and .user branches
+    _sync_session_into_cookies(logger, resp)
+
+    return result
   except Exception as e:
     return _fail(logger, "refresh_session failed", e)
+
 
 def set_session_from_tokens(
   supabase: Client,
@@ -115,13 +203,18 @@ def set_session_from_tokens(
   access_token: str,
   refresh_token: str
 ) -> Dict[str, Any]:
-  """Set the current auth session from existing access/refresh tokens."""
+  """Set the current auth session from existing tokens, then sync."""
   if not access_token or not refresh_token:
     return _fail(logger, "set_session_from_tokens requires non-empty access_token and refresh_token")
 
   try:
     resp = supabase.auth.set_session(access_token, refresh_token)
-    return _ok(resp)
+    result = _ok(resp)
+
+    # resp now holds both .session and .user branches
+    _sync_session_into_cookies(logger, resp)
+
+    return result
   except Exception as e:
     return _fail(logger, "set_session_from_tokens failed", e)
 
