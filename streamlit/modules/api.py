@@ -5,6 +5,7 @@ import streamlit as st
 from supabase import Client, create_client
 from typing import List, Dict, Optional, Tuple, Any
 
+from streamlit_cookies_controller import CookieController
 from modules.config import (
   get_backend_api_endpoint,
   get_supabase_url,
@@ -511,10 +512,7 @@ def cookies_delete(
 ) -> Dict[str, Any]:
   """
   Call backend route POST /cookies/delete.
-
-  Mirrors FastAPI endpoint:
-
-    @router.post("/cookies/delete")
+  If deletion is successful, also remove the browser cookie.
   """
   if not token:
     return _fail(logger, "cookies_delete requires non-empty token")
@@ -527,11 +525,27 @@ def cookies_delete(
       json=payload,
       timeout=15
     )
+
     if resp.status_code >= 400:
       msg = f"cookies/delete failed with status {resp.status_code}: {resp.text}"
       return _fail(logger, msg)
 
-    return resp.json()
+    result = resp.json()
+    if result.get("ok"):
+      try:
+        controller = CookieController()
+        controller.remove("ajs_anonymous_id")
+
+        if logger:
+          logger.info(
+            f"[COOKIES] Successfully deleted backend cookie and browser cookie "
+            f"for token={token}"
+          )
+      except Exception as ce:
+        if logger:
+          logger.warning(f"[COOKIES] Backend cookie deleted but browser cookie removal failed: {ce}")
+
+    return result
 
   except Exception as e:
     return _fail(logger, "cookies_delete request failed", e)
@@ -562,7 +576,6 @@ def admin_delete_user(
     return resp.json()
   except Exception as e:
     return _fail(logger, "admin_delete_user request failed", e)
-
 
 def admin_update_user_email(
   logger,
