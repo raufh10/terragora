@@ -1,19 +1,19 @@
 import yaml
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Depends
 
 from services.llm import OpenAIResponse
 from services.schemas import DiscoverCategory, NBAThreadCategory, RedditReplyIdeas
 
 from supabase import Client
-from services.database import db, angles, submissions
+from services.database import db, angles, submissions as submissions_svc
 
 from logger import start_logger
 logger = start_logger()
 router = APIRouter()
 
 PROMPTS_PATH = "data/prompts.yaml"
-def _load_prompts_yaml(logger, path: str = PROMPTS_PATH) -> Tuple[str, str]:
+def _load_prompts_yaml(logger, path: str = PROMPTS_PATH):
   try:
     with open(path, "r", encoding="utf-8") as f:
       data = yaml.safe_load(f)
@@ -100,7 +100,7 @@ async def run_suggest(
     if not user_id or not submission_id:
       raise HTTPException(status_code=400, detail="ids is required")
 
-    data = submissions.simple_select(supabase, logger, submission_data)
+    data = submissions_svc.simple_select(supabase, logger, submission_data)
     if not data:
       logger.warning("⚠️ Missing data")
       raise HTTPException(status_code=502, detail="No data found in database")
@@ -142,7 +142,7 @@ async def run_suggest(
     logger.debug(f"{active_model} keys: {list(data.keys())}")
 
     insert_payload = {
-      "user_id": user_id
+      "user_id": user_id,
       "submission_id": submission_id,
       "data": data_result
     }

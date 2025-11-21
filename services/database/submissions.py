@@ -54,8 +54,7 @@ async def select(
         "data->created_utc, "
         "data->is_self, "
         "data->selftext, "
-        "data->url, "
-        "angles(id, data)"
+        "data->url"
       )
       .eq("subreddit", subreddit)
       .order("data->created_utc", desc=desc_flag)

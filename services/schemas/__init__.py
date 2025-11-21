@@ -1,6 +1,7 @@
-from .discover import DiscoverCategory, NBAThreadCategory
+from .discover import DiscoverCategory, NBAThreadCategory, RedditReplyIdeas
 
 __all__ = [
   "DiscoverCategory",
-  "NBAThreadCategory"
+  "NBAThreadCategory",
+  "RedditReplyIdeas"
 ]
