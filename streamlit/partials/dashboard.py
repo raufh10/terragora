@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import datetime
-from modules.api import fetch_submissions_feed
+from modules.api import fetch_submissions_feed, run_suggest
 from modules.config import PAGE_SIZE
 
 # --------------------------
@@ -134,6 +134,23 @@ def feed():
       # Reddit link
       st.write("🔗 Reddit URL:", it.get("url"))
       st.link_button("View on Reddit", it.get("url"))
+
+      # Angles Pop Up
+      angles = it.get("angles_data", [])
+      if angles:
+        with st.expander("Reply Ideas"):
+          st.write(angles)
+        
+      else:
+        logger = st.session_state.get("logger")
+        st.button(
+          "Generate Angles",
+          on_click=run_suggest(
+            logger,
+            st.session_state.get("user_id"),
+            it.get("id")
+          )
+        )
 
   # ----------------------------
   # Pagination
