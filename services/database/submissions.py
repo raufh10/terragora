@@ -1,3 +1,4 @@
+from typing import Optional
 from supabase import Client
 from services.database.agendas import select_subreddit
 
@@ -13,7 +14,9 @@ async def select(
   agenda_id: int,
   page: int = 1,
   per_page: int = 10,
-  sort: str = "desc",
+  sort: str = "default",
+  custom_category: Optional[str] = None,
+  keyword: Optional[str] = None,
 ):
   try:
     subreddit, category = await select_subreddit(supabase, logger, agenda_id)
@@ -21,10 +24,15 @@ async def select(
       logger.warning(f"No subreddit found for agenda_id={agenda_id}")
       return []
 
+    if custom_category:
+      logger.info(f"🔧 Overriding category with custom_category='{custom_category}'")
+      category = custom_category
+
     try:
       page = int(page)
     except Exception:
       page = 1
+
     try:
       per_page = int(per_page)
     except Exception:
@@ -35,13 +43,19 @@ async def select(
     if per_page < 1:
       per_page = 10
 
-    sort = (sort or "desc").lower()
-    desc_flag = sort != "asc"
+    sort_normalized = (sort or "default").lower()
+    sort_field_map = {
+      "default": "data->created_utc",
+      "num_comments": "data->num_comments",
+      "scores": "data->score",
+    }
+    sort_field = sort_field_map.get(sort_normalized, "data->created_utc")
+    desc_flag = True
 
     start = (page - 1) * per_page
     end = start + per_page - 1
 
-    response = (
+    query = (
       supabase
       .table("submissions")
       .select(
@@ -51,21 +65,39 @@ async def select(
         "data->title, "
         "data->link_flair_text, "
         "data->num_comments, "
+        "data->score, "
         "data->created_utc, "
         "data->is_self, "
         "data->selftext, "
         "data->url"
       )
       .eq("subreddit", subreddit)
-      .order("data->created_utc", desc=desc_flag)
+    )
+
+    if keyword:
+      kw = str(keyword).strip()
+      if kw:
+        pattern = f"%{kw}%"
+        query = query.or_(
+          f"data->title.ilike.{pattern},data->selftext.ilike.{pattern}"
+        )
+
+    response = (
+      query
+      .order(sort_field, desc=desc_flag)
       .range(start, end)
       .execute()
     )
 
-    if response.data:
-      return [item for item in response.data if has_accepted_subcategory(item.get("category_data", []), category)]
-    else:
+    if not response.data:
       return []
+
+    filtered = [
+      item for item in response.data
+      if has_accepted_subcategory(item.get("category_data", []), category)
+    ]
+
+    return filtered
 
   except Exception as e:
     logger.error(f"Failed to fetch Submissions based on agenda id: {str(e)}")

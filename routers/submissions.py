@@ -22,7 +22,9 @@ async def submissions_feed(
     payload = payload or {}
     page = payload.get("page", 1)
     per_page = payload.get("per_page", 10)
-    sort = payload.get("sort", "desc")
+    sort = payload.get("sort", "default")
+    keyword = payload.get("keyword")
+    custom_category = payload.get("category")
 
     try:
       page_int = int(page)
@@ -34,7 +36,11 @@ async def submissions_feed(
     except Exception:
       per_page_int = 10
 
-    sort_str = str(sort or "desc").lower()
+    sort_str = str(sort or "default").lower()
+    allowed_sorts = {"default", "num_comments", "scores"}
+    if sort_str not in allowed_sorts:
+      logger.warning(f"⚠️ Invalid sort='{sort_str}', falling back to 'default'")
+      sort_str = "default"
 
     rows = await submissions.select(
       supabase,
@@ -43,16 +49,13 @@ async def submissions_feed(
       page=page_int,
       per_page=per_page_int,
       sort=sort_str,
+      custom_category=custom_category,
+      keyword=keyword,
     )
 
     if rows is None:
       logger.error(f"⚠️ submissions.select returned None for agenda_id={agenda_id}")
       raise HTTPException(status_code=502, detail="Failed to load submissions")
-
-    if isinstance(rows, list):
-      count = len(rows)
-    else:
-      count = 1
 
     new_rows = []
 
@@ -64,7 +67,7 @@ async def submissions_feed(
       angles_by_sub_id = {
         item.get("submission_id"): item.get("data")
         for item in angles_result
-          if item.get("submission_id") is not None
+        if item.get("submission_id") is not None
       }
 
       for item in rows:
@@ -73,13 +76,16 @@ async def submissions_feed(
         row["angles_data"] = angles_by_sub_id.get(sub_id)
         new_rows.append(row)
 
-    print(new_rows[0])
+    count = len(new_rows)
+
     return {
       "ok": True,
       "agenda_id": agenda_id,
       "page": page_int,
       "per_page": per_page_int,
       "sort": sort_str,
+      "keyword": keyword,
+      "category": custom_category,
       "count": count,
       "data": new_rows,
     }
