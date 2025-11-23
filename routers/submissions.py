@@ -77,7 +77,6 @@ async def submissions_feed(
         new_rows.append(row)
 
     count = len(new_rows)
-
     return {
       "ok": True,
       "agenda_id": agenda_id,

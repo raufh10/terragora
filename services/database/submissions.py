@@ -72,15 +72,14 @@ async def select(
         "data->url"
       )
       .eq("subreddit", subreddit)
+      .not_.is_("category_data", "null")
     )
 
     if keyword:
       kw = str(keyword).strip()
       if kw:
         pattern = f"%{kw}%"
-        query = query.or_(
-          f"data->title.ilike.{pattern},data->selftext.ilike.{pattern}"
-        )
+        query = query.like("data->title", pattern)
 
     response = (
       query
