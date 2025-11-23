@@ -81,6 +81,8 @@ async def select(
         pattern = f"%{kw}%"
         query = query.like("data->>title", pattern)
 
+    query = query.contains("category_data->list", test_cat)
+
     response = (
       query
       .order(sort_field, desc=desc_flag)
@@ -91,10 +93,12 @@ async def select(
     if not response.data:
       return []
 
+    """
     filtered = [
       item for item in response.data
       if has_accepted_subcategory(item.get("category_data", []), category)
     ]
+    """
 
     return filtered
 

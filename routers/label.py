@@ -72,10 +72,15 @@ async def run_analysis(
       raise HTTPException(status_code=502, detail="LLM produced no result")
 
     data = result.model_dump()
+    final_data {
+      "list": [item["subcategory"] for item in data],
+      "data": data
+    }
+
     logger.info("✅ {active_model} generation completed")
     logger.debug(f"{active_model} keys: {list(data.keys())}")
 
-    return data
+    return final_data
 
   except HTTPException:
     raise
