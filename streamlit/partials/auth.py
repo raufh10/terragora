@@ -122,7 +122,7 @@ def render_login():
 
   st.caption("Forgot your password?")
   if st.button("🔁 Reset password"):
-    st.session_state["auth_panel"] = "forgot"
+
 
   st.caption("New here?")
   if st.button("📝 Create account"):
@@ -217,9 +217,12 @@ def render_sign_up():
 # --------------------------
 # FORGOT PASSWORD
 # --------------------------
+@st.dialog("Forgot password")
 def render_forgot_password():
+
+  """
   st.header("🔁 Reset password")
-  st.write("Enter your email and we’ll send a reset link to your inbox.")
+  """
 
   supabase = st.session_state.get("db_client")
   logger = st.session_state.get("logger")
@@ -228,11 +231,11 @@ def render_forgot_password():
     st.error("Supabase client missing: session_state['db_client'] not set.")
     return
 
+  st.write("Enter your email and we’ll send a reset link to your inbox.")
   with st.form("forgot_form"):
     email = st.text_input("Email", key="forgot_email")
     submitted = st.form_submit_button("Send reset link")
 
-    """
     if submitted:
       if not email:
         st.error("Please enter your email address.")
@@ -249,7 +252,6 @@ def render_forgot_password():
         st.success(f"Reset link sent to **{email}**.")
       else:
         st.error(result.get("error", "Failed to send reset email."))
-    """
 
 # --------------------------
 # ONBOARDING
