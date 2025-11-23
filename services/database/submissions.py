@@ -79,7 +79,7 @@ async def select(
       kw = str(keyword).strip()
       if kw:
         pattern = f"%{kw}%"
-        query = query.like("data->title", pattern)
+        query = query.like("data->>title", pattern)
 
     response = (
       query
