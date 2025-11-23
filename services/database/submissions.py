@@ -73,6 +73,7 @@ async def select(
       )
       .eq("subreddit", subreddit)
       .not_.is_("category_data", "null")
+      .contains("category_data->list", category)
     )
 
     if keyword:
@@ -80,8 +81,6 @@ async def select(
       if kw:
         pattern = f"%{kw}%"
         query = query.like("data->>title", pattern)
-
-    query = query.contains("category_data->list", test_cat)
 
     response = (
       query

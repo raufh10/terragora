@@ -72,7 +72,7 @@ async def run_analysis(
       raise HTTPException(status_code=502, detail="LLM produced no result")
 
     data = result.model_dump()
-    final_data {
+    final_data = {
       "list": [item["subcategory"] for item in data],
       "data": data
     }
