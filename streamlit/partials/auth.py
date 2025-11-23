@@ -122,7 +122,7 @@ def render_login():
 
   st.caption("Forgot your password?")
   if st.button("🔁 Reset password"):
-
+    render_forgot_password()
 
   st.caption("New here?")
   if st.button("📝 Create account"):
