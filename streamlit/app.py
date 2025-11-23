@@ -8,6 +8,8 @@ logger = start_logger()
 
 st.title("🧪 Partial Renderer Test")
 
+st.write(st.query_params.to_dict())
+
 # --- Session initialization ---
 if "initiated" not in st.session_state:
   builder = SessionStateBuilder(logger)
