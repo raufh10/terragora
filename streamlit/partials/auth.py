@@ -6,6 +6,7 @@ from modules.api import (
   sign_up,
   select_agenda_by_user_id,
   create_agenda,
+  reset_password_for_email
 )
 from modules.setter import PageSetter
 from modules.config import TYPE_OPTIONS, LOCATION_OPTIONS

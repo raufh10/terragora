@@ -163,6 +163,27 @@ def sign_out(
   except Exception as e:
     return _fail(logger, "sign_out failed", e)
 
+# ---------- Auth: Password Reset ----------
+def reset_password_for_email(
+  supabase: Client,
+  logger,
+  email: str,
+  redirect_to: Optional[str] = None
+) -> Dict[str, Any]:
+  """Send a password reset email with optional redirect URL."""
+  if not email:
+    return _fail(logger, "reset_password_for_email requires non-empty email")
+
+  options = {}
+  if redirect_to:
+    options["redirect_to"] = redirect_to
+
+  try:
+    resp = supabase.auth.reset_password_for_email(email, options)
+    return _ok(resp)
+  except Exception as e:
+    return _fail(logger, "reset_password_for_email failed", e)
+
 # ---------- Auth: Session (Auto-Sync to backend cookies table) ----------
 def get_session(
   supabase: Client,
