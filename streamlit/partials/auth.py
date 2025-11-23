@@ -246,7 +246,7 @@ def render_forgot_password():
         supabase=supabase,
         logger=logger,
         email=email,
-        redirect_to=None,  # keep redirect None
+        redirect_to="https://website-production-1286.up.railway.app/?first_key="
       )
 
       if result.get("ok"):
