@@ -30,7 +30,7 @@ def render_login():
 
     if submitted:
       logger = st.session_state.get("logger")
-      result = sign_in(supabase, logger, email, password)
+      result = sign_in(supabase, email, password)
 
       if result.get("ok"):
         auth_resp = result.get("data")
@@ -63,7 +63,7 @@ def render_login():
 
         if user_id:
           try:
-            agenda_result = select_agenda_by_user_id(logger, user_id)
+            agenda_result = select_agenda_by_user_id(user_id)
 
             if agenda_result.get("ok") and agenda_result.get("data"):
               row = agenda_result["data"]
@@ -75,18 +75,17 @@ def render_login():
               st.session_state["agenda_type"] = row.get("type")
               st.session_state["agenda_location"] = row.get("location")
 
-              if logger:
-                logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id}")
+              logger.info(f"[SETTINGS] Loaded agenda for user_id={user_id}")
+
             else:
-              if logger:
-                logger.warning(f"[SETTINGS] select_agenda_by_user_id not ok: {agenda_result}")
+              logger.warning(f"[SETTINGS] select_agenda_by_user_id not ok: {agenda_result}")
+
           except Exception as e:
-            if logger:
-              logger.exception(f"[SETTINGS] Error calling select_agenda_by_user_id: {e}")
+            logger.exception(f"[SETTINGS] Error calling select_agenda_by_user_id: {e}")
             st.warning("Could not load agenda from backend; using defaults.")
+
         else:
-          if logger:
-            logger.info("[SETTINGS] Missing user_id; using defaults")
+          logger.info("[SETTINGS] Missing user_id; using defaults")
 
         # --------------------------
         # Persist session in backend cookies table
@@ -104,12 +103,11 @@ def render_login():
             "refresh_token": st.session_state.get("refresh_token"),
             "token_expires_at": st.session_state.get("session_expires_at"),
           }
-          cookie_result = cookies_create(logger, token, cookie_data)
-          if logger and not cookie_result.get("ok"):
+          cookie_result = cookies_create(token, cookie_data)
+          if not cookie_result.get("ok"):
             logger.warning(f"[COOKIES] cookies_create not ok: {cookie_result}")
         else:
-          if logger:
-            logger.warning("[COOKIES] Missing ajs_anonymous_id; skipping cookies_create")
+          logger.warning("[COOKIES] Missing ajs_anonymous_id; skipping cookies_create")
 
         # Mark logged in and switch page
         st.session_state["is_login"] = True
@@ -153,7 +151,7 @@ def render_sign_up():
         return
 
       logger = st.session_state.get("logger")
-      result = sign_up(supabase, logger, email, password)
+      result = sign_up(supabase, email, password)
 
       if result.get("ok"):
         auth_resp = result.get("data")
@@ -194,12 +192,11 @@ def render_sign_up():
             "token_expires_at": st.session_state.get("session_expires_at"),
           }
 
-          cookie_result = cookies_create(logger, token, cookie_data)
-          if logger and not cookie_result.get("ok"):
+          cookie_result = cookies_create(token, cookie_data)
+          if not cookie_result.get("ok"):
             logger.warning(f"[COOKIES] cookies_create not ok: {cookie_result}")
         else:
-          if logger:
-            logger.warning("[COOKIES] No ajs_anonymous_id in session_state['cookies']; skipping cookies_create")
+          logger.warning("[COOKIES] No ajs_anonymous_id in session_state['cookies']; skipping cookies_create")
 
         # Mark is_onboarding
         st.session_state["is_onboarding"] = True
@@ -244,7 +241,6 @@ def render_forgot_password():
 
       result = reset_password_for_email(
         supabase=supabase,
-        logger=logger,
         email=email,
         redirect_to="https://website-production-1286.up.railway.app/?first_key="
       )
@@ -301,7 +297,6 @@ def render_onboarding():
     }
 
     result = create_agenda(
-      logger=logger,
       subreddit=subreddit,
       user_id=user_id,
       name=agenda_name,

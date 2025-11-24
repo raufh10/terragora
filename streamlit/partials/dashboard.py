@@ -123,7 +123,6 @@ def feed():
   # Fetch backend feed
   # ----------------------------
   resp = fetch_submissions_feed(
-    logger,
     agenda_id,
     page=page,
     per_page=PAGE_SIZE,
@@ -180,11 +179,10 @@ def feed():
         submission_id = it.get("id")
 
         def _on_generate_angles(
-          _logger=logger_local,
           _user_id=user_id,
           _submission_id=submission_id,
         ):
-          run_suggest(_logger, _user_id, _submission_id)
+          run_suggest(_user_id, _submission_id)
 
         st.button(
           "Generate Angles",

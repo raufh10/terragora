@@ -3,16 +3,13 @@ from modules import SessionStateBuilder, PageSetter, run_page_flow
 from streamlit_cookies_controller import CookieController
 from modules.api import cookies_select, select_agenda_by_user_id
 
-from logger import start_logger
-logger = start_logger()
-
 st.title("🧪 Partial Renderer Test")
 
 st.write(st.query_params.to_dict())
 
 # --- Session initialization ---
 if "initiated" not in st.session_state:
-  builder = SessionStateBuilder(logger)
+  builder = SessionStateBuilder()
   builder.build()
 else:
   pass
@@ -27,7 +24,7 @@ token = st.session_state.get("cookie", {}).get("ajs_anonymous_id")
 
 if token:
   try:
-    cookie_resp = cookies_select(logger, token)
+    cookie_resp = cookies_select(token)
 
     if cookie_resp.get("ok") and cookie_resp.get("data"):
       data = cookie_resp["data"]["data"]
@@ -45,7 +42,7 @@ if token:
       # -------- Agenda restore added here --------
       user_id = st.session_state.get("user_id")
       if user_id:
-        agenda_result = select_agenda_by_user_id(logger, user_id)
+        agenda_result = select_agenda_by_user_id(user_id)
 
         if agenda_result.get("ok") and agenda_result.get("data"):
           row = agenda_result["data"]
@@ -58,8 +55,7 @@ if token:
           st.session_state["agenda_location"] = row.get("location")
 
   except Exception as e:
-    if logger:
-      logger.exception(f"[COOKIES] cookies_select error: {e}")
+    st.session_state["logger"].exception(f"[COOKIES] cookies_select error: {e}")
 
 # --- Navigation ---
 pages = PageSetter.get_pages()

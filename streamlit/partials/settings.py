@@ -42,17 +42,14 @@ def render_profile():
       if not agenda_id_val:
         name_update_ok = False
         st.error("No agenda loaded from backend; cannot sync name to agenda (missing agenda_id).")
-        if logger:
-          logger.warning("[SETTINGS] Name change requested but agenda_id is missing")
+        logger.warning("[SETTINGS] Name change requested but agenda_id is missing")
       else:
-        if logger:
-          logger.info(
-            f"[SETTINGS] Calling edit_agenda_user_name for agenda_id={agenda_id_val} "
-            f"user_name={name!r}"
-          )
+        logger.info(
+          f"[SETTINGS] Calling edit_agenda_user_name for agenda_id={agenda_id_val} "
+          f"user_name={name!r}"
+        )
 
         name_result = edit_agenda_user_name(
-          logger=logger,
           agenda_id=agenda_id_val,
           user_name=name,
         )
@@ -66,17 +63,14 @@ def render_profile():
       if not user_id:
         email_update_ok = False
         st.error("Missing user_id; cannot update email.")
-        if logger:
-          logger.warning("[SETTINGS] Email change requested but user_id missing")
+        logger.warning("[SETTINGS] Email change requested but user_id missing")
       else:
-        if logger:
-          logger.info(
-            f"[SETTINGS] Calling admin_update_user_email for user_id={user_id} "
-            f"new_email={email!r}"
-          )
+        logger.info(
+          f"[SETTINGS] Calling admin_update_user_email for user_id={user_id} "
+          f"new_email={email!r}"
+        )
 
         email_result = admin_update_user_email(
-          logger=logger,
           user_id=user_id,
           new_email=email,
         )
@@ -125,22 +119,19 @@ def render_agenda():
     if submitted:
       if not agenda_id_val:
         st.error("No agenda loaded from backend; cannot update agenda.")
-        if logger:
-          logger.warning("[SETTINGS] Save agenda clicked but agenda_id missing")
+        logger.warning("[SETTINGS] Save agenda clicked but agenda_id missing")
       else:
         payload_data = {
           "type": data_type,
           "location": location,
         }
 
-        if logger:
-          logger.info(
-            f"[SETTINGS] Submitting edit_agenda for agenda_id={agenda_id_val} "
-            f"name={agenda_name!r} subreddit={subreddit!r} data={payload_data!r}"
-          )
+        logger.info(
+          f"[SETTINGS] Submitting edit_agenda for agenda_id={agenda_id_val} "
+          f"name={agenda_name!r} subreddit={subreddit!r} data={payload_data!r}"
+        )
 
         result = edit_agenda(
-          logger=logger,
           agenda_id=agenda_id_val,
           name=agenda_name,
           subreddit=subreddit,
@@ -153,7 +144,7 @@ def render_agenda():
           st.error(result.get("error", "Failed to update agenda."))
 
 @st.dialog("Change your password")
-def render_password_form(logger, user_id, user_email):
+def render_password_form(user_id, user_email):
   with st.form("password_form"):
     confirm_email = st.text_input(
       "Type your account email to confirm",
@@ -170,8 +161,7 @@ def render_password_form(logger, user_id, user_email):
     if submitted:
       if not user_id:
         st.error("Cannot update password: missing user_id in session.")
-        if logger:
-          logger.warning("[SETTINGS] Missing user_id during password change")
+        logger.warning("[SETTINGS] Missing user_id during password change")
         return
 
       if not confirm_email:
@@ -187,11 +177,9 @@ def render_password_form(logger, user_id, user_email):
         return
 
       # Call backend
-      if logger:
-        logger.info("[SETTINGS] Calling admin_update_user_password")
+      logger.info("[SETTINGS] Calling admin_update_user_password")
 
       resp = admin_update_user_password(
-        logger=logger,
         user_id=user_id,
         new_password=new_password,
       )
@@ -211,7 +199,7 @@ def render_change_password():
   open_change_password = st.checkbox("Change Password confirmation")
 
   if open_change_password:
-    render_password_form(logger, user_id, user_email)
+    render_password_form(user_id, user_email)
 
 @st.dialog("Delete your account")
 def render_delete_account_form():
@@ -225,15 +213,13 @@ def render_delete_account_form():
     if submitted:
       if not user_id:
         st.error("Missing user_id — cannot delete account.")
-        if logger:
-          logger.error("[SETTINGS] Delete clicked but user_id missing")
+        logger.error("[SETTINGS] Delete clicked but user_id missing")
         return
 
       # Call backend delete API
-      if logger:
-        logger.info(f"[SETTINGS] Calling admin_delete_user for user_id={user_id}")
+      logger.info(f"[SETTINGS] Calling admin_delete_user for user_id={user_id}")
 
-      resp = admin_delete_user(logger, user_id)
+      resp = admin_delete_user(user_id)
 
       if not resp.get("ok"):
         st.error(resp.get("error", "Failed to delete account."))
