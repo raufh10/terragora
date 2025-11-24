@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import datetime
+from typing import Optional
 from modules.api import fetch_submissions_feed, run_suggest
 from modules.config import PAGE_SIZE
 
@@ -7,84 +8,129 @@ from modules.config import PAGE_SIZE
 # Internal feed state helper
 # --------------------------
 def _setup_feed_state():
-  st.write("🛠️ _setup_feed_state() called")
-
   if "agenda_feed" not in st.session_state:
     st.session_state.agenda_feed = []
-    st.write("➡️ Initialized st.session_state.agenda_feed = []")
-  else:
-    st.write("↪️ agenda_feed already exists, len =", len(st.session_state.agenda_feed))
-
   if "feed_page" not in st.session_state:
     st.session_state.feed_page = 1
-    st.write("➡️ Initialized feed_page = 1")
-  else:
-    st.write("↪️ feed_page already exists =", st.session_state.feed_page)
+  if "feed_sort" not in st.session_state:
+    st.session_state.feed_sort = "default"
+  if "feed_keyword" not in st.session_state:
+    st.session_state.feed_keyword = ""
+  if "feed_category" not in st.session_state:
+    # store the *selected* category string; "" means "All"
+    st.session_state.feed_category = ""
 
 
 # --------------------------
 # Human timestamp formatter
 # --------------------------
-def _format_timestamp(ts):
-  st.write("🕒 Formatting timestamp:", ts)
+def _format_timestamp(ts: Optional[float]) -> str:
   try:
-    formatted = datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M UTC")
-    st.write("➡️ formatted =", formatted)
-    return formatted
-  except Exception as e:
-    st.write("⚠️ Failed to format timestamp:", e)
+    return datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M UTC")
+  except Exception:
     return "unknown time"
 
 
 # --------------------------
-# Controller
+# Controller (filters + refresh)
 # --------------------------
 def feed_controller():
-  st.write("🧪 feed_controller() started")
   _setup_feed_state()
 
-  cols = st.columns([1, 0.2])
-  with cols[0]:
+  top_cols = st.columns([1, 1])
+  with top_cols[0]:
     st.subheader("Newest posts")
-  with cols[1]:
+  with top_cols[1]:
     if st.button("Refresh", key="feed_refresh"):
-      st.write("🔄 Refresh clicked — resetting feed + page")
+      # Reset pagination + accumulated items
       st.session_state.feed_page = 1
       st.session_state.agenda_feed = []
       st.rerun()
+
+  # Filter + sort controls
+  with st.expander("Filter & sort", expanded=False):
+    cols = st.columns(3)
+
+    # --- Sort control ---
+    with cols[0]:
+      sort_label = st.selectbox(
+        "Sort by",
+        ["Most recent", "Most comments", "Top scores"],
+        index={
+          "default": 0,
+          "num_comments": 1,
+          "scores": 2
+        }.get(st.session_state.get("feed_sort", "default"), 0),
+      )
+      sort_map = {
+        "Most recent": "default",
+        "Most comments": "num_comments",
+        "Top scores": "scores",
+      }
+      st.session_state.feed_sort = sort_map.get(sort_label, "default")
+
+    # --- Keyword control ---
+    with cols[1]:
+      st.session_state.feed_keyword = st.text_input(
+        "Keyword (optional)",
+        value=st.session_state.get("feed_keyword", ""),
+      )
+
+    # --- Category control (from agenda_type list) ---
+    with cols[2]:
+      raw_categories = st.session_state.get("agenda_type") or []
+      # Normalize to list
+      if isinstance(raw_categories, str):
+        raw_categories = [raw_categories]
+      elif not isinstance(raw_categories, list):
+        raw_categories = []
+
+      # Build options: "All" + specific categories
+      options = ["All"] + raw_categories if raw_categories else ["All"]
+      current = st.session_state.get("feed_category") or "All"
+      if current not in options:
+        current = "All"
+
+      selected = st.selectbox(
+        "Category",
+        options,
+        index=options.index(current),
+      )
+
+      # Store "" for All (so backend receives None later)
+      st.session_state.feed_category = "" if selected == "All" else selected
 
 
 # --------------------------
 # Main Feed Renderer
 # --------------------------
 def feed():
-  st.write("🧪 feed() started")
   _setup_feed_state()
 
   logger = st.session_state.get("logger")
-  st.write("📝 logger exists:", bool(logger))
-
   agenda_id = st.session_state.get("agenda_id")
-  st.write("📌 agenda_id =", agenda_id)
 
   if not agenda_id:
-    st.warning("⚠️ No agenda selected. Go to Settings to configure one.")
+    st.warning("No agenda selected. Go to Settings to configure one.")
     return
 
   page = st.session_state.feed_page
-  st.write("📄 Current feed page =", page)
+  sort = st.session_state.get("feed_sort", "default")
+  keyword = st.session_state.get("feed_keyword") or None
+  category = st.session_state.get("feed_category") or None  # "" → None
 
   # ----------------------------
   # Fetch backend feed
   # ----------------------------
-  st.write("➡️ Calling fetch_submissions_feed() with arguments:")
-  st.write("   agenda_id =", agenda_id)
-  st.write("   page =", page)
-  st.write("   per_page =", PAGE_SIZE)
-
-  resp = fetch_submissions_feed(logger, agenda_id, page=page, per_page=PAGE_SIZE)
-
-  st.write("📬 Raw fetch_submissions_feed response:", resp)
+  resp = fetch_submissions_feed(
+    logger,
+    agenda_id,
+    page=page,
+    per_page=PAGE_SIZE,
+    sort=sort,
+    keyword=keyword,
+    category=category,
+  )
 
   if not resp.get("ok"):
     st.error(resp.get("error", "Failed to load feed"))
@@ -93,23 +139,15 @@ def feed():
   items = resp.get("data", [])
   count = resp.get("count", 0)
 
-  st.write(f"📦 Received {len(items)} items for this page (count={count})")
-
-  # Append into state for persistent pagination
-  before_len = len(st.session_state.agenda_feed)
+  # Append into state for persistent pagination across pages
   st.session_state.agenda_feed.extend(items)
-  after_len = len(st.session_state.agenda_feed)
-
-  st.write(f"🧩 agenda_feed length before={before_len}, after={after_len}")
 
   # ----------------------------
   # Render each item
   # ----------------------------
-  for idx, it in enumerate(items, start=1):
-    st.write(f"🔹 Rendering item #{idx}:", it)
-
+  for it in items:
     with st.container(border=True):
-      st.markdown(f"### {it['title']}")
+      st.markdown(f"### {it.get('title', '(no title)')}")
 
       # created time
       human_time = _format_timestamp(it.get("created_utc"))
@@ -118,49 +156,47 @@ def feed():
       with meta_cols[0]:
         st.caption(human_time)
       with meta_cols[1]:
-        st.caption(f"category: {it.get('category_data','unknown')}")
+        st.caption(f"category: {it.get('category', 'unknown')}")
       with meta_cols[2]:
         flair = it.get("link_flair_text") or "no flair"
         st.caption(f"flair: {flair}")
 
       # Post body (optional)
       if it.get("is_self") and it.get("selftext"):
-        st.write("📝 This item contains selftext → showing expander")
         with st.expander("Post body"):
           st.write(it["selftext"])
-      else:
-        st.write("ℹ️ No selftext for this post")
 
       # Reddit link
-      st.write("🔗 Reddit URL:", it.get("url"))
       st.link_button("View on Reddit", it.get("url"))
 
-      # Angles Pop Up
-      angles = it.get("angles_data", [])
-      if angles:
+      # Angles
+      angles_data = it.get("angles_data")
+      if angles_data:
         with st.expander("Reply Ideas"):
-          st.write(angles)
-        
+          st.write(angles_data)
       else:
-        logger = st.session_state.get("logger")
+        logger_local = st.session_state.get("logger")
+        user_id = st.session_state.get("user_id")
+        submission_id = it.get("id")
+
+        def _on_generate_angles(
+          _logger=logger_local,
+          _user_id=user_id,
+          _submission_id=submission_id,
+        ):
+          run_suggest(_logger, _user_id, _submission_id)
+
         st.button(
           "Generate Angles",
-          on_click=run_suggest(
-            logger,
-            st.session_state.get("user_id"),
-            it.get("id")
-          )
+          key=f"generate_angles_{submission_id}",
+          on_click=_on_generate_angles,
         )
 
   # ----------------------------
   # Pagination
   # ----------------------------
-  if resp.get("count", 0) >= PAGE_SIZE:
+  if count >= PAGE_SIZE:
     st.divider()
-    st.write("📨 Showing load more button (more pages available)")
     if st.button("Load more", key=f"more_page_{page}"):
-      st.write("➡️ Load more clicked — advancing page")
       st.session_state.feed_page += 1
       st.rerun()
-  else:
-    st.write("📭 No more items to load (end of feed)")

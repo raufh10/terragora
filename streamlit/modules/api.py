@@ -428,7 +428,9 @@ def fetch_submissions_feed(
   agenda_id: int,
   page: int = 1,
   per_page: int = 10,
-  sort: str = "desc"
+  sort: str = "default",
+  keyword: Optional[str] = None,
+  category: Optional[str] = None,
 ) -> Dict[str, Any]:
   """
   Call backend route POST /submissions/{agenda_id}/feed.
@@ -436,21 +438,30 @@ def fetch_submissions_feed(
   Mirrors FastAPI endpoint:
 
     @router.post("/submissions/{agenda_id}/feed")
+
+  Payload supports:
+    - page: int
+    - per_page: int
+    - sort: "default" | "num_comments" | "scores"
+    - keyword: Optional[str]
+    - category: Optional[str]
   """
   if not isinstance(agenda_id, int) or agenda_id <= 0:
     return _fail(logger, "fetch_submissions_feed requires a positive integer agenda_id")
 
-  payload = {
+  payload: Dict[str, Any] = {
     "page": page,
     "per_page": per_page,
     "sort": sort,
+    "keyword": keyword,
+    "category": category,
   }
 
   try:
     resp = requests.post(
       f"{get_backend_api_endpoint()}/submissions/{agenda_id}/feed",
       json=payload,
-      timeout=15
+      timeout=15,
     )
     if resp.status_code >= 400:
       msg = f"submissions/{agenda_id}/feed failed with status {resp.status_code}: {resp.text}"
