@@ -2,12 +2,6 @@ from typing import Optional
 from supabase import Client
 from services.database.agendas import select_subreddit
 
-def has_accepted_subcategory(data, accepted):
-  if data is None:
-    return False
-  else:
-    return any(item.get("subcategory") in accepted for item in data)
-
 async def select(
   supabase: Client,
   logger,
@@ -54,14 +48,14 @@ async def select(
 
     start = (page - 1) * per_page
     end = start + per_page - 1
-    print(type(category))
+
     query = (
       supabase
       .table("submissions")
       .select(
         "id, "
         "subreddit, "
-        "category_data, "
+        "category, "
         "data->title, "
         "data->link_flair_text, "
         "data->num_comments, "
@@ -72,8 +66,8 @@ async def select(
         "data->url"
       )
       .eq("subreddit", subreddit)
-      .not_.is_("category_data", "null")
-      .overlaps("category_data->>list", category)
+      .not_.is_("category", "null")
+      .overlaps("category", category)
     )
 
     if keyword:
@@ -91,13 +85,6 @@ async def select(
 
     if not response.data:
       return []
-
-    """
-    filtered = [
-      item for item in response.data
-      if has_accepted_subcategory(item.get("category_data", []), category)
-    ]
-    """
 
     return response.data
 
