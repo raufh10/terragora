@@ -12,6 +12,8 @@ from modules.config import (
   get_supabase_public_key
 )
 
+logger = st.session_state["logger"]
+
 # ===== Admin =====
 def send_telegram_notification(message: str) -> bool:
   try:
@@ -37,14 +39,14 @@ def get_supabase_client() -> Client:
 def _ok(data: Any = None) -> Dict[str, Any]:
   return {"ok": True, "data": data}
 
-def _fail(logger, msg: str, exc: Optional[Exception] = None) -> Dict[str, Any]:
+def _fail(msg: str, exc: Optional[Exception] = None) -> Dict[str, Any]:
   if exc:
     logger.error(f"{msg}: {exc}")
   else:
     logger.error(msg)
   return {"ok": False, "error": msg}
 
-def _sync_session_into_cookies(logger, auth_resp):
+def _sync_session_into_cookies(auth_resp):
   """
   Given a Supabase auth response (with `.session` and `.user`),
   extract tokens + user info, update session_state, and
@@ -114,7 +116,7 @@ def _sync_session_into_cookies(logger, auth_resp):
   if logger:
     logger.info(f"[AUTH] Syncing auth response → cookies_create() for token={token}")
 
-  resp = cookies_create(logger, token, payload)
+  resp = cookies_create(token, payload)
 
   if logger and not resp.get("ok"):
     logger.warning(f"[AUTH] cookies_create failed during session sync: {resp}")
@@ -122,57 +124,53 @@ def _sync_session_into_cookies(logger, auth_resp):
 # ---------- Auth: Basic ----------
 def sign_up(
   supabase: Client,
-  logger,
   email: str,
   password: str
 ) -> Dict[str, Any]:
   """Create a new user with email/password."""
   if not email or not password:
-    return _fail(logger, "sign_up requires non-empty email and password")
+    return _fail("sign_up requires non-empty email and password")
 
   try:
     resp = supabase.auth.sign_up({"email": email, "password": password})
     return _ok(resp)
   except Exception as e:
-    return _fail(logger, "sign_up failed", e)
+    return _fail("sign_up failed", e)
 
 def sign_in(
   supabase: Client,
-  logger,
   email: str,
   password: str
 ) -> Dict[str, Any]:
   """Sign in a user with email/password."""
   if not email or not password:
-    return _fail(logger, "sign_in requires non-empty email and password")
+    return _fail("sign_in requires non-empty email and password")
 
   try:
     resp = supabase.auth.sign_in_with_password({"email": email, "password": password})
     return _ok(resp)
   except Exception as e:
-    return _fail(logger, "sign_in failed", e)
+    return _fail("sign_in failed", e)
 
 def sign_out(
-  supabase: Client,
-  logger
+  supabase: Client
 ) -> Dict[str, Any]:
   """Sign out the current session."""
   try:
     resp = supabase.auth.sign_out()
     return _ok(resp)
   except Exception as e:
-    return _fail(logger, "sign_out failed", e)
+    return _fail("sign_out failed", e)
 
 # ---------- Auth: Password Reset ----------
 def reset_password_for_email(
   supabase: Client,
-  logger,
   email: str,
   redirect_to: Optional[str] = None
 ) -> Dict[str, Any]:
   """Send a password reset email with optional redirect URL."""
   if not email:
-    return _fail(logger, "reset_password_for_email requires non-empty email")
+    return _fail("reset_password_for_email requires non-empty email")
 
   options = {}
   if redirect_to:
@@ -182,12 +180,11 @@ def reset_password_for_email(
     resp = supabase.auth.reset_password_for_email(email, options)
     return _ok(resp)
   except Exception as e:
-    return _fail(logger, "reset_password_for_email failed", e)
+    return _fail("reset_password_for_email failed", e)
 
 # ---------- Auth: Session (Auto-Sync to backend cookies table) ----------
 def get_session(
-  supabase: Client,
-  logger
+  supabase: Client
 ) -> Dict[str, Any]:
   """Get the current auth session (if any) and sync into cookies table."""
   try:
@@ -195,16 +192,15 @@ def get_session(
     result = _ok(resp)
 
     # resp now holds both .session and .user branches
-    _sync_session_into_cookies(logger, resp)
+    _sync_session_into_cookies(resp)
 
     return result
   except Exception as e:
-    return _fail(logger, "get_session failed", e)
+    return _fail("get_session failed", e)
 
 
 def refresh_session(
-  supabase: Client,
-  logger
+  supabase: Client
 ) -> Dict[str, Any]:
   """Refresh tokens, then sync to cookies table."""
   try:
@@ -212,73 +208,69 @@ def refresh_session(
     result = _ok(resp)
 
     # resp now holds both .session and .user branches
-    _sync_session_into_cookies(logger, resp)
+    _sync_session_into_cookies(resp)
 
     return result
   except Exception as e:
-    return _fail(logger, "refresh_session failed", e)
+    return _fail("refresh_session failed", e)
 
 
 def set_session_from_tokens(
   supabase: Client,
-  logger,
   access_token: str,
   refresh_token: str
 ) -> Dict[str, Any]:
   """Set the current auth session from existing tokens, then sync."""
   if not access_token or not refresh_token:
-    return _fail(logger, "set_session_from_tokens requires non-empty access_token and refresh_token")
+    return _fail("set_session_from_tokens requires non-empty access_token and refresh_token")
 
   try:
     resp = supabase.auth.set_session(access_token, refresh_token)
     result = _ok(resp)
 
     # resp now holds both .session and .user branches
-    _sync_session_into_cookies(logger, resp)
+    _sync_session_into_cookies(resp)
 
     return result
   except Exception as e:
-    return _fail(logger, "set_session_from_tokens failed", e)
+    return _fail("set_session_from_tokens failed", e)
 
 # ---------- Auth: Update User ----------
 def update_user_email(
   supabase: Client,
-  logger,
   new_email: str
 ) -> Dict[str, Any]:
   """Update the current user's email."""
   if not new_email:
-    return _fail(logger, "update_user_email requires non-empty new_email")
+    return _fail("update_user_email requires non-empty new_email")
 
   try:
     resp = supabase.auth.update_user({"email": new_email})
     return _ok(resp)
   except Exception as e:
-    return _fail(logger, "update_user_email failed", e)
+    return _fail("update_user_email failed", e)
 
 def update_user_password(
   supabase: Client,
-  logger,
   new_password: str
 ) -> Dict[str, Any]:
   """Update the current user's password."""
   if not new_password:
-    return _fail(logger, "update_user_password requires non-empty new_password")
+    return _fail("update_user_password requires non-empty new_password")
 
   try:
     resp = supabase.auth.update_user({"password": new_password})
     return _ok(resp)
   except Exception as e:
-    return _fail(logger, "update_user_password failed", e)
+    return _fail("update_user_password failed", e)
 
 # ---------- Agendas: via BACKEND_API ----------
 def select_agenda_by_user_id(
-  logger,
   user_id: str
 ) -> Dict[str, Any]:
   """Call backend route POST /agendas/select."""
   if not user_id:
-    return _fail(logger, "select_agenda_by_user_id requires non-empty user_id")
+    return _fail("select_agenda_by_user_id requires non-empty user_id")
 
   try:
     resp = requests.post(
@@ -288,14 +280,13 @@ def select_agenda_by_user_id(
     )
     if resp.status_code >= 400:
       msg = f"agendas/select failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "select_agenda_by_user_id request failed", e)
+    return _fail("select_agenda_by_user_id request failed", e)
 
 def edit_agenda(
-  logger,
   agenda_id: int,
   name: Optional[str] = None,
   subreddit: Optional[str] = None,
@@ -309,7 +300,7 @@ def edit_agenda(
     - name / subreddit / data: optional fields to update
   """
   if not isinstance(agenda_id, int) or agenda_id <= 0:
-    return _fail(logger, "edit_agenda requires a positive integer agenda_id")
+    return _fail("edit_agenda requires a positive integer agenda_id")
 
   payload: Dict[str, Any] = {"agenda_id": agenda_id}
 
@@ -322,7 +313,7 @@ def edit_agenda(
 
   # Ensure at least one field besides agenda_id is being updated
   if len(payload) == 1:
-    return _fail(logger, "edit_agenda requires at least one of name, subreddit, or data")
+    return _fail("edit_agenda requires at least one of name, subreddit, or data")
 
   try:
     resp = requests.post(
@@ -332,14 +323,13 @@ def edit_agenda(
     )
     if resp.status_code >= 400:
       msg = f"agendas/edit failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "edit_agenda request failed", e)
+    return _fail("edit_agenda request failed", e)
 
 def edit_agenda_user_name(
-  logger,
   agenda_id: int,
   user_name: str
 ) -> Dict[str, Any]:
@@ -351,9 +341,9 @@ def edit_agenda_user_name(
     @router.post("/agendas/edit_user_name")
   """
   if not isinstance(agenda_id, int) or agenda_id <= 0:
-    return _fail(logger, "edit_agenda_user_name requires a positive integer agenda_id")
+    return _fail("edit_agenda_user_name requires a positive integer agenda_id")
   if not user_name:
-    return _fail(logger, "edit_agenda_user_name requires non-empty user_name")
+    return _fail("edit_agenda_user_name requires non-empty user_name")
 
   payload = {
     "agenda_id": agenda_id,
@@ -368,14 +358,13 @@ def edit_agenda_user_name(
     )
     if resp.status_code >= 400:
       msg = f"agendas/edit_user_name failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "edit_agenda_user_name request failed", e)
+    return _fail("edit_agenda_user_name request failed", e)
 
 def create_agenda(
-  logger,
   subreddit: str,
   user_id: str,
   name: str,
@@ -390,15 +379,15 @@ def create_agenda(
     @router.post("/agendas/create")
   """
   if not subreddit:
-    return _fail(logger, "create_agenda requires non-empty subreddit")
+    return _fail("create_agenda requires non-empty subreddit")
   if not user_id:
-    return _fail(logger, "create_agenda requires non-empty user_id")
+    return _fail("create_agenda requires non-empty user_id")
   if not name:
-    return _fail(logger, "create_agenda requires non-empty name")
+    return _fail("create_agenda requires non-empty name")
   if not user_name:
-    return _fail(logger, "create_agenda requires non-empty user_name")
+    return _fail("create_agenda requires non-empty user_name")
   if not isinstance(data, dict):
-    return _fail(logger, "create_agenda requires data to be a JSON-serializable dict")
+    return _fail("create_agenda requires data to be a JSON-serializable dict")
 
   payload = {
     "subreddit": subreddit,
@@ -416,15 +405,14 @@ def create_agenda(
     )
     if resp.status_code >= 400:
       msg = f"agendas/create failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "create_agenda request failed", e)
+    return _fail("create_agenda request failed", e)
 
 # ---------- Dashboard: Submissions feed via BACKEND_API ----------
 def fetch_submissions_feed(
-  logger,
   agenda_id: int,
   page: int = 1,
   per_page: int = 10,
@@ -447,7 +435,7 @@ def fetch_submissions_feed(
     - category: Optional[str]
   """
   if not isinstance(agenda_id, int) or agenda_id <= 0:
-    return _fail(logger, "fetch_submissions_feed requires a positive integer agenda_id")
+    return _fail("fetch_submissions_feed requires a positive integer agenda_id")
 
   payload: Dict[str, Any] = {
     "page": page,
@@ -465,15 +453,14 @@ def fetch_submissions_feed(
     )
     if resp.status_code >= 400:
       msg = f"submissions/{agenda_id}/feed failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "fetch_submissions_feed request failed", e)
+    return _fail("fetch_submissions_feed request failed", e)
 
 # ---------- Cookies: via BACKEND_API ----------
 def cookies_create(
-  logger,
   token: str,
   data: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -485,9 +472,9 @@ def cookies_create(
     @router.post("/cookies/create")
   """
   if not token:
-    return _fail(logger, "cookies_create requires non-empty token")
+    return _fail("cookies_create requires non-empty token")
   if not isinstance(data, dict):
-    return _fail(logger, "cookies_create requires data to be a JSON-serializable dict")
+    return _fail("cookies_create requires data to be a JSON-serializable dict")
 
   payload = {
     "token": token,
@@ -502,14 +489,13 @@ def cookies_create(
     )
     if resp.status_code >= 400:
       msg = f"cookies/create failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "cookies_create request failed", e)
+    return _fail("cookies_create request failed", e)
 
 def cookies_select(
-  logger,
   token: str
 ) -> Dict[str, Any]:
   """
@@ -520,7 +506,7 @@ def cookies_select(
     @router.post("/cookies/select")
   """
   if not token:
-    return _fail(logger, "cookies_select requires non-empty token")
+    return _fail("cookies_select requires non-empty token")
 
   payload = {"token": token}
 
@@ -532,14 +518,13 @@ def cookies_select(
     )
     if resp.status_code >= 400:
       msg = f"cookies/select failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "cookies_select request failed", e)
+    return _fail("cookies_select request failed", e)
 
 def cookies_delete(
-  logger,
   token: str
 ) -> Dict[str, Any]:
   """
@@ -547,7 +532,7 @@ def cookies_delete(
   If deletion is successful, also remove the browser cookie.
   """
   if not token:
-    return _fail(logger, "cookies_delete requires non-empty token")
+    return _fail("cookies_delete requires non-empty token")
 
   payload = {"token": token}
 
@@ -560,7 +545,7 @@ def cookies_delete(
 
     if resp.status_code >= 400:
       msg = f"cookies/delete failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     result = resp.json()
     if result.get("ok"):
@@ -580,11 +565,10 @@ def cookies_delete(
     return result
 
   except Exception as e:
-    return _fail(logger, "cookies_delete request failed", e)
+    return _fail("cookies_delete request failed", e)
 
 # ---------- Account Admin: via BACKEND_API ----------
 def admin_delete_user(
-  logger,
   user_id: str
 ) -> Dict[str, Any]:
   """
@@ -593,7 +577,7 @@ def admin_delete_user(
   via cookies_delete().
   """
   if not user_id:
-    return _fail(logger, "admin_delete_user requires non-empty user_id")
+    return _fail("admin_delete_user requires non-empty user_id")
 
   payload = {"user_id": user_id}
 
@@ -605,7 +589,7 @@ def admin_delete_user(
     )
     if resp.status_code >= 400:
       msg = f"account/admin/delete failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     result = resp.json()
 
@@ -617,7 +601,7 @@ def admin_delete_user(
         token = cookie_state.get("ajs_anonymous_id")
 
         if token:
-          cookies_delete(logger, token)
+          cookies_delete(token)
         elif logger:
           logger.warning(
             "[ACCOUNT] User deleted but no ajs_anonymous_id token found; "
@@ -632,10 +616,9 @@ def admin_delete_user(
     return result
 
   except Exception as e:
-    return _fail(logger, "admin_delete_user request failed", e)
+    return _fail("admin_delete_user request failed", e)
 
 def admin_update_user_email(
-  logger,
   user_id: str,
   new_email: str,
   supabase: Optional[Client] = None
@@ -644,9 +627,9 @@ def admin_update_user_email(
   Update user email via backend API with automatic token refresh + retry.
   """
   if not user_id:
-    return _fail(logger, "admin_update_user_email requires non-empty user_id")
+    return _fail("admin_update_user_email requires non-empty user_id")
   if not new_email:
-    return _fail(logger, "admin_update_user_email requires non-empty new_email")
+    return _fail("admin_update_user_email requires non-empty new_email")
 
   payload = {
     "user_id": user_id,
@@ -663,10 +646,10 @@ def admin_update_user_email(
       )
       if resp.status_code >= 400:
         msg = f"account/admin/update-email failed with status {resp.status_code}: {resp.text}"
-        return _fail(logger, msg)
+        return _fail(msg)
       return resp.json()
     except Exception as e:
-      return _fail(logger, "admin_update_user_email request failed", e)
+      return _fail("admin_update_user_email request failed", e)
 
   # --- First attempt ---
   result = _do_request()
@@ -684,7 +667,7 @@ def admin_update_user_email(
     return result  # cannot refresh without supabase client
 
   # 1) Try refresh_session()
-  refresh_res = refresh_session(supabase, logger)
+  refresh_res = refresh_session(supabase)
   if refresh_res.get("ok"):
     if logger:
       logger.info("[AUTH] refresh_session() succeeded — retrying email update")
@@ -700,7 +683,7 @@ def admin_update_user_email(
     if logger:
       logger.info("[AUTH] refresh_session failed — trying set_session_from_tokens()")
 
-    set_res = set_session_from_tokens(supabase, logger, access, refresh)
+    set_res = set_session_from_tokens(supabase, access, refresh)
 
     if set_res.get("ok"):
       retry2 = _do_request()
@@ -710,7 +693,6 @@ def admin_update_user_email(
   return result
 
 def admin_update_user_password(
-  logger,
   user_id: str,
   new_password: str
 ) -> Dict[str, Any]:
@@ -718,9 +700,9 @@ def admin_update_user_password(
   Call backend route POST /account/admin/update-password.
   """
   if not user_id:
-    return _fail(logger, "admin_update_user_password requires non-empty user_id")
+    return _fail("admin_update_user_password requires non-empty user_id")
   if not new_password:
-    return _fail(logger, "admin_update_user_password requires non-empty new_password")
+    return _fail("admin_update_user_password requires non-empty new_password")
 
   payload = {
     "user_id": user_id,
@@ -735,15 +717,14 @@ def admin_update_user_password(
     )
     if resp.status_code >= 400:
       msg = f"account/admin/update-password failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
   except Exception as e:
-    return _fail(logger, "admin_update_user_password request failed", e)
+    return _fail("admin_update_user_password request failed", e)
 
 # ---------- Angles: via BACKEND_API ----------
 def run_suggest(
-  logger,
   user_id: str,
   submission_id: int
 ) -> Dict[str, Any]:
@@ -755,9 +736,9 @@ def run_suggest(
     - submission_id
   """
   if not user_id:
-    return _fail(logger, "run_suggest requires non-empty user_id")
+    return _fail("run_suggest requires non-empty user_id")
   if not submission_id:
-    return _fail(logger, "run_suggest requires non-empty submission_id")
+    return _fail("run_suggest requires non-empty submission_id")
 
   payload = {
     "user_id": user_id,
@@ -772,9 +753,9 @@ def run_suggest(
     )
     if resp.status_code >= 400:
       msg = f"suggest/run failed with status {resp.status_code}: {resp.text}"
-      return _fail(logger, msg)
+      return _fail(msg)
 
     return resp.json()
 
   except Exception as e:
-    return _fail(logger, "run_suggest request failed", e)
+    return _fail("run_suggest request failed", e)
