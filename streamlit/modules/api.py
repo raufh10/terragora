@@ -12,7 +12,7 @@ from modules.config import (
   get_supabase_public_key
 )
 
-logger = st.session_state["logger"]
+logger = st.session_state.get("logger", None)
 
 # ===== Admin =====
 def send_telegram_notification(message: str) -> bool:
