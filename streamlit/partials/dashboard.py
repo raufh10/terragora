@@ -98,7 +98,7 @@ def feed_controller():
       )
 
       # Store "" for All (so backend receives None later)
-      st.session_state.feed_category = "" if selected == "All" else selected
+      st.session_state.feed_category = st.session_state.get("agenda_type") if selected == "All" else [selected]
 
 
 # --------------------------
