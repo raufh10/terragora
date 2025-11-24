@@ -224,7 +224,8 @@ def _process_agenda(
     insert_result = {
       "submission_id": sid,
       "to_insert": {
-        "category_data": data_out["subcategories"]
+        "category": data_out["category"]
+        "category_data": data_out["category_data"]["subcategories"]
       }
     }
     all_results.append(insert_result)
