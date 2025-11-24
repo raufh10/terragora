@@ -73,8 +73,8 @@ async def run_analysis(
 
     data = result.model_dump()
     final_data = {
-      "list": [item["subcategory"] for item in data],
-      "data": data
+      "category": [item["subcategory"] for item in data],
+      "category_data": data
     }
 
     logger.info("✅ {active_model} generation completed")

@@ -54,7 +54,7 @@ async def select(
 
     start = (page - 1) * per_page
     end = start + per_page - 1
-
+    print(type(category))
     query = (
       supabase
       .table("submissions")
@@ -73,14 +73,14 @@ async def select(
       )
       .eq("subreddit", subreddit)
       .not_.is_("category_data", "null")
-      .contains("category_data->list", category)
+      .overlaps("category_data->>list", category)
     )
 
     if keyword:
       kw = str(keyword).strip()
       if kw:
         pattern = f"%{kw}%"
-        query = query.like("data->>title", pattern)
+        query = query.ilike("data->>title", pattern)
 
     response = (
       query
@@ -99,7 +99,7 @@ async def select(
     ]
     """
 
-    return filtered
+    return response.data
 
   except Exception as e:
     logger.error(f"Failed to fetch Submissions based on agenda id: {str(e)}")
