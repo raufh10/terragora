@@ -73,7 +73,7 @@ async def run_analysis(
 
     data = result.model_dump()
     final_data = {
-      "category": [item["subcategory"] for item in data],
+      "category": [item["subcategory"] for item in data["subcategories"]],
       "category_data": data
     }
 
