@@ -5,8 +5,7 @@ from typing import Optional, Dict, Callable, List
 from pydantic import SecretStr, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from scheduler.actions import do_all
-#from scheduler.test_actions import do_test
+from scheduler import actions
 
 class Settings(BaseSettings):
   model_config = SettingsConfigDict(
@@ -32,8 +31,7 @@ class Settings(BaseSettings):
   ]
 
   ACTION_REGISTRY: Dict[str, Callable[..., None]] = {
-    "all": do_all,
-    #"test": do_test,
+    "all": actions.all,
   }
 
   @model_validator(mode="after")
