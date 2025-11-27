@@ -180,3 +180,6 @@ class AgendaProcessor:
         logger.info("Category updates complete")
       except Exception as e:
         logger.error(f"Update exception: {e}")
+
+def run_agenda_processor():
+  AgendaProcessor.run()

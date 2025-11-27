@@ -4,4 +4,4 @@ time_rules:
     action: "all"
 
 actions:
-  all: "AgendaProcessor.run()"
+  all: "run_agenda_processor"
