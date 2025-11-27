@@ -7,236 +7,176 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Tuple, Optional
 
 from services.database import db, agendas, submissions
+from logger import start_logger
 
 PROMPTS_PATH = "data/prompts.yaml"
-def _load_prompts_yaml(logger, path: str = PROMPTS_PATH) -> Tuple[str, str]:
-  try:
+logger = start_logger()
+
+
+class AgendaProcessor:
+  def __init__(self):
+    from services.config import settings
+    self.supabase = db.get_supabase_client()
+    self.api = settings.API_ENDPOINT.rstrip("/")
+
+    self.fetch_url = f"{self.api}/submissions/fetch"
+    self.run_url = f"{self.api}/analysis/run"
+
+    self.system_prompt, self.user_prompt_tpl = self._load_yaml(PROMPTS_PATH)
+
+  @staticmethod
+  def _load_yaml(path: str) -> Tuple[str, str]:
     with open(path, "r", encoding="utf-8") as f:
       data = yaml.safe_load(f)
-  except Exception as e:
-    logger.exception(f"❌ Unable to read or parse YAML at {path}")
-    raise RuntimeError(f"Failed to read/parse prompts YAML: {e}") from e
 
-  if not isinstance(data, dict):
-    raise ValueError(f"Invalid YAML structure in {path}: expected a mapping at top-level")
+    block = data.get("discover_category")
+    if not isinstance(block, dict):
+      raise ValueError("Missing required key 'discover_category' in YAML")
 
-  block = data.get("discover_category")
-  if not isinstance(block, dict):
-    raise ValueError("Missing required key 'submission_category' (mapping) in prompts YAML")
+    system_prompt = block.get("system_prompt")
+    user_prompt = block.get("user_prompt")
 
-  system_prompt = block.get("system_prompt")
-  user_prompt = block.get("user_prompt")
+    if not system_prompt or not user_prompt:
+      raise ValueError("YAML missing system_prompt or user_prompt")
 
-  if not isinstance(system_prompt, str) or not system_prompt.strip():
-    raise ValueError("'submission_category.system_prompt' must be a non-empty string")
+    return system_prompt.strip(), user_prompt.strip()
 
-  if not isinstance(user_prompt, str) or not user_prompt.strip():
-    raise ValueError("'submission_category.user_prompt' must be a non-empty string")
+  @classmethod
+  def run(cls):
+    processor = cls()
+    processor._run_all()
 
-  return system_prompt.strip(), user_prompt.strip()
-
-def do_all(logger):
-  supabase = db.get_supabase_client()
-
-  # --- Load configuration ---
-  try:
-    from services.config import settings
-    api = getattr(settings, "API_ENDPOINT", None)
-  except Exception:
-    logger.exception("❌ Unable to import settings or read API_ENDPOINT")
-    return
-  if not api:
-    logger.error("❌ Missing settings.API_ENDPOINT")
-    return
-
-  fetch_url = f"{api.rstrip('/')}/submissions/fetch"
-  run_url = f"{api.rstrip('/')}/analysis/run"
-
-  # --- Load prompts from YAML ---
-  system_prompt, user_prompt_tpl = _load_prompts_yaml(logger, PROMPTS_PATH)
-  logger.debug(
-    f"🧾 Prompts loaded | system_len={len(system_prompt)} user_tpl_len={len(user_prompt_tpl)}"
-  )
-
-  # --- Fetch all agendas ---
-  try:
-    agenda_list = asyncio.run(agendas.select(supabase, logger)) or []
-  except Exception as e:
-    logger.error(f"❌ Agenda select exception: {e}")
-    return
-
-  if not agenda_list:
-    logger.warning("⚠️ No agendas found in database")
-    return
-
-  logger.info(f"🗂️ Found {len(agenda_list)} agenda(s) to process")
-
-  for idx, agenda in enumerate(agenda_list, start=1):
+  def _run_all(self):
     try:
-      logger.info(f"====== ▶️ Agenda {idx}/{len(agenda_list)} | id={agenda.get('id')} ======")
-      _process_agenda(logger, supabase, agenda, fetch_url, run_url, system_prompt, user_prompt_tpl)
+      agenda_list = asyncio.run(agendas.select(self.supabase, logger)) or []
     except Exception as e:
-      logger.exception(f"💥 Unhandled error processing agenda id={agenda.get('id')}: {e}")
-      continue
+      logger.error(f"Agenda select failed: {e}")
+      return
 
-def _process_agenda(
-  logger,
-  supabase,
-  agenda: Dict[str, Any],
-  fetch_url: str,
-  run_url: str,
-  system_prompt: str,
-  user_prompt_tpl: str,
-):
-  try:
-    agenda_id = agenda["id"]
-    data = agenda.get("data") or {}
+    if not agenda_list:
+      logger.warning("No agendas found")
+      return
 
-    agenda_subreddit = agenda.get("subreddit")
-    if not agenda_subreddit:
-      raise ValueError("Missing required field: subreddit")
+    logger.info(f"Processing {len(agenda_list)} agendas")
 
-  except Exception:
-    logger.exception("❌ Agenda missing required fields; skipping")
-    return
+    for idx, agenda_row in enumerate(agenda_list, start=1):
+      logger.info(f"▶ Agenda {idx}/{len(agenda_list)} | id={agenda_row.get('id')}")
+      self._process_single_agenda(agenda_row)
 
-  # =====================
-  # 1️⃣ EXTRACT
-  # =====================
-  fetch_payload = {"subreddit": agenda_subreddit}
+  def _process_single_agenda(self, agenda: Dict[str, Any]):
+    agenda_id = agenda.get("id")
+    subreddit = agenda.get("subreddit")
 
-  all_insert_data: List[Dict[str, Any]] = []
-  try:
-    logger.info(f"📡 POST {fetch_url} | subreddit={agenda_subreddit}")
-    resp = requests.post(fetch_url, json=fetch_payload, timeout=60)
-    if not resp.ok:
-      logger.error(f"⚠️ Fetch failed [{resp.status_code}] → {resp.text[:300]}")
-    else:
+    if not subreddit:
+      logger.error("Missing subreddit; skipping")
+      return
+
+    fetch_payload = {"subreddit": subreddit}
+    insert_buffer = []
+
+    try:
+      resp = requests.post(self.fetch_url, json=fetch_payload, timeout=60)
+      if not resp.ok:
+        logger.error(f"Fetch failed [{resp.status_code}] {resp.text[:200]}")
+        return
+
+      body = resp.json()
+      posts = body.get("results", {}).get(subreddit)
+
+      if not posts:
+        logger.warning(f"No posts returned for r/{subreddit}")
+        return
+
       try:
-        body = resp.json()
-      except ValueError:
-        body = {}
-        logger.error("⚠️ Invalid JSON response from fetch endpoint")
+        existing = asyncio.run(submissions.select_reddit_ids(self.supabase, logger, subreddit)) or []
+      except Exception:
+        existing = []
 
-      ok = bool(body.get("ok"))
-      results = body.get("results") or {}
-      posts = results.get(agenda_subreddit) if isinstance(results, dict) else results
-      if not ok or not posts:
-        logger.warning(f"⚠️ No posts returned for r/{agenda_subreddit}")
-      else:
-        try:
-          existing_ids = asyncio.run(submissions.select_reddit_ids(supabase, logger, agenda_subreddit))
-          existing_ids = set(existing_ids or [])
-        except Exception as e:
-          logger.exception(f"❌ Failed reading existing reddit_ids: {e}")
-          existing_ids = set()
+      existing = set(existing)
 
-        for post in posts:
-          if not isinstance(post, dict):
-            continue
-          rid = post.get("id")
+      for post in posts:
+        rid = post.get("id")
+        if not rid:
+          continue
 
-          # Duplicate Remover
-          #if not rid or rid in existing_ids:
-            #continue
+        new_post = dict(post)
+        new_post.pop("id", None)
 
-          new_post = dict(post)
-          new_post.pop("id", None)
-          all_insert_data.append({
-            "reddit_id": rid,
-            "subreddit": agenda_subreddit,
-            "data": new_post
-          })
+        insert_buffer.append({
+          "reddit_id": rid,
+          "subreddit": subreddit,
+          "data": new_post
+        })
 
-  except requests.RequestException as e:
-    logger.exception(f"❌ Request error calling fetch endpoint: {e}")
-
-  if all_insert_data:
-    try:
-      status = asyncio.run(submissions.insert(supabase, logger, all_insert_data))
-      if status:
-        logger.info(f"📥 Insert complete | total_inserted={len(all_insert_data)}")
-      else:
-        logger.warning("⚠️ Insert returned falsy result")
     except Exception as e:
-      logger.error(f"❌ Insert exception (submissions): {e}")
-  else:
-    logger.warning("⚠️ No valid submission data collected; skipping insert")
+      logger.error(f"Fetch exception: {e}")
 
-  # =====================
-  # 2️⃣ TRANSFORM (→ /analysis/run with prompts)
-  # =====================
-  try:
-    submissions_data = asyncio.run(submissions.select_to_label(supabase, logger, agenda_subreddit))
-  except Exception as e:
-    logger.error(f"❌ Submissions fetch exception: {e}")
-    submissions_data = []
-  else:
-    if submissions_data is None:
-      submissions_data = []
+    if insert_buffer:
+      try:
+        result = asyncio.run(submissions.insert(self.supabase, logger, insert_buffer))
+        logger.info(f"Inserted {len(insert_buffer)} posts" if result else "Insert failed")
+      except Exception as e:
+        logger.error(f"Insert exception: {e}")
 
-  submissions_data = submissions_data[:25]
-  payloads: List[Dict[str, Any]] = []
-  for item in submissions_data:
-    pdata = item.get("data") or {}
-    title = pdata.get("title", "-") or "-"
-    selftext = pdata.get("selftext", "") or ""
-    link_flair_text = pdata.get("link_flair_text") or ""
+    self._label_unprocessed(subreddit)
 
-    user_prompt = user_prompt_tpl.format(
-      subreddit=agenda_subreddit,
-      link_flair_text=link_flair_text,
-      title=title,
-      selftext=selftext,
-    ).strip()
-
-    payloads.append({
-      "submission_id": item.get("id"),
-      "system_prompt": system_prompt,
-      "user_prompt": user_prompt
-    })
-
-  all_results: List[Dict[str, Any]] = []
-  for payload in payloads:
-    sid = payload.get("submission_id")
-    if not sid:
-      continue
-    logger.info(f"📡 POST {run_url} | submission_id={sid}")
+  def _label_unprocessed(self, subreddit: str):
     try:
-      resp = requests.post(run_url, json={
-        "system_prompt": payload["system_prompt"],
-        "user_prompt": payload["user_prompt"]
-      }, timeout=60)
-    except requests.RequestException as e:
-      logger.error(f"💥 Request error for submission_id={sid}: {e}")
-      continue
+      posts = asyncio.run(submissions.select_to_label(self.supabase, logger, subreddit)) or []
+    except Exception as e:
+      logger.error(f"Select_to_label failed: {e}")
+      return
 
-    if not resp.ok:
-      logger.error(f"⚠️ Transform failed [{resp.status_code}] → {resp.text[:200]}")
-      continue
+    posts = posts[:25]
+    payloads = []
 
-    try:
-      data_out = resp.json()
-    except ValueError:
-      logger.error(f"⚠️ Invalid JSON response for submission_id={sid}")
-      continue
+    for item in posts:
+      pdata = item.get("data") or {}
+      user_prompt = self.user_prompt_tpl.format(
+        subreddit=subreddit,
+        link_flair_text=pdata.get("link_flair_text") or "",
+        title=pdata.get("title") or "-",
+        selftext=pdata.get("selftext") or "",
+      )
 
-    insert_result = {
-      "submission_id": sid,
-      "to_insert": {
-        "category": data_out["category"],
-        "category_data": data_out["category_data"]["subcategories"]
-      }
-    }
-    all_results.append(insert_result)
+      payloads.append({
+        "submission_id": item.get("id"),
+        "system_prompt": self.system_prompt,
+        "user_prompt": user_prompt
+      })
 
-  if not all_results:
-    logger.warning("⚠️ No transform results — skipping updates for this agenda")
-    return
+    results = []
 
-  try:
-    status = asyncio.run(submissions.update_category_data(supabase, logger, all_results))
-    if status:
-      logger.info("📥 Category updates complete")
-  except Exception as e:
-    logger.error(f"❌ Category update exception: {e}")
+    for p in payloads:
+      sid = p["submission_id"]
+      if not sid: 
+        continue
+
+      try:
+        resp = requests.post(self.run_url, json={
+          "system_prompt": p["system_prompt"],
+          "user_prompt": p["user_prompt"]
+        }, timeout=60)
+
+        if not resp.ok:
+          continue
+
+        parsed = resp.json()
+
+        results.append({
+          "submission_id": sid,
+          "to_insert": {
+            "category": parsed["category"],
+            "category_data": parsed["category_data"]["subcategories"]
+          }
+        })
+
+      except Exception as e:
+        logger.error(f"Run prompt failed for {sid}: {e}")
+
+    if results:
+      try:
+        asyncio.run(submissions.update_category_data(self.supabase, logger, results))
+        logger.info("Category updates complete")
+      except Exception as e:
+        logger.error(f"Update exception: {e}")

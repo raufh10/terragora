@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, time
 from typing import Optional, Set
-from .utils import parse_hms, DAY_NAME_TO_INDEX
+from services.utils import parse_hms, DAY_NAME_TO_INDEX
 
 @dataclass(frozen=True)
 class TimeRange:
