@@ -65,3 +65,24 @@ async def edit_is_permitted(
 
   except Exception as e:
     return _fail(logger, f"edit_is_permitted failed for user_id={user_id}", e)
+
+async def insert(
+  supabase: Client,
+  logger,
+  data: dict
+):
+
+  try:
+    response = (
+      supabase
+      .table("profiles")
+      .insert(data)
+      .execute()
+    )
+
+    if response.data:
+      return response.data[0]
+
+  except Exception as e:
+    logger.error(f"Exception inserting profiles: {e}")
+    return {}

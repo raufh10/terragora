@@ -68,3 +68,40 @@ async def profiles_edit_user_name(
   except Exception:
     logger.exception("💥 Unhandled error in /profiles/edit_user_name")
     raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/profiles/create")
+async def profiles_create(
+  payload: Optional[Dict[str, Any]] = Body(None),
+  supabase: Client = Depends(db.get_supabase_client),
+):
+  logger.info("📥 /profiles/create")
+  try:
+    payload = payload or {}
+
+    user_id = str(payload.get("user_id", "")).strip()
+    data_field = payload.get("data")
+
+    if not user_id:
+      raise HTTPException(status_code=400, detail="user_id is required")
+    if not isinstance(data_field, dict):
+      raise HTTPException(status_code=400, detail="data must be a JSON object")
+
+    insert_payload = {
+      "user_id": user_id,
+      "data": data_field
+    }
+
+    row = await profiles_svc.insert(supabase, logger, insert_payload)
+    if not row:
+      raise HTTPException(status_code=502, detail="Failed to insert profile")
+
+    return {
+      "ok": True,
+      "data": row,
+    }
+
+  except HTTPException:
+    raise
+  except Exception:
+    logger.exception("💥 Unhandled error in /profiles/create")
+    raise HTTPException(status_code=500, detail="Internal server error")
