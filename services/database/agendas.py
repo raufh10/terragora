@@ -12,33 +12,6 @@ def _fail(logger, msg: str, exc: Optional[Exception] = None) -> Dict[str, Any]:
     logger.error(msg)
   return {"ok": False, "error": msg}
 
-# ---------- Update column: data ----------
-async def edit_data(
-  supabase: Client,
-  logger,
-  agenda_id: int,
-  new_data: dict
-) -> Dict[str, Any]:
-  if not agenda_id or not isinstance(new_data, dict):
-    return _fail(logger, "edit_data requires valid agenda_id and new_data dict")
-
-  try:
-    response = (
-      supabase
-      .table("agendas")
-      .update({"data": new_data})
-      .eq("id", agenda_id)
-      .execute()
-    )
-
-    if response.data:
-      logger.info(f"✅ Updated agenda data | id={agenda_id}")
-      return _ok(response.data)
-    return _fail(logger, f"⚠️ No rows updated for id={agenda_id}")
-
-  except Exception as e:
-    return _fail(logger, f"edit_data failed for id={agenda_id}", e)
-
 # ---------- Agendas router ----------
 async def select(
   supabase: Client,
@@ -49,7 +22,7 @@ async def select(
 
     response = (
       supabase.table("agendas")
-      .select("id, name, user_name, subreddit, data->type, data->location")
+      .select("id, data, profiles(name, is_permitted)")
       .eq("user_id", user_id)
       .execute()
     )
@@ -83,6 +56,32 @@ async def insert(
   except Exception as e:
     logger.error(f"Exception inserting agendas: {e}")
     return {}
+
+async def edit_data(
+  supabase: Client,
+  logger,
+  agenda_id: int,
+  new_data: dict
+) -> Dict[str, Any]:
+  if not agenda_id or not isinstance(new_data, dict):
+    return _fail(logger, "edit_data requires valid agenda_id and new_data dict")
+
+  try:
+    response = (
+      supabase
+      .table("agendas")
+      .update({"data": new_data})
+      .eq("id", agenda_id)
+      .execute()
+    )
+
+    if response.data:
+      logger.info(f"✅ Updated agenda data | id={agenda_id}")
+      return _ok(response.data)
+    return _fail(logger, f"⚠️ No rows updated for id={agenda_id}")
+
+  except Exception as e:
+    return _fail(logger, f"edit_data failed for id={agenda_id}", e)
 
 # ---------- Misc ----------
 async def select_subreddit(
