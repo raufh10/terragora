@@ -10,6 +10,47 @@ from logger import start_logger
 router = APIRouter()
 logger = start_logger()
 
+# ---------- Helpers ----------
+
+IMMUTABLE_FIELDS = {
+  "title", "author", "link_flair_text", "created_utc",
+  "is_self", "selftext", "permalink", "url"
+}
+
+MUTABLE_FIELDS = {
+  "score", "num_comments", "upvote_ratio"
+}
+
+COMMENT_FIELDS = {
+  "comments"
+}
+
+def _split_reddit_posts(
+  posts: List[Dict[str, Any]],
+  subreddit: str
+) -> List[Dict[str, Any]]:
+  output: List[Dict[str, Any]] = []
+
+  for post in posts:
+    if not isinstance(post, dict):
+      continue
+
+    reddit_id = post.get("id")
+
+    data_block = {k: post.get(k) for k in IMMUTABLE_FIELDS if k in post}
+    mutable_data_block = {k: post.get(k) for k in MUTABLE_FIELDS if k in post}
+    comments_data_block = {k: post.get(k) for k in COMMENT_FIELDS if k in post}
+
+    output.append({
+      "reddit_id": reddit_id,
+      "subreddit": subreddit,
+      "data": data_block,
+      "mutable_data": mutable_data_block,
+      "comments_data": comments_data_block
+    })
+
+  return output
+
 def _preflight_check() -> None:
   if not credentials.CLIENT_ID:
     logger.error("🚫 Missing CLIENT_ID in credentials")
@@ -59,6 +100,8 @@ def _normalize_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
   }
   return cfg
 
+# ---------- Endpoints ----------
+
 @router.post("/submissions/fetch")
 async def fetch_submissions(
   config: Optional[Dict[str, Any]] = Body(None),
@@ -80,7 +123,7 @@ async def fetch_submissions(
 
     reddit = await _build_reddit()
     try:
-      results: Dict[str, List[Dict[str, Any]]] = {}
+      results: List[Dict[str, Any]] = []
       totals = {"subreddits": len(subs_list), "submissions": 0}
 
       for sr in subs_list:
@@ -90,10 +133,12 @@ async def fetch_submissions(
         )
         extractor = SubmissionsExtractor.from_config(reddit, logger, sr_cfg)
         rows = await extractor.collect()
-        results[sr] = rows
+        results.append(_split_reddit_posts(rows, sr))
         totals["submissions"] += len(rows)
 
       logger.info(f"✅ Fetch complete | subreddits={totals['subreddits']} submissions={totals['submissions']}")
+
+      print(results[0])
       return {
         "ok": True,
         "counts": totals,
