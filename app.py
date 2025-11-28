@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 from contextlib import asynccontextmanager
 from services.config import settings
-from routers import account, agendas, collect, cookies, label, send, submissions
+from routers import account, agendas, collect, cookies, label, profiles, send, submissions
 
 from logger import start_logger
 logger = start_logger()
@@ -53,6 +53,7 @@ def create_app() -> FastAPI:
   app.include_router(collect.router, tags=["Extraction"])
   app.include_router(cookies.router, tags=["Auth"])
   app.include_router(label.router, tags=["Transform"])
+  app.include_router(profiles.router, tags=["Auth"])
   app.include_router(send.router, tags=["Load"])
   app.include_router(submissions.router, tags=["Load"])
 
