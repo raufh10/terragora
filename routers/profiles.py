@@ -86,10 +86,7 @@ async def profiles_create(
     if not isinstance(data_field, dict):
       raise HTTPException(status_code=400, detail="data must be a JSON object")
 
-    insert_payload = {
-      "user_id": user_id,
-      "data": data_field
-    }
+    insert_payload = {"user_id": user_id} | data_field
 
     row = await profiles_svc.insert(supabase, logger, insert_payload)
     if not row:
