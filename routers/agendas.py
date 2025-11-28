@@ -22,7 +22,7 @@ async def agendas_edit(
       raise HTTPException(status_code=400, detail="agenda_id must be a positive integer")
 
     has_data = "data" in payload
-    if not has_name:
+    if not has_data:
       raise HTTPException(
         status_code=400,
         detail="At least 'data' must be provided"
@@ -60,20 +60,20 @@ async def agendas_select_by_user(
   payload: Optional[Dict[str, Any]] = Body(None),
   supabase: Client = Depends(db.get_supabase_client),
 ):
-  logger.info("📥 /agendas/select (by user_id)")
+  logger.info("📥 /agendas/select (by profile_id)")
   try:
     payload = payload or {}
 
-    user_id = str(payload.get("user_id", "")).strip()
-    if not user_id:
-      raise HTTPException(status_code=400, detail="user_id is required")
+    profile_id = str(payload.get("profile_id", "")).strip()
+    if not profile_id:
+      raise HTTPException(status_code=400, detail="profile_id is required")
 
-    row = await agendas_svc.select(supabase, logger, user_id)
+    row = await agendas_svc.select(supabase, logger, profile_id)
     if row is None:
       return {
         "ok": False,
         "data": None,
-        "error": f"No agenda found for user_id={user_id}"
+        "error": f"No agenda found for profile_id={profile_id}"
       }
 
     return {
@@ -84,7 +84,7 @@ async def agendas_select_by_user(
   except HTTPException:
     raise
   except Exception:
-    logger.exception("💥 Unhandled error in /agendas/select (by user_id)")
+    logger.exception("💥 Unhandled error in /agendas/select (by profile_id)")
     raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/agendas/create")
@@ -96,16 +96,16 @@ async def agendas_create(
   try:
     payload = payload or {}
 
-    user_id = str(payload.get("user_id", "")).strip()
+    profile_id = str(payload.get("profile_id", "")).strip()
     data_field = payload.get("data")
 
-    if not user_id:
-      raise HTTPException(status_code=400, detail="user_id is required")
+    if not profile_id:
+      raise HTTPException(status_code=400, detail="profile_id is required")
     if not isinstance(data_field, dict):
       raise HTTPException(status_code=400, detail="data must be a JSON object")
 
     insert_payload = {
-      "user_id": user_id,
+      "profile_id": profile_id,
       "data": data_field
     }
 

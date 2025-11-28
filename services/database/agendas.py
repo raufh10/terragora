@@ -16,14 +16,14 @@ def _fail(logger, msg: str, exc: Optional[Exception] = None) -> Dict[str, Any]:
 async def select(
   supabase: Client,
   logger,
-  user_id: str
+  profile_id: int
 ):
   try:
 
     response = (
       supabase.table("agendas")
       .select("id, data, profiles(name, is_permitted)")
-      .eq("user_id", user_id)
+      .eq("profile_id", profile_id)
       .execute()
     )
 
