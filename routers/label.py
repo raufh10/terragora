@@ -12,6 +12,8 @@ from logger import start_logger
 logger = start_logger()
 router = APIRouter()
 
+# ---------- Helpers ----------
+
 PROMPTS_PATH = "data/prompts.yaml"
 def _load_prompts_yaml(logger, path: str = PROMPTS_PATH):
   try:
@@ -39,6 +41,7 @@ def _load_prompts_yaml(logger, path: str = PROMPTS_PATH):
 
   return system_prompt.strip(), user_prompt.strip()
 
+# ---------- Endpoints ----------
 @router.post("/analysis/run")
 async def run_analysis(
   payload: Optional[Dict[str, Any]] = Body(None),
@@ -105,7 +108,7 @@ async def run_suggest(
     if not user_id or not submission_id:
       raise HTTPException(status_code=400, detail="ids is required")
 
-    data = submissions_svc.simple_select(supabase, logger, submission_data)
+    data = submissions_svc.simple_select(supabase, logger, submission_id)
     if not data:
       logger.warning("⚠️ Missing data")
       raise HTTPException(status_code=502, detail="No data found in database")

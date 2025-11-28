@@ -2,6 +2,7 @@ from typing import Optional
 from supabase import Client
 from services.database.agendas import select_subreddit
 
+# ---------- Submissions Endpoints ----------
 async def select(
   supabase: Client,
   logger,
@@ -92,6 +93,7 @@ async def select(
     logger.error(f"Failed to fetch Submissions based on agenda id: {str(e)}")
     return None
 
+# ---------- Label Endpoints ----------
 async def simple_select(
   supabase: Client,
   logger,
