@@ -8,6 +8,7 @@ from logger import start_logger
 logger = start_logger()
 router = APIRouter()
 
+# ---------- Endpoints ----------
 @router.post("/submissions/{agenda_id}/feed")
 async def submissions_feed(
   agenda_id: int,
@@ -57,6 +58,7 @@ async def submissions_feed(
       logger.error(f"⚠️ submissions.select returned None for agenda_id={agenda_id}")
       raise HTTPException(status_code=502, detail="Failed to load submissions")
 
+    print(rows)
     new_rows = []
 
     if rows:

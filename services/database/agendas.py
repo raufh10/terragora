@@ -93,7 +93,7 @@ async def select_subreddit(
 
     response = (
       supabase.table("agendas")
-      .select("subreddit, data->type")
+      .select("data")
       .eq("id", id)
       .execute()
     )

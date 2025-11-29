@@ -37,6 +37,10 @@ def _split_reddit_posts(
 
     reddit_id = post.get("id")
 
+    title = post.get("title")
+    selftext = post.get("selftext")
+    title_and_selftext = f"{title}\n{selftext}"
+
     data_block = {k: post.get(k) for k in IMMUTABLE_FIELDS if k in post}
     mutable_data_block = {k: post.get(k) for k in MUTABLE_FIELDS if k in post}
     comments_data_block = {k: post.get(k) for k in COMMENT_FIELDS if k in post}
@@ -44,6 +48,7 @@ def _split_reddit_posts(
     output.append({
       "reddit_id": reddit_id,
       "subreddit": subreddit,
+      "title_and_selftext": title_and_selftext,
       "data": data_block,
       "mutable_data": mutable_data_block,
       "comments_data": comments_data_block
@@ -133,12 +138,11 @@ async def fetch_submissions(
         )
         extractor = SubmissionsExtractor.from_config(reddit, logger, sr_cfg)
         rows = await extractor.collect()
-        results.append(_split_reddit_posts(rows, sr))
+        results.extend(_split_reddit_posts(rows, sr))
         totals["submissions"] += len(rows)
 
       logger.info(f"✅ Fetch complete | subreddits={totals['subreddits']} submissions={totals['submissions']}")
 
-      print(results[0])
       return {
         "ok": True,
         "counts": totals,
@@ -150,6 +154,7 @@ async def fetch_submissions(
           "fields": cfg["fields"],
         },
       }
+
     finally:
       try:
         await reddit.close()

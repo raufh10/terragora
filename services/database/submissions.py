@@ -56,15 +56,10 @@ async def select(
       .select(
         "id, "
         "subreddit, "
-        "category, "
-        "data->title, "
-        "data->link_flair_text, "
-        "data->num_comments, "
-        "data->score, "
-        "data->created_utc, "
-        "data->is_self, "
-        "data->selftext, "
-        "data->url"
+        "data->data, "
+        "data->mutable_data, "
+        "data->comments_data, "
+        "angles(category, data, is_read)"
       )
       .eq("subreddit", subreddit)
       .not_.is_("category", "null")
