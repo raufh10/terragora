@@ -8,7 +8,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from scheduler import actions
 
-
 def load_yaml_config(file_path: str) -> dict:
   if not os.path.exists(file_path):
     raise FileNotFoundError(f"❌ Config YAML not found: {file_path}")
@@ -19,7 +18,6 @@ def load_yaml_config(file_path: str) -> dict:
   except Exception as e:
     raise RuntimeError(f"❌ Failed to read YAML config: {e}")
 
-
 class Settings(BaseSettings):
   model_config = SettingsConfigDict(
     env_file=".env" if os.getenv("ENV", "development") == "development" else None,
@@ -28,14 +26,6 @@ class Settings(BaseSettings):
   )
 
   env_type: Optional[SecretStr] = Field(default=None, alias="ENV_TYPE")
-
-  TITLE: str = "LeadditsScheduler"
-  VERSION: str = "1.0.0"
-
-  LOG_PATH: str = "./logs/app.log"
-  LOGGING_BASE: int = logging.DEBUG
-  TELEGRAM_BASE: int = logging.ERROR
-
   API_ENDPOINT: str = "http://leaddits_api.railway.internal:8080"
 
   # Loaded dynamically from YAML

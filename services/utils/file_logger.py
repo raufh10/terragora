@@ -5,7 +5,7 @@ import logging
 
 from typing import Optional
 from urllib.parse import quote_plus
-from services.config import credentials, settings
+from services.config.creds import credentials
 
 def send_telegram_notification(message: str):
   bot_token = quote_plus(credentials.telegram_bot_token.get_secret_value())
@@ -36,7 +36,7 @@ class JSONFormatter(logging.Formatter):
 class TelegramHandler(logging.Handler):
   def emit(self, record):
     try:
-      if record.levelno >= settings.TELEGRAM_BASE:
+      if record.levelno >= logging.ERROR:
         log_entry = self.format(record)
         send_telegram_notification(log_entry)
     except Exception:
@@ -47,7 +47,7 @@ class FileLogger:
     self,
     name: str,
     log_file: Optional[str] = None,
-    level: int = settings.LOGGING_BASE,
+    level: int = logging.DEBUG,
     use_json: bool = True,
     log_format: Optional[str] = None
   ):

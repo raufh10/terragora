@@ -1,11 +1,14 @@
 from services.utils import FileLogger
-from services.config import settings
+
+TITLE: str = "LeadditsScheduler"
+VERSION: str = "1.0.0"
+LOG_PATH: str = "./logs/app.log"
 
 def start_logger():
 
   file_logger = FileLogger(
-    name=f"{settings.TITLE}-{settings.VERSION}",
-    log_file=f"{settings.LOG_PATH}"
+    name=f"{TITLE}-{VERSION}",
+    log_file=f"{LOG_PATH}"
   )
 
   return file_logger.get_logger()

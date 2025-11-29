@@ -12,7 +12,6 @@ from logger import start_logger
 PROMPTS_PATH = "data/prompts.yaml"
 logger = start_logger()
 
-
 class AgendaProcessor:
   def __init__(self):
     from services.config import settings
@@ -56,6 +55,10 @@ class AgendaProcessor:
     if not agenda_list:
       logger.warning("No agendas found")
       return
+
+    print(agenda_list)
+    from sys import exit
+    exit()
 
     logger.info(f"Processing {len(agenda_list)} agendas")
 

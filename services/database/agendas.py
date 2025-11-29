@@ -11,7 +11,7 @@ async def select(
     query = (
       supabase
       .table("agendas")
-      .select("*")
+      .select("data")
     )
 
     if id:
@@ -19,11 +19,10 @@ async def select(
 
     response = query.execute()
 
-    if id:
-      if response.data:
-        return response.data[0]
+    if response.data:
+      return set().union(*(d.keys() for d in response.data))
     else:
-      return response.data
+      return []
 
   except Exception as e:
     logger.error(f"Exception selecting agenda: {e}")
