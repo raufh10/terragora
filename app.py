@@ -26,7 +26,7 @@ def main():
 
   match = choose_matching_rule(now, rules)
   if match:
-    run_actions(match.action, logger)
+    run_actions(match.action, logger, settings)
   else:
     logger.debug(f"No matching rule for current UTC time window. {timestamp_str}")
     import requests; print(requests.get(f"{settings.API_ENDPOINT}/", timeout=10).status_code)

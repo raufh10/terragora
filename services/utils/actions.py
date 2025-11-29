@@ -1,8 +1,7 @@
 import inspect
 from typing import List, Optional, Callable, Union
-from services.config import settings
 
-def _resolve_action(name: str, logger) -> Optional[Callable]:
+def _resolve_action(name: str, logger, settings) -> Optional[Callable]:
   fn = settings.ACTION_REGISTRY.get(name)
   if not fn:
     logger.warning(f"⚠️ No function registered for action '{name}'.")
@@ -18,15 +17,15 @@ def _normalize_actions(action_spec: Union[str, List[str]], logger) -> List[str]:
   logger.warning(f"⚠️ Unsupported action type: {type(action_spec)}; ignoring.")
   return []
 
-def run_actions(action_spec: Union[str, List[str]], logger) -> None:
-  names = _normalize_actions(action_spec)
+def run_actions(action_spec: Union[str, List[str]], logger, settings) -> None:
+  names = _normalize_actions(action_spec, logger)
   if not names:
     logger.info("ℹ️ No actions to run.")
     return
 
   logger.info(f"🧩 Running actions in sequence: {', '.join(names)}")
   for name in names:
-    fn = _resolve_action(name)
+    fn = _resolve_action(name, logger, settings)
     if not fn:
       continue
     try:

@@ -3,7 +3,7 @@ import logging
 import yaml
 from typing import Optional, Dict, Callable, List
 
-from pydantic import SecretStr, Field, ValidationError
+from pydantic import SecretStr, Field, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from scheduler import actions
@@ -28,7 +28,6 @@ class Settings(BaseSettings):
   env_type: Optional[SecretStr] = Field(default=None, alias="ENV_TYPE")
   API_ENDPOINT: str = "http://leaddits_api.railway.internal:8080"
 
-  # Loaded dynamically from YAML
   TIME_RULES: List[dict] = []
   ACTION_REGISTRY: Dict[str, Callable[..., None]] = {}
 

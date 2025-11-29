@@ -20,7 +20,7 @@ async def select(
     response = query.execute()
 
     if response.data:
-      return set().union(*(d.keys() for d in response.data))
+      return sorted(set().union(*(d["data"].keys() for d in response.data)))
     else:
       return []
 

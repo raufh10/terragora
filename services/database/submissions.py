@@ -13,7 +13,7 @@ async def insert(
       .table("submissions")
       .upsert(
         data,
-        on_conflict="reddit_id",
+        on_conflict="reddit_id,subreddit",
       )
       .execute()
     )

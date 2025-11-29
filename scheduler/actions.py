@@ -56,25 +56,14 @@ class AgendaProcessor:
       logger.warning("No agendas found")
       return
 
-    print(agenda_list)
-    from sys import exit
-    exit()
-
     logger.info(f"Processing {len(agenda_list)} agendas")
 
     for idx, agenda_row in enumerate(agenda_list, start=1):
-      logger.info(f"▶ Agenda {idx}/{len(agenda_list)} | id={agenda_row.get('id')}")
+      logger.info(f"▶ Agenda {idx}/{len(agenda_list)} | subreddit={agenda_row}")
       self._process_single_agenda(agenda_row)
 
-  def _process_single_agenda(self, agenda: Dict[str, Any]):
-    agenda_id = agenda.get("id")
-    subreddit = agenda.get("subreddit")
-
-    if not subreddit:
-      logger.error("Missing subreddit; skipping")
-      return
-
-    fetch_payload = {"subreddit": subreddit}
+  def _process_single_agenda(self, agenda: str):
+    fetch_payload = {"subreddit": agenda}
     insert_buffer = []
 
     try:
@@ -84,44 +73,23 @@ class AgendaProcessor:
         return
 
       body = resp.json()
-      posts = body.get("results", {}).get(subreddit)
+      posts = body.get("results", {})
 
       if not posts:
-        logger.warning(f"No posts returned for r/{subreddit}")
+        logger.warning(f"No posts returned for r/{agenda}")
         return
-
-      try:
-        existing = asyncio.run(submissions.select_reddit_ids(self.supabase, logger, subreddit)) or []
-      except Exception:
-        existing = []
-
-      existing = set(existing)
-
-      for post in posts:
-        rid = post.get("id")
-        if not rid:
-          continue
-
-        new_post = dict(post)
-        new_post.pop("id", None)
-
-        insert_buffer.append({
-          "reddit_id": rid,
-          "subreddit": subreddit,
-          "data": new_post
-        })
 
     except Exception as e:
       logger.error(f"Fetch exception: {e}")
 
-    if insert_buffer:
+    if posts:
       try:
-        result = asyncio.run(submissions.insert(self.supabase, logger, insert_buffer))
-        logger.info(f"Inserted {len(insert_buffer)} posts" if result else "Insert failed")
+        result = asyncio.run(submissions.insert(self.supabase, logger, posts))
+        logger.info(f"Inserted {len(posts)} posts" if result else "Insert failed")
       except Exception as e:
         logger.error(f"Insert exception: {e}")
 
-    self._label_unprocessed(subreddit)
+    #self._label_unprocessed(subreddit)
 
   def _label_unprocessed(self, subreddit: str):
     try:
