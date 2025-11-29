@@ -6,7 +6,7 @@ import requests
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Tuple, Optional
 
-from services.database import db, agendas, submissions
+from services.database import db, angles, agendas, submissions
 from logger import start_logger
 
 PROMPTS_PATH = "data/prompts.yaml"
@@ -43,9 +43,10 @@ class AgendaProcessor:
   @classmethod
   def run(cls):
     processor = cls()
-    processor._run_all()
+    #processor._run_collect()
+    #processor._run_label()
 
-  def _run_all(self):
+  def _run_collect(self):
     try:
       agenda_list = asyncio.run(agendas.select(self.supabase, logger)) or []
     except Exception as e:
@@ -89,68 +90,79 @@ class AgendaProcessor:
       except Exception as e:
         logger.error(f"Insert exception: {e}")
 
-    #self._label_unprocessed(subreddit)
+  def _run_label(self):
 
-  def _label_unprocessed(self, subreddit: str):
-    try:
-      posts = asyncio.run(submissions.select_to_label(self.supabase, logger, subreddit)) or []
-    except Exception as e:
-      logger.error(f"Select_to_label failed: {e}")
-      return
+    users_agenda = asyncio.run(agendas.select_all(self.supabase, logger))
+    for agenda in users_agenda:
+      agenda_id = agenda.get("agenda_id")
+      agenda_subreddit = agenda.get("subreddit")
 
-    posts = posts[:25]
-    payloads = []
-
-    for item in posts:
-      pdata = item.get("data") or {}
-      user_prompt = self.user_prompt_tpl.format(
-        subreddit=subreddit,
-        link_flair_text=pdata.get("link_flair_text") or "",
-        title=pdata.get("title") or "-",
-        selftext=pdata.get("selftext") or "",
-      )
-
-      payloads.append({
-        "submission_id": item.get("id"),
-        "system_prompt": self.system_prompt,
-        "user_prompt": user_prompt
-      })
-
-    results = []
-
-    for p in payloads:
-      sid = p["submission_id"]
-      if not sid: 
-        continue
+      labeled_ids = asyncio.run(angles.select_labeled(self.supabase, logger, agenda_id))
 
       try:
-        resp = requests.post(self.run_url, json={
-          "system_prompt": p["system_prompt"],
-          "user_prompt": p["user_prompt"]
-        }, timeout=60)
+        posts = asyncio.run(
+          submissions.select_to_label(
+            self.supabase,
+            logger,
+            agenda_subreddit,
+            labeled_ids
+          )
+        ) or []
+      except Exception as e:
+        logger.error(f"Select_to_label failed: {e}")
+        return
 
-        if not resp.ok:
+      posts = posts[:25]
+      payloads = []
+
+      if posts:
+        for item in posts:
+          user_prompt = self.user_prompt_tpl.format(
+          subreddit=agenda_subreddit,
+          link_flair_text=item.get("link_flair_text") or "",
+          title=item.get("title") or "-",
+          selftext=item.get("selftext") or "",
+        )
+
+          payloads.append({
+            "submission_id": item.get("id"),
+            "system_prompt": self.system_prompt,
+            "user_prompt": user_prompt
+          })
+
+      results = []
+      for p in payloads:
+        sid = p["submission_id"]
+        if not sid:
           continue
 
-        parsed = resp.json()
+        try:
+          resp = requests.post(self.run_url, json={
+            "system_prompt": p["system_prompt"],
+            "user_prompt": p["user_prompt"]
+          }, timeout=60)
 
-        results.append({
-          "submission_id": sid,
-          "to_insert": {
+          if not resp.ok:
+            continue
+
+          parsed = resp.json()
+
+          results.append({
+            "submission_id": sid,
+            "agenda_id": agenda_id,
             "category": parsed["category"],
             "category_data": parsed["category_data"]["subcategories"]
-          }
-        })
+          })
 
-      except Exception as e:
-        logger.error(f"Run prompt failed for {sid}: {e}")
+        except Exception as e:
+          logger.error(f"Run prompt failed for {sid}: {e}")
 
-    if results:
-      try:
-        asyncio.run(submissions.update_category_data(self.supabase, logger, results))
-        logger.info("Category updates complete")
-      except Exception as e:
-        logger.error(f"Update exception: {e}")
+      if results:
+        try:
+          asyncio.run(angles.insert(self.supabase, logger, results))
+          logger.info("Category updates complete")
+        except Exception as e:
+          logger.error(f"Update exception: {e}")
 
 def run_agenda_processor():
   AgendaProcessor.run()
