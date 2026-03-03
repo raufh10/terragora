@@ -6,8 +6,8 @@ from services.config import configs
 
 @dataclass
 class AsyncPrawStarter:
-  client_id: str = field(default_factory=lambda: configs.CLIENT_ID)
-  client_secret: Optional[str] = field(default_factory=lambda: configs.CLIENT_SECRET)
+  client_id: str = field(default_factory=lambda: configs.client_id.get_secret_value())
+  client_secret: Optional[str] = field(default_factory=lambda: configs.client_secret.get_secret_value())
   user_agent: str = field(default_factory=lambda: configs.USER_AGENT)
   read_only: bool = field(default_factory=lambda: configs.IS_READ_ONLY)
   timeout: float = field(default_factory=lambda: float(configs.TIMEOUT))
@@ -32,8 +32,8 @@ class AsyncPrawStarter:
   @classmethod
   def from_dict(cls, config: dict) -> AsyncPrawStarter:
     return cls(
-      client_id=config.get("client_id", configs.CLIENT_ID),
-      client_secret=config.get("client_secret", configs.CLIENT_SECRET),
+      client_id=config.get("client_id", configs.client_id),
+      client_secret=config.get("client_secret", configs.client_secret),
       user_agent=config.get("user_agent", configs.USER_AGENT),
       read_only=config.get("read_only", configs.IS_READ_ONLY),
       timeout=float(config.get("timeout_seconds", configs.TIMEOUT))

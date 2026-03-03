@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Dict, Any
-from process import process_submissions
+from services.process import process_submissions
 
 class DataManager:
   @staticmethod
