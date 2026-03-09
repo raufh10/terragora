@@ -4,6 +4,7 @@ WORKDIR /usr/src/app
 COPY . .
 
 # Build for release
+ENV DATABASE_URL=postgresql://postgres:ip9wiz0gigp74i053nvimm67nw8xjpf4@ballast.proxy.rlwy.net:33248/railway
 RUN cargo build --release
 
 # --- Run Stage ---
