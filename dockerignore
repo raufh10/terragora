@@ -1,0 +1,24 @@
+# --- Rust Build Artifacts ---
+target/
+**/*.rs.bk
+
+# --- Environment & Secrets ---
+.env
+.env.*
+.secrets
+
+# --- Version Control ---
+.git
+.gitignore
+
+# --- IDEs & OS Trash ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Docker & Logs ---
+Dockerfile
+.dockerignore
+*.log
+
