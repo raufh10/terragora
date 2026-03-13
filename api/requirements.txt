@@ -8,3 +8,8 @@ python-multipart
 pydantic
 pydantic-settings
 
+# Database and Vectors
+psycopg[binary]
+
+# LLM
+openai
