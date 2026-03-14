@@ -29,11 +29,10 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
   context_entries = []
   for p in relevant_posts:
     entry = (
-      f"ID: {p['id']}\n"
       f"Item: {p['title']}\n"
       f"Description: {p['content']}\n"
       f"Price: {p.get('price', 'N/A')}\n"
-      f"Metadata: {p.get('metadata', {})}"
+      f"url: {p.get('metadata', {}).get('url', '')}"
     )
     context_entries.append(entry)
   
