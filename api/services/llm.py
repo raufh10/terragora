@@ -6,9 +6,15 @@ from services.config import configs
 client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
 
 class MarketplaceSearch(BaseModel):
-  summary: str = Field(description="A brief summary of available items found matching the user's request.")
-  best_deal_id: Optional[str] = Field(description="The UUID of the post with the best price or condition.")
-  recommendation: str = Field(description="Advice to the buyer (e.g., 'Check the seller notes for shipping').")
+  summary: str = Field(
+    description="A summary of matching items found. Strictly maximum 2 sentences."
+  )
+  best_deal_url: Optional[str] = Field(
+    description="The URL of the post identified as the best deal."
+  )
+  recommendation: str = Field(
+    description="Buying advice or seller warnings. Strictly maximum 2 sentences."
+  )
 
 async def get_embedding(text: str) -> List[float]:
   try:
@@ -22,20 +28,21 @@ async def get_embedding(text: str) -> List[float]:
     return []
 
 async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Optional[MarketplaceSearch]:
-
   if not relevant_posts:
     return None
 
   context_entries = []
   for p in relevant_posts:
+    post_url = p.get('metadata', {}).get('url', p.get('url', 'No URL available'))
+    
     entry = (
       f"Item: {p['title']}\n"
       f"Description: {p['content']}\n"
       f"Price: {p.get('price', 'N/A')}\n"
-      f"url: {p.get('metadata', {}).get('url', '')}"
+      f"URL: {post_url}"
     )
     context_entries.append(entry)
-  
+
   context_text = "\n\n---\n\n".join(context_entries)
 
   try:
@@ -45,9 +52,8 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
         {
           "role": "system", 
           "content": (
-            "You are a marketplace assistant for used items. "
-            "Analyze the provided Reddit posts to find the best matches for the user. "
-            "Focus on price, item condition, and seller credibility mentioned in the notes."
+            "You are a marketplace scout. Analyze the Reddit posts to find the best deals. "
+            "Your summary and recommendation must be extremely concise, never exceeding 2 sentences each."
           )
         },
         {"role": "user", "content": f"User Search: {user_query}\n\nContext:\n{context_text}"},

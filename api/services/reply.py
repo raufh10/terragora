@@ -25,19 +25,15 @@ async def get_marketplace_reply(message_data: dict):
   if not result:
     return "❌ Failed to analyze the results. Please try a more specific search."
 
-  reply = ""
-
-  """
   reply = f"📦 **Marketplace Results for:** _{user_query}_\n\n"
   reply += f"{result.summary}\n\n"
   reply += f"💡 **Recommendation:** {result.recommendation}\n\n"
   
-  if result.best_deal_id:
-    best_item = next((p for p in relevant_posts if str(p['id']) == result.best_deal_id), None)
+  if result.best_deal_url:
+    best_item = next((p for p in relevant_posts if str(p['metadata']['url']) == result.best_deal_url), None)
     if best_item:
       reply += f"🏆 **Top Pick:** {best_item['title']}\n"
       if best_item.get('price'):
         reply += f"💰 **Price:** {best_item['price']}\n"
-  """
 
   return reply
