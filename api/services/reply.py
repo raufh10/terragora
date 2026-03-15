@@ -36,4 +36,8 @@ async def get_marketplace_reply(message_data: dict):
       if best_item.get('price'):
         reply += f"💰 **Price:** {best_item['price']}\n"
 
+      item_url = best_item.get('metadata', {}).get('url')
+      if item_url:
+        reply += f"🔗 **Link:** {item_url}\n"
+
   return reply
