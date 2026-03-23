@@ -58,7 +58,7 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
   for attempt in range(MAX_RETRIES):
     try:
       response = client.responses.parse(
-        model="gpt-5.4-nano-2026-03-17",
+        model="gpt-5.4-mini-2026-03-17",
         input=[
           {
             "role": "system", 
