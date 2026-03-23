@@ -1,4 +1,6 @@
 import re
+from typing import Type
+from pydantic import BaseModel
 
 def clean_text(text: str) -> str:
   if not text:
@@ -34,3 +36,17 @@ def format_payloads(processed_results: list):
       embedding_updates.append((item['embedding'], item['id']))
       
   return price_updates, embedding_updates
+
+def build_openai_text_format(model_class: Type[BaseModel], schema_name: str) -> dict:
+
+  schema = model_class.model_json_schema()  
+  schema["additionalProperties"] = False
+
+  return {
+    "format": {
+      "type": "json_schema",
+      "name": schema_name,
+      "strict": True,
+      "schema": schema
+    }
+  }
