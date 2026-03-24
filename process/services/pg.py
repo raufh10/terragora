@@ -1,10 +1,21 @@
 import json
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
+from typing import List, Optional, Dict, Any
 from services.config import configs
 
 def get_db_connection():
-  return psycopg.connect(configs.conn_str.get_secret_value(), row_factory=dict_row)
+  active_str = configs.active_conn_str
+
+  try:
+    return psycopg.connect(
+      active_str.get_secret_value(), 
+      row_factory=dict_row
+    )
+  except Exception as e:
+    print(f"[ERROR] Failed to connect to {configs.env} database: {e}")
+    raise
 
 def fetch_posts_to_process(conn):
   query = """
@@ -58,3 +69,50 @@ def update_post_price(conn, post_id, price):
     conn.rollback()
     print(f"❌ Error updating price for post {post_id}: {e}")
 
+def insert_batch(conn, batch_id: str, file_input_id: str, owner: str, data: Dict[str, Any], status: str = "validating"):
+  query = """
+    INSERT INTO batches (id, file_input_id, owner, data, status)
+    VALUES (%s, %s, %s, %s, %s)
+    RETURNING *;
+  """
+  with conn.cursor() as cur:
+    cur.execute(query, (batch_id, file_input_id, owner, Jsonb(data), status))
+    conn.commit()
+    return cur.fetchone()
+
+def update_batch(conn, batch_id: str, status: Optional[str] = None, data: Optional[Dict[str, Any]] = None):
+  updates = []
+  params = []
+
+  if status:
+    updates.append("status = %s")
+    params.append(status)
+  if data:
+    updates.append("data = %s")
+    params.append(Jsonb(data))
+
+  if not updates:
+    return None
+
+  params.append(batch_id)
+  query = f"UPDATE batches SET {', '.join(updates)} WHERE id = %s RETURNING *;"
+
+  with conn.cursor() as cur:
+    cur.execute(query, params)
+    conn.commit()
+    return cur.fetchone()
+
+def get_batches(conn, owner: Optional[str] = None, batch_id: Optional[str] = None) -> List[Dict]:
+  if batch_id:
+    query = "SELECT * FROM batches WHERE id = %s;"
+    params = (batch_id,)
+  elif owner:
+    query = "SELECT * FROM batches WHERE owner = %s ORDER BY created_at DESC;"
+    params = (owner,)
+  else:
+    query = "SELECT * FROM batches ORDER BY created_at DESC LIMIT 100;"
+    params = ()
+
+  with conn.cursor() as cur:
+    cur.execute(query, params)
+    return cur.fetchall()
