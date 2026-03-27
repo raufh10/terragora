@@ -23,7 +23,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
   let reddit_scraper = Scraper::new(config).await?;
   
   println!("[3/3] Scraping Reddit...");
-  // Explicit type annotation helps the compiler infer .len()
   let raw_posts: Vec<RawScrapedPost> = reddit_scraper.scrape_all().await?;
 
   if raw_posts.is_empty() {
@@ -33,7 +32,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
   println!("📡 Found {} relevant posts.", raw_posts.len());
 
-  // Test Print
   if let Some(post) = raw_posts.first() {
     println!("--- SAMPLE ---");
     println!("Title: {}", post.title);

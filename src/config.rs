@@ -1,5 +1,7 @@
 use dotenvy::dotenv;
 use std::env;
+use fake_user_agent::get_rua;
+use urlencoding::encode;
 
 pub struct Config {
   pub database_url: String,
@@ -7,24 +9,45 @@ pub struct Config {
   pub subreddits: Vec<String>,
   pub timeout_seconds: u64,
   pub base_url: String,
+  pub proxy_url: String,
 }
 
 impl Config {
   pub fn from_env() -> Self {
     dotenv().ok();
 
+    let proxy_url = Self::generate_oxylabs_proxy().expect("Failed to configure Oxylabs proxy");
+
     Self {
       database_url: env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-      // Modern Chrome 145 User-Agent (March 2026)
-      user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36".to_string(),
+      user_agent: get_rua().to_string(),
       subreddits: vec!["jualbeliindonesia".to_string()],
       timeout_seconds: 15,
       base_url: "https://www.reddit.com".to_string(),
+      proxy_url,
     }
   }
 
+  fn generate_oxylabs_proxy() -> anyhow::Result<String> {
+    let user = env::var("OXYLABS_USER")
+      .map_err(|_| anyhow::anyhow!("OXYLABS_USER not set"))?;
+    let key = env::var("OXYLABS_KEY")
+      .map_err(|_| anyhow::anyhow!("OXYLABS_KEY not set"))?;
+
+    let username = encode(&user);
+    let password = encode(&key);
+
+    let session_id: u32 = rand::random_range(100000..999999);
+
+    let full_username = format!("customer-{}-cc-ID-sessid-{}", username, session_id);
+    
+    Ok(format!(
+      "http://{}:{}@pr.oxylabs.io:7777",
+      full_username, password
+    ))
+  }
+
   pub fn get_subreddit_url(&self, subreddit: &str) -> String {
-    // Appends .json to the subreddit path to bypass API key requirements
     format!("{}/r/{}.json?limit=100", self.base_url, subreddit)
   }
 }
