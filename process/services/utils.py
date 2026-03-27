@@ -39,7 +39,8 @@ def format_payloads(processed_results: list):
 
 def build_openai_text_format(model_class: Type[BaseModel], schema_name: str) -> dict:
 
-  schema = model_class.model_json_schema()  
+  schema = model_class.model_json_schema()
+  schema["required"] = list(schema["properties"].keys())
   schema["additionalProperties"] = False
 
   return {
