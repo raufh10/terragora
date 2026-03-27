@@ -49,7 +49,7 @@ def generate_structured_jsonl(
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": text["text"]}
         ],
-        "text": text_format_config["format"]
+        "text": text_format_config
       }
     }
     lines.append(json.dumps(line))
