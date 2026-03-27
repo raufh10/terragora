@@ -15,7 +15,7 @@ client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
 
 async def orchestrate_structured_batch(
   owner: str,
-  texts: List[str],
+  texts: List[dict],
   model_class: Type[BaseModel],
   schema_name: str,
   system_prompt: str,
@@ -64,7 +64,7 @@ async def orchestrate_structured_batch(
 
 async def orchestrate_embedding_batch(
   owner: str,
-  texts: List[str],
+  texts: List[dict],
   custom_metadata: Dict[str, Any] = {}
 ):
   jsonl_content = generate_embedding_jsonl(texts=texts)
@@ -101,4 +101,3 @@ async def orchestrate_embedding_batch(
   finally:
     if os.path.exists(tmp_path):
       os.remove(tmp_path)
-

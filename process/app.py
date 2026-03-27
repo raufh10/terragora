@@ -23,10 +23,13 @@ async def run_batch_processor():
     post_ids = []
     
     for post in posts:
+      post_id = str(post['id'])
       raw_content = f"{post['title']} {post['content']}"
       cleaned = clean_text(raw_content)
-      texts_to_process.append(cleaned)
-      post_ids.append(post['id'])
+
+      text_dict = {"id": post_id, "text": cleaned}
+      texts_to_process.append(text_dict)
+      post_ids.append(post_id)
 
     batch_job = await orchestrate_structured_batch(
       owner="system_processor",
