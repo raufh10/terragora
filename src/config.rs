@@ -22,7 +22,7 @@ impl Config {
       database_url: env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
       user_agent: get_rua().to_string(),
       subreddits: vec!["jualbeliindonesia".to_string()],
-      timeout_seconds: 15,
+      timeout_seconds: 120,
       base_url: "https://www.reddit.com".to_string(),
       proxy_url,
     }
