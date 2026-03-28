@@ -21,7 +21,8 @@ def fetch_posts_to_process(conn):
   query = """
     SELECT id, title, content, metadata
     FROM reddit_posts
-    WHERE embedding IS NULL
+    WHERE embedding IS NULL 
+    AND is_active = true
   """
   with conn.cursor() as cur:
     cur.execute(query)
@@ -69,14 +70,14 @@ def update_post_price(conn, post_id, price):
     conn.rollback()
     print(f"❌ Error updating price for post {post_id}: {e}")
 
-def insert_batch(conn, batch_id: str, file_input_id: str, owner: str, data: Dict[str, Any], status: str = "validating"):
+def insert_batch(conn, batch_id: str, file_input_id: str, owner: str, data: Dict[str, Any], type: str, status: str = "validating"):
   query = """
-    INSERT INTO batches (id, file_input_id, owner, data, status)
-    VALUES (%s, %s, %s, %s, %s)
+    INSERT INTO batches (id, file_input_id, owner, data, type, status)
+    VALUES (%s, %s, %s, %s, %s, %s)
     RETURNING *;
   """
   with conn.cursor() as cur:
-    cur.execute(query, (batch_id, file_input_id, owner, Jsonb(data), status))
+    cur.execute(query, (batch_id, file_input_id, owner, Jsonb(data), type, status))
     conn.commit()
     return cur.fetchone()
 
@@ -102,13 +103,25 @@ def update_batch(conn, batch_id: str, status: Optional[str] = None, data: Option
     conn.commit()
     return cur.fetchone()
 
-def get_batches(conn, owner: Optional[str] = None, batch_id: Optional[str] = None) -> List[Dict]:
+def get_batches(
+  conn, 
+  owner: Optional[str] = None, 
+  batch_id: Optional[str] = None, 
+  batch_type: Optional[str] = None
+) -> List[Dict]:
   if batch_id:
     query = "SELECT * FROM batches WHERE id = %s;"
     params = (batch_id,)
   elif owner:
-    query = "SELECT * FROM batches WHERE owner = %s ORDER BY created_at DESC;"
-    params = (owner,)
+    if batch_type:
+      query = "SELECT * FROM batches WHERE owner = %s AND type = %s ORDER BY created_at DESC;"
+      params = (owner, batch_type)
+    else:
+      query = "SELECT * FROM batches WHERE owner = %s ORDER BY created_at DESC;"
+      params = (owner,)
+  elif batch_type:
+    query = "SELECT * FROM batches WHERE type = %s ORDER BY created_at DESC LIMIT 100;"
+    params = (batch_type,)
   else:
     query = "SELECT * FROM batches ORDER BY created_at DESC LIMIT 100;"
     params = ()
