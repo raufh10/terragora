@@ -54,3 +54,71 @@ async def run_data_extraction():
   finally:
     conn.close()
 
+import json
+from typing import Optional, Dict, Any
+from openai import OpenAI
+from services.pg import get_batches, update_batch
+from services.llm import retrieve_batch_status, get_file_content
+from services.jsonl import extract_batch_embeddings, process_batch_output
+
+async def sync_and_process_batches(conn, client: OpenAI, owner: str, batch_type: str):
+  """
+  Checks pending batches in DB, syncs status with OpenAI, 
+  and parses results if completed.
+  """
+  # 1. Filter out batches that are already finished or have been downloaded
+  batches = get_batches(conn, owner=owner, batch_type=batch_type)
+  
+  active_batches = [
+    b for b in batches 
+    if b['status'] not in ['completed', 'failed', 'expired', 'cancelled', 'downloaded']
+  ]
+  
+  if not active_batches:
+    print(f"ℹ️ No active {batch_type} batches to sync for {owner}.")
+    return
+
+  for db_batch in active_batches:
+    batch_id = db_batch['id']
+    print(f"🔄 Syncing {batch_type} batch: {batch_id}...")
+
+    # 2. Retrieve fresh status from OpenAI
+    remote_batch = await retrieve_batch_status(client, batch_id)
+    if not remote_batch:
+      continue
+
+    # 3. Handle Completion
+    if remote_batch.status == "completed":
+      file_id = remote_batch.output_file_id
+      
+      if not file_id:
+        print(f"⚠️ Batch {batch_id} marked completed but no output_file_id found.")
+        update_batch(conn, batch_id, status="failed")
+        continue
+
+      # Download and Parse content
+      file_response = await get_file_content(client, file_id)
+      if file_response:
+        raw_content = file_response.text
+        
+        # Determine parser based on type
+        results = {}
+        if batch_type == "embedding":
+          results = extract_batch_embeddings(raw_content)
+        elif batch_type == "structured":
+          results = process_batch_output(raw_content)
+
+        # Update DB with status 'downloaded' and the parsed data
+        update_batch(conn, batch_id, status="downloaded", data={"results": results})
+        print(f"✅ Batch {batch_id} processed: {len(results)} items extracted.")
+
+    # 4. Handle Errors/Failures
+    elif remote_batch.status in ["failed", "expired", "cancelled"]:
+      print(f"❌ Batch {batch_id} failed with status: {remote_batch.status}")
+      update_batch(conn, batch_id, status="failed")
+
+    # 5. Still Processing
+    else:
+      print(f"⏳ Batch {batch_id} is still {remote_batch.status}...")
+      if remote_batch.status != db_batch['status']:
+        update_batch(conn, batch_id, status=remote_batch.status)

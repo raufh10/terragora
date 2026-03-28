@@ -29,6 +29,7 @@ def fetch_posts_to_process(conn):
     return cur.fetchall()
 
 def bulk_update_embeddings(conn, updates):
+
   query = "UPDATE reddit_posts SET embedding = %s::vector WHERE id = %s"
   try:
     with conn.cursor() as cur:
@@ -39,36 +40,17 @@ def bulk_update_embeddings(conn, updates):
     conn.rollback()
     print(f"❌ Bulk embedding update failed: {e}")
 
-def bulk_update_prices(conn, price_updates):
-  query = "UPDATE reddit_posts SET price = %s WHERE id = %s"
-  try:
-    with conn.cursor() as cur:
-      cur.executemany(query, price_updates)
-    conn.commit()
-    print(f"✅ Successfully updated {len(price_updates)} prices.")
-  except Exception as e:
-    conn.rollback()
-    print(f"❌ Bulk price update failed: {e}")
+def bulk_update_post_data(conn, column_name, updates):
 
-def update_post_embedding(conn, post_id, embedding):
-  query = "UPDATE reddit_posts SET embedding = %s::vector WHERE id = %s"
+  query = f"UPDATE reddit_posts SET {column_name} = %s WHERE id = %s"
   try:
     with conn.cursor() as cur:
-      cur.execute(query, (embedding, post_id))
+      cur.executemany(query, updates)
     conn.commit()
+    print(f"✅ Successfully updated {len(updates)} records in '{column_name}'.")
   except Exception as e:
     conn.rollback()
-    print(f"❌ Error updating embedding for post {post_id}: {e}")
-
-def update_post_price(conn, post_id, price):
-  query = "UPDATE reddit_posts SET price = %s WHERE id = %s"
-  try:
-    with conn.cursor() as cur:
-      cur.execute(query, (price, post_id))
-    conn.commit()
-  except Exception as e:
-    conn.rollback()
-    print(f"❌ Error updating price for post {post_id}: {e}")
+    print(f"❌ Bulk {column_name} update failed: {e}")
 
 def insert_batch(conn, batch_id: str, file_input_id: str, owner: str, data: Dict[str, Any], type: str, status: str = "validating"):
   query = """

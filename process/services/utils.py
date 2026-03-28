@@ -25,18 +25,6 @@ def assemble_embedding_text(title: str, price: float, notes: str, category: str)
   price_str = f"Rp{price:,.0f}" if price else "Price N/A"
   return f"Category: {category} | Product: {title} | Price: {price_str} | Info: {notes}"
 
-def format_payloads(processed_results: list):
-  price_updates = []
-  embedding_updates = []
-  
-  for item in processed_results:
-    if item['price'] is not None:
-      price_updates.append((item['price'], item['id']))
-    if item['embedding']:
-      embedding_updates.append((item['embedding'], item['id']))
-      
-  return price_updates, embedding_updates
-
 def build_openai_text_format(model_class: Type[BaseModel], schema_name: str) -> dict:
 
   schema = model_class.model_json_schema()
