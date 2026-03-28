@@ -33,6 +33,9 @@ class Listing(BaseModel):
     default=None,
     description="Optional score from 0–10 representing deal quality."
   )
+  url: str = Field(
+    description="Direct link to the listing."
+  )
 
 class MarketplaceSearch(BaseModel):
   listings: List[Listing] = Field(

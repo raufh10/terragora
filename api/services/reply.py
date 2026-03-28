@@ -1,5 +1,6 @@
 from services.pg import get_db_connection, fetch_relevant_posts
 from services.llm import get_embedding, search_used_items
+from services.messages import format_telegram_message
 
 async def get_marketplace_reply(message_data: dict):
 
@@ -7,10 +8,12 @@ async def get_marketplace_reply(message_data: dict):
   if not user_query:
     return "⚠️ What used item are you looking for today?"
 
+  # 🔍 Embedding
   query_vector = await get_embedding(user_query)
   if not query_vector:
     return "❌ Sorry, I had trouble processing your search. Please try again."
 
+  # 🗄️ Fetch from DB
   try:
     with get_db_connection() as conn:
       relevant_posts = fetch_relevant_posts(conn, query_vector, limit=5)
@@ -19,25 +22,22 @@ async def get_marketplace_reply(message_data: dict):
     return "❌ Database connection issue. Please try again later."
 
   if not relevant_posts:
-    return "🔍 No matching items found in the database. Try a different keyword!"
+    return "🔍 No matching items found. Try a different keyword!"
 
+  # 🧠 LLM Analysis
   result = await search_used_items(user_query, relevant_posts)
-  if not result:
-    return "❌ Failed to analyze the results. Please try a more specific search."
+  if not result or not result.listings:
+    return "❌ Failed to analyze results. Try a more specific search."
 
-  reply = f"📦 **Marketplace Results for:** _{user_query}_\n\n"
-  reply += f"{result.summary}\n\n"
-  reply += f"💡 **Recommendation:** {result.recommendation}\n\n"
-  
-  if result.best_deal_url:
-    best_item = next((p for p in relevant_posts if str(p['metadata']['url']) == result.best_deal_url), None)
-    if best_item:
-      reply += f"🏆 **Top Pick:** {best_item['title']}\n"
-      if best_item.get('price'):
-        reply += f"💰 **Price:** {best_item['price']}\n"
+  # 🧾 Format final Telegram message
+  try:
+    reply = format_telegram_message(
+      user_query=user_query,
+      result=result,
+      relevant_posts=relevant_posts
+    )
+    return reply
 
-      item_url = best_item.get('metadata', {}).get('url')
-      if item_url:
-        reply += f"🔗 **Link:** {item_url}\n"
-
-  return reply
+  except Exception as e:
+    print(f"Format Error: {e}")
+    return "❌ Error formatting results. Please try again."
