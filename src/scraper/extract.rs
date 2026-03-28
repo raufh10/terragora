@@ -33,15 +33,22 @@ pub fn process_response(response: RedditResponse) -> Vec<RawScrapedPost> {
   response.data.children
     .into_iter()
     .filter(|child| {
-      match &child.data.link_flair_richtext {
-        Some(flair) => !flair.is_empty(),
-        None => false,
-      }
+      let flairs = match &child.data.link_flair_richtext {
+        Some(f) if !f.is_empty() => f,
+        _ => return false,
+      };
+
+      flairs.iter().any(|f| {
+        f.get("t")
+          .and_then(|t| t.as_str())
+          .map(|text| text.to_ascii_uppercase().contains("WTS"))
+          .unwrap_or(false)
+      })
     })
     .map(|child| {
       let post = child.data;
       let raw_val = serde_json::to_value(&post).unwrap_or(Value::Null);
-      
+
       RawScrapedPost {
         reddit_id: post.reddit_id,
         title: post.title,
