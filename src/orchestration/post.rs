@@ -21,13 +21,13 @@ pub async fn run_post_orchestration() -> Result<(), Box<dyn Error>> {
 
   for url in active_data.urls {
     if url.contains("i.redd.it") || url.contains("preview.redd.it") || url.ends_with(".jpg") || url.ends_with(".png") {
-        println!("🗑️  [MEDIA] Deactivating: {}", url);
-        updated_statuses.push(RedditUrlStatus { url: url.clone(), is_active: false });
-        continue;
+      println!("🗑️  [MEDIA] Deactivating: {}", url);
+      updated_statuses.push(RedditUrlStatus { url: url.clone(), is_active: false });
+      continue;
     }
 
     let json_url = if url.ends_with(".json") { url.clone() } else { format!("{}.json", url) };
-    
+
     let is_active = match reddit_scraper.scrape_single_url(&json_url).await {
       Ok(posts) => {
         let has_wts = posts.iter().any(|post| {
@@ -51,24 +51,24 @@ pub async fn run_post_orchestration() -> Result<(), Box<dyn Error>> {
           println!("🚫 [REJECT] Not WTS: {}", url);
           false
         }
-      }
+      },
       Err(e) => {
         let err_msg = e.to_string();
         if err_msg.contains("429") {
-            println!("🛑 [RATE LIMIT] Reddit is blocking us. Keeping status as-is and exiting.");
-            return Err("Rate limit hit. Stopping orchestration to protect data.".into());
-        if url.contains("/gallery/") && err_msg.contains("decoding") {
-            println!("🏗️  [GALLERY] Decoding Issue (Keeping): {}", url);
-            true
+          println!("🛑 [RATE LIMIT] Reddit is blocking us. Keeping status as-is and exiting.");
+          return Err("Rate limit hit. Stopping orchestration to protect data.".into());
+        } else if url.contains("/gallery/") && err_msg.contains("decoding") {
+          println!("🏗️  [GALLERY] Decoding Issue (Keeping): {}", url);
+          true
         } else {
-            println!("❌ [ERROR] {}: {}", err_msg, url);
-            false
+          println!("❌ [ERROR] {}: {}", err_msg, url);
+          false
         }
       }
     };
 
     updated_statuses.push(RedditUrlStatus { url, is_active });
-    tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
   }
 
   let total = updated_statuses.len();
