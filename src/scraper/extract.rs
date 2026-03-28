@@ -22,8 +22,6 @@ pub struct StorablePost {
 }
 
 pub fn process_url_response(response: RedditUrlResponse) -> Vec<RawScrapedPost> {
-  // Reddit URL responses are Vec<RedditResponse>. 
-  // Index 0 is the Post listing, Index 1 is the Comments listing.
   if let Some(post_listing) = response.0.into_iter().next() {
     return process_response(post_listing);
   }
@@ -35,7 +33,6 @@ pub fn process_response(response: RedditResponse) -> Vec<RawScrapedPost> {
   response.data.children
     .into_iter()
     .filter(|child| {
-      // Logic: Only posts with flairs
       match &child.data.link_flair_richtext {
         Some(flair) => !flair.is_empty(),
         None => false,
@@ -43,7 +40,6 @@ pub fn process_response(response: RedditResponse) -> Vec<RawScrapedPost> {
     })
     .map(|child| {
       let post = child.data;
-      // Capture the full data for the metadata column
       let raw_val = serde_json::to_value(&post).unwrap_or(Value::Null);
       
       RawScrapedPost {
