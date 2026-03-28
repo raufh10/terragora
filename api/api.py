@@ -34,6 +34,7 @@ async def telegram_webhook(request: Request):
   typing_task = asyncio.create_task(typing_loop(chat_id))
 
   try:
+    await asyncio.sleep(2)
     reply_text = await reply.get_marketplace_reply(message)
 
     await client.post(f"{API_BASE}/sendMessage", json={
