@@ -8,6 +8,7 @@ from services.pg import (
 from services.process import orchestrate_structured_batch
 from services.models import ProductExtraction
 from services.utils import clean_text
+from services.config import configs
 
 async def run_data_extraction():
   conn = get_db_connection()
@@ -36,7 +37,7 @@ async def run_data_extraction():
       texts=texts_to_process,
       model_class=ProductExtraction,
       schema_name="marketplace_extraction_v1",
-      system_prompt="Extract pricing and 1-3 sentences of seller notes from the marketplace post with high precision.",
+      system_prompt=configs.ProductExtractionPrompt,
       custom_metadata={
         "post_ids": post_ids,
         "source": "reddit_marketplace"
