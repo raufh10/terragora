@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n    SELECT url \n    FROM reddit_posts \n    WHERE is_active = true\n    LIMIT 5\n    ",
+  "query": "\n    SELECT url \n    FROM reddit_posts \n    WHERE is_active = true\n    ",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       true
     ]
   },
-  "hash": "92b6c1a2769d41feff3aca8da15c964af15e96a755201914122ca66a79dc51ce"
+  "hash": "8a5bf393ce6c78582b1b521dba2be162123bb667760b94fc0a185602b34c91fe"
 }
