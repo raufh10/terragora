@@ -210,3 +210,65 @@ async def run_data_vectorization():
   finally:
     conn.close()
 
+import asyncio
+from services.pg import (
+  get_db_connection, 
+  get_batches, 
+  update_batch, 
+  bulk_update_embeddings
+)
+from services.llm import client
+from services.orchestration import sync_and_process_batches
+
+async def run_data_storage():
+  """
+  Final stage: Syncs embedding batches, parses vectors, 
+  and stores them in the reddit_posts table.
+  """
+  conn = get_db_connection()
+  try:
+    # 1. Sync and Process completed "embedding" batches from OpenAI
+    # This downloads the vectors and saves them into batches.data['results']
+    await sync_and_process_batches(conn, client, "system_processor", "embedding")
+
+    # 2. Fetch 'downloaded' embedding batches that haven't been applied to posts yet
+    downloaded_batches = get_batches(conn, owner="system_processor", batch_type="embedding")
+    target_batches = [b for b in downloaded_batches if b['status'] == 'downloaded']
+
+    if not target_batches:
+      print("😴 No downloaded embedding results to store.")
+      return
+
+    for batch in target_batches:
+      results = batch.get('data', {}).get('results', {})
+      if not results:
+        print(f"⚠️ Batch {batch['id']} has no result data. Skipping.")
+        continue
+
+      # 3. Match custom_id to extract original post UUIDs
+      # Expected custom_id: f"leaddits-embed-{date_str}-{post_id}"
+      embedding_updates = []
+
+      for custom_id, vector in results.items():
+        try:
+          # Extract the UUID (the last part of your custom_id string)
+          original_post_id = custom_id.split("-")[-1]
+          
+          # Prepare tuple for executemany: (vector, post_id)
+          embedding_updates.append((vector, original_post_id))
+        except Exception as e:
+          print(f"⚠️ Failed to parse ID from custom_id '{custom_id}': {e}")
+
+      # 4. Perform Bulk Update to reddit_posts.embedding
+      if embedding_updates:
+        print(f"💾 Storing {len(embedding_updates)} vectors for batch {batch['id']}...")
+        bulk_update_embeddings(conn, embedding_updates)
+
+      # 5. Label Batch as 'completed'
+      # This moves it out of the 'downloaded' queue so it won't run again
+      update_batch(conn, batch['id'], status="completed")
+      print(f"✅ Batch {batch['id']} fully processed and storage complete.")
+
+  finally:
+    conn.close()
+
