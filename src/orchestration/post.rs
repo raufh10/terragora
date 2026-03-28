@@ -54,6 +54,9 @@ pub async fn run_post_orchestration() -> Result<(), Box<dyn Error>> {
       }
       Err(e) => {
         let err_msg = e.to_string();
+        if err_msg.contains("429") {
+            println!("🛑 [RATE LIMIT] Reddit is blocking us. Keeping status as-is and exiting.");
+            return Err("Rate limit hit. Stopping orchestration to protect data.".into());
         if url.contains("/gallery/") && err_msg.contains("decoding") {
             println!("🏗️  [GALLERY] Decoding Issue (Keeping): {}", url);
             true
