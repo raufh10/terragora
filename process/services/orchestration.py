@@ -122,3 +122,91 @@ async def sync_and_process_batches(conn, client: OpenAI, owner: str, batch_type:
       print(f"⏳ Batch {batch_id} is still {remote_batch.status}...")
       if remote_batch.status != db_batch['status']:
         update_batch(conn, batch_id, status=remote_batch.status)
+
+import asyncio
+from datetime import datetime
+from services.pg import (
+  get_db_connection, 
+  get_batches, 
+  update_batch, 
+  bulk_update_post_data,
+  fetch_posts_to_process # Assumed helper to get posts by list of IDs
+)
+from services.llm import client
+from services.orchestration import sync_and_process_batches
+from services.process import orchestrate_embedding_batch
+from services.utils import extract_category, assemble_embedding_text
+
+async def run_data_vectorization():
+  conn = get_db_connection()
+  try:
+    # 1. Sync and Process completed "structured" batches
+    # This downloads the price/notes from OpenAI and saves them to batches.data
+    await sync_and_process_batches(conn, client, "system_processor", "structured")
+
+    # 2. Fetch "downloaded" structured batches that haven't been applied yet
+    downloaded_batches = get_batches(conn, owner="system_processor", batch_type="structured")
+    target_batches = [b for b in downloaded_batches if b['status'] == 'downloaded']
+
+    if not target_batches:
+      print("😴 No downloaded structured results to vectorize.")
+      return
+
+    for batch in target_batches:
+      results = batch.get('data', {}).get('results', {})
+      if not results:
+        continue
+
+      # 3. Match custom_id to extract original post IDs
+      # Expected custom_id: f"leaddits-process-{date_str}-{post_id}"
+      price_updates = []
+      notes_updates = []
+      post_ids = []
+
+      for custom_id, data in results.items():
+        try:
+          original_post_id = custom_id.split("-")[-1]
+          post_ids.append(original_post_id)
+          
+          # Prepare bulk updates
+          price_updates.append((data.get('price'), original_post_id))
+          notes_updates.append((data.get('notes'), original_post_id))
+        except Exception as e:
+          print(f"⚠️ Failed to parse ID from {custom_id}: {e}")
+
+      # 4. Save Extracted Data to reddit_posts
+      if price_updates:
+        bulk_update_post_data(conn, 'price', price_updates)
+        bulk_update_post_data(conn, 'notes', notes_updates)
+
+      # 5. Assemble Text for Embedding
+      # Fetch the updated posts to get titles and metadata (categories)
+      updated_posts = fetch_posts_to_process(conn, post_ids=post_ids)
+      embedding_payload = []
+
+      for post in updated_posts:
+        category = extract_category(post.get('metadata', {}))
+        text_to_embed = assemble_embedding_text(
+          title=post['title'],
+          price=post['price'],
+          notes=post['notes'],
+          category=category
+        )
+        embedding_payload.append({"id": str(post['id']), "text": text_to_embed})
+
+      # 6. Trigger Embedding Batch
+      print(f"🚀 Orchestrating embedding batch for {len(embedding_payload)} posts...")
+      emb_batch = await orchestrate_embedding_batch(
+        owner="system_processor",
+        texts=embedding_payload,
+        custom_metadata={"parent_batch_id": batch['id']}
+      )
+
+      if emb_batch:
+        # Mark the structured batch as fully 'processed' so we don't do it again
+        update_batch(conn, batch['id'], status="completed")
+        print(f"✅ Vectorization batch created: {emb_batch.id}")
+
+  finally:
+    conn.close()
+
