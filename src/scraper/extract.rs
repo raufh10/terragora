@@ -1,4 +1,4 @@
-use crate::models::RedditResponse;
+use crate::models::{RedditResponse, RedditUrlResponse};
 use serde_json::Value;
 
 #[allow(dead_code)]
@@ -19,6 +19,16 @@ pub struct StorablePost {
   pub url: String,
   pub created_at: f64,
   pub raw_json: Value,
+}
+
+pub fn process_url_response(response: RedditUrlResponse) -> Vec<RawScrapedPost> {
+  // Reddit URL responses are Vec<RedditResponse>. 
+  // Index 0 is the Post listing, Index 1 is the Comments listing.
+  if let Some(post_listing) = response.0.into_iter().next() {
+    return process_response(post_listing);
+  }
+  
+  Vec::new()
 }
 
 pub fn process_response(response: RedditResponse) -> Vec<RawScrapedPost> {
@@ -61,4 +71,3 @@ pub fn process_response_to_storable(raw_posts: Vec<RawScrapedPost>) -> Vec<Stora
     }
   }).collect()
 }
-

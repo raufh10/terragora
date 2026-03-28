@@ -40,4 +40,15 @@ impl Scraper {
 
     Ok(all_results)
   }
+
+  pub async fn scrape_single_url(&self, url: &str) -> Result<Vec<extract::RawScrapedPost>, Box<dyn Error>> {
+    let response = request::fetch_subreddit_json_as_url(
+      &self.client, 
+      url, 
+      &self.config.user_agent
+    ).await?;
+
+    Ok(extract::process_url_response(response))
+  }
 }
+
