@@ -1,4 +1,5 @@
 from typing import List, Optional
+from services.utils import format_price
 from services.llm import MarketplaceSearch
 
 def format_telegram_message(
@@ -20,62 +21,6 @@ def format_telegram_message(
     key=lambda x: (x[0].deal_score is not None, x[0].deal_score or 0),
     reverse=True
   )
-
-  def format_rp(value):
-    if value is None:
-      return None
-    return f"{int(value):,}".replace(",", ".")
-
-  def format_price(price):
-    # Case 1: None
-    if not price:
-      return "Rp -"
-
-    # Case 2: Single number
-    if isinstance(price, (int, float)):
-      return f"Rp {format_rp(price)}"
-
-    # Case 3: List of dicts (bundle / multiple items)
-    if isinstance(price, list):
-      parts = []
-      total_min = 0
-      total_max = 0
-      has_max = False
-
-      for p in price:
-        start = p.get("start")
-        max_p = p.get("max")
-
-        if start:
-          total_min += start
-        if max_p:
-          total_max += max_p
-          has_max = True
-        else:
-          total_max += start if start else 0
-
-        # Per-item display
-        if start and max_p:
-          parts.append(f"{format_rp(start)}–{format_rp(max_p)}")
-        elif start:
-          parts.append(f"{format_rp(start)}")
-
-      # Join individual prices
-      price_line = "Rp " + ", ".join(parts)
-
-      # Add total
-      if len(price) > 1:
-        if has_max:
-          total_str = f"{format_rp(total_min)}–{format_rp(total_max)}"
-        else:
-          total_str = f"{format_rp(total_min)}"
-
-        price_line += f" (Total: Rp {total_str})"
-
-      return price_line
-
-    # Fallback
-    return f"Rp {price}"
 
   lines = []
 

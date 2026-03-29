@@ -1,8 +1,10 @@
 import asyncio
-from typing import List, Optional, Annotated
 from openai import OpenAI
 from pydantic import BaseModel, Field
+from typing import List, Optional, Annotated
+
 from services.config import configs
+from services.utils import format_price
 
 MAX_RETRIES = 2
 RETRY_DELAY = 1
@@ -68,10 +70,13 @@ async def search_used_items(
 
   context_entries = []
   for p in relevant_posts:
+     price = p.get('price')
+     price_line = format_price(price)
+
     entry = (
       f"Item: {p.get('title', 'N/A')}\n"
       f"Description: {p.get('content', 'N/A')}\n"
-      f"Price: {p.get('price', 'N/A')}\n"
+      f"Price: {price_line}\n"
     )
     context_entries.append(entry)
 
