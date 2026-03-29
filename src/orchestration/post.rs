@@ -91,12 +91,12 @@ pub async fn run_post_orchestration() -> Result<(), Box<dyn Error>> {
     };
 
     if let Some(attempts) = Some(3) {
-      println!("⏸️ Cooling down for 60s...");
-      sleep(Duration::from_secs(60)).await;
+      println!("⏸️ Cooling down for 5s...");
+      sleep(Duration::from_secs(5)).await;
     }
 
     updated_statuses.push(RedditUrlStatus { url, is_active });
-    sleep(Duration::from_secs(5)).await; // longer delay between requests
+    sleep(Duration::from_secs(5)).await;
   }
 
   let total = updated_statuses.len();
