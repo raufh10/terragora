@@ -16,43 +16,6 @@ from services.pg import (
   fetch_posts_to_process
 )
 
-async def sync_and_process_batches(conn, client: OpenAI, owner: str, batch_type: str):
-  """
-  Checks pending batches in DB, syncs status with OpenAI, and parses results.
-  """
-  batches = get_batches(conn, owner=owner, batch_type=batch_type)
-  active_statuses = ['completed', 'failed', 'expired', 'cancelled', 'downloaded', 'saved']
-  active_batches = [b for b in batches if b['status'] not in active_statuses]
-
-  if not active_batches:
-    print(f"ℹ️ No active {batch_type} batches to sync.")
-    return
-
-  for db_batch in active_batches:
-    batch_id = db_batch['id']
-    remote_batch = await retrieve_batch_status(client, batch_id)
-    if not remote_batch:
-      continue
-
-    if remote_batch.status == "completed":
-      file_id = remote_batch.output_file_id
-      if not file_id:
-        update_batch(conn, batch_id, status="failed")
-        continue
-
-      file_response = await get_file_content(client, file_id)
-      if file_response:
-        raw_content = file_response.text
-        results = extract_batch_embeddings(raw_content) if batch_type == "embedding" else process_batch_output(raw_content)
-        
-        update_batch(conn, batch_id, status="downloaded", result={"results": results})
-        print(f"✅ Batch {batch_id} downloaded: {len(results)} items.")
-
-    elif remote_batch.status in ["failed", "expired", "cancelled"]:
-      update_batch(conn, batch_id, status="failed")
-    elif remote_batch.status != db_batch['status']:
-      update_batch(conn, batch_id, status=remote_batch.status)
-
 async def run_data_extraction(conn, client: OpenAI):
   """
   Stage 1: Fetch raw posts and create a structured extraction batch.
