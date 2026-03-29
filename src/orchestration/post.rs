@@ -21,7 +21,7 @@ pub async fn run_post_orchestration() -> Result<(), Box<dyn Error>> {
   let reddit_scraper = Scraper::new(config).await?;
   let mut updated_statuses = Vec::new();
 
-  for url in active_data.urls.iter().take(50) {
+  for url in active_data.urls {
     if url.contains("i.redd.it") || url.contains("preview.redd.it") || url.ends_with(".jpg") || url.ends_with(".png") {
       println!("🗑️  [MEDIA] Deactivating: {}", url);
       updated_statuses.push(RedditUrlStatus { url: url.clone(), is_active: false });
