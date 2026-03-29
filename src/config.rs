@@ -3,7 +3,6 @@ use std::env;
 use std::net::SocketAddr;
 use fake_user_agent::get_rua;
 use urlencoding::encode;
-use rand::Rng;
 
 pub struct Config {
   pub database_url: String,
@@ -45,7 +44,7 @@ impl Config {
     let username = encode(&user);
     let password = encode(&key);
 
-    let session_id: u32 = rand::thread_rng().gen_range(100000..999999);
+    let session_id: u32 = rand::random_range(100000..999999);
 
     let full_username = format!("customer-{}-cc-ID-sessid-{}", username, session_id);
 

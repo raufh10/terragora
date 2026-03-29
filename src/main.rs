@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("\n📡 Processing /r/{}...", subreddit);
     
     let mut current_after: Option<String> = None;
-    let max_pages = 10;
+    let max_pages = 5;
 
     for page in 1..=max_pages {
       println!("📄 Page {}/{} (after: {:?})", page, max_pages, current_after);
@@ -85,7 +85,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
   println!("\n✨ --- ALL TASKS COMPLETE --- ✨");
   Ok(())
 }
-
-// Ensure your Scraper struct has this getter in src/scraper/mod.rs:
-// impl Scraper { pub fn get_client(&self) -> &reqwest::Client { &self.client } }
-

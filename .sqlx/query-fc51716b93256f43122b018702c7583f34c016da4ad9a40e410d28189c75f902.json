@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n    INSERT INTO reddit_posts (reddit_id, title, content, url, posted_at, metadata, is_active)\n    SELECT * FROM UNNEST(\n      $1::text[], \n      $2::text[], \n      $3::text[], \n      $4::text[], \n      $5::timestamptz[], \n      $6::jsonb[],\n      $7::boolean[]\n    )\n    ON CONFLICT (reddit_id) DO UPDATE SET\n      title = EXCLUDED.title,\n      content = EXCLUDED.content,\n      metadata = EXCLUDED.metadata,\n      is_active = EXCLUDED.is_active,\n      scraped_at = NOW()\n    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TimestamptzArray",
+        "JsonbArray",
+        "BoolArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fc51716b93256f43122b018702c7583f34c016da4ad9a40e410d28189c75f902"
+}

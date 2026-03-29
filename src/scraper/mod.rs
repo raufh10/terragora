@@ -2,7 +2,6 @@ pub mod request;
 pub mod extract;
 
 use crate::config::Config;
-use crate::models::StorablePost;
 use std::error::Error;
 
 pub struct Scraper {
@@ -24,22 +23,8 @@ impl Scraper {
     })
   }
 
-  pub async fn scrape_all(&self) -> Result<Vec<StorablePost>, Box<dyn Error>> {
-    let mut all_results = Vec::new();
-
-    for sub in &self.config.subreddits {
-      let url = self.config.get_subreddit_url(sub);
-
-      let response = request::fetch_subreddit_json(
-        &self.client, 
-        &url, 
-        &self.config.user_agent
-      ).await?;
-
-      let mut posts = extract::process_response(response);
-      all_results.append(&mut posts);
-    }
-
-    Ok(all_results)
+  pub fn get_client(&self) -> &reqwest::Client {
+    &self.client
   }
 }
+
