@@ -1,6 +1,5 @@
 use sqlx::{Pool, Postgres};
-use crate::scraper::extract::StorablePost;
-use crate::models::{RedditUrlStatuses, RedditUrls};
+use crate::models::StorablePost;
 use chrono::{Utc, TimeZone};
 
 pub async fn bulk_ingest_raw_posts(
@@ -11,16 +10,18 @@ pub async fn bulk_ingest_raw_posts(
   let titles: Vec<String> = posts.iter().map(|p| p.title.clone()).collect();
   let contents: Vec<String> = posts.iter().map(|p| p.content.clone()).collect();
   let urls: Vec<String> = posts.iter().map(|p| p.url.clone()).collect();
-  let metadata_json: Vec<serde_json::Value> = posts.iter().map(|p| p.raw_json.clone()).collect();
-  
+  let metadata: Vec<serde_json::Value> = posts.iter().map(|p| p.metadata.clone()).collect();
+  let is_active: Vec<bool> = posts.iter().map(|p| p.is_active).collect();
+
+  // Convert f64 UTC timestamp to Chrono DateTime
   let posted_at: Vec<chrono::DateTime<Utc>> = posts
     .iter()
-    .map(|p| Utc.timestamp_opt(p.created_at as i64, 0).unwrap())
+    .map(|p| Utc.timestamp_opt(p.posted_at as i64, 0).single().unwrap_or_else(Utc::now))
     .collect();
 
   sqlx::query!(
     r#"
-    INSERT INTO reddit_posts (reddit_id, title, content, url, posted_at, metadata, embedding)
+    INSERT INTO reddit_posts (reddit_id, title, content, url, posted_at, metadata, is_active)
     SELECT * FROM UNNEST(
       $1::text[], 
       $2::text[], 
@@ -28,12 +29,13 @@ pub async fn bulk_ingest_raw_posts(
       $4::text[], 
       $5::timestamptz[], 
       $6::jsonb[],
-      CAST(NULL AS vector[]) -- Placeholder for Python to fill
+      $7::boolean[]
     )
     ON CONFLICT (reddit_id) DO UPDATE SET
       title = EXCLUDED.title,
       content = EXCLUDED.content,
       metadata = EXCLUDED.metadata,
+      is_active = EXCLUDED.is_active,
       scraped_at = NOW()
     "#,
     &reddit_ids,
@@ -41,49 +43,8 @@ pub async fn bulk_ingest_raw_posts(
     &contents,
     &urls,
     &posted_at,
-    &metadata_json
-  )
-  .execute(pool)
-  .await?;
-
-  Ok(())
-}
-
-pub async fn fetch_active_reddit_urls(pool: &Pool<Postgres>) -> Result<RedditUrls, sqlx::Error> {
-  let rows = sqlx::query!(
-    r#"
-    SELECT url 
-    FROM reddit_posts 
-    WHERE is_active = true
-    LIMIT 100
-    "#
-  )
-  .fetch_all(pool)
-  .await?;
-
-  let urls = rows.into_iter().map(|r| r.url.unwrap_or_default()).collect();
-  
-  Ok(RedditUrls { urls })
-}
-
-pub async fn bulk_update_url_statuses(
-  pool: &Pool<Postgres>,
-  statuses: &RedditUrlStatuses,
-) -> Result<(), sqlx::Error> {
-  let urls: Vec<String> = statuses.items.iter().map(|i| i.url.clone()).collect();
-  let activity_flags: Vec<bool> = statuses.items.iter().map(|i| i.is_active).collect();
-
-  sqlx::query!(
-    r#"
-    UPDATE reddit_posts AS rp
-    SET is_active = data.new_status
-    FROM (
-      SELECT * FROM UNNEST($1::text[], $2::boolean[])
-    ) AS data(url, new_status)
-    WHERE rp.url = data.url
-    "#,
-    &urls,
-    &activity_flags
+    &metadata,
+    &is_active
   )
   .execute(pool)
   .await?;
