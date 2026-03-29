@@ -70,8 +70,8 @@ async def search_used_items(
 
   context_entries = []
   for p in relevant_posts:
-     price = p.get('price')
-     price_line = format_price(price)
+    price = p.get('price')
+    price_line = format_price(price)
 
     entry = (
       f"Item: {p.get('title', 'N/A')}\n"
