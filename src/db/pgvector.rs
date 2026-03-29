@@ -55,7 +55,7 @@ pub async fn fetch_active_reddit_urls(pool: &Pool<Postgres>) -> Result<RedditUrl
     SELECT url 
     FROM reddit_posts 
     WHERE is_active = true
-    LIMIT 20
+    LIMIT 100
     "#
   )
   .fetch_all(pool)
