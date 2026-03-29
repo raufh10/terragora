@@ -22,6 +22,8 @@ class Configs(BaseSettings):
 
   # General settings
   env: SecretStr | None = None
+  MAX_RETRIES: int = 2
+  RETRY_DELAY: int = 1
 
   # OpenAI settings
   ProductExtractionPrompt: str = """

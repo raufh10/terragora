@@ -1,70 +1,55 @@
+import asyncio
 from openai import OpenAI
+from typing import List, Optional
+from services.config import configs
+from services.models import ProductExtraction
 
-# --- Batch & File Operations ---
-async def create_batch_file(client: OpenAI, file_path: str):
-  try:
-    return client.files.create(
-      file=open(file_path, "rb"),
-      purpose="batch"
-    )
-  except Exception as e:
-    print(f"❌ Error creating batch file: {e}")
-    return None
+client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
 
-async def create_structured_batch_job(
-  client: OpenAI, 
-  input_file_id: str
-):
+async def get_embedding(text: str) -> List[float]:
+  for attempt in range(configs.MAX_RETRIES):
+    try:
+      response = client.embeddings.create(
+        input=text,
+        model="text-embedding-3-small",
+        dimensions=1536
+      )
+      return response.data[0].embedding
 
-  try:
-    return client.batches.create(
-      input_file_id=input_file_id,
-      endpoint="/v1/responses",
-      completion_window="24h"
-    )
-  except Exception as e:
-    print(f"❌ Error creating structured batch job: {e}")
-    return None
+    except Exception as e:
+      print(f"⚠️ Embedding failed (attempt {attempt+1}): {e}")
+      if attempt < configs.MAX_RETRIES - 1:
+        await asyncio.sleep(configs.RETRY_DELAY)
+      else:
+        print("❌ Embedding failed after retries")
+        return []
 
-async def create_embedding_batch_job(
-  client: OpenAI,
-  input_file_id: str
-):
+async def extract_product_details(text: str) -> Optional[ProductExtraction]:
+  for attempt in range(configs.MAX_RETRIES):
+    try:
+      response = client.responses.parse(
+        model="gpt-5.4-nano-2026-03-17",
+        input=[
+          {
+            "role": "system", 
+            "content": configs.ProductExtractionPrompt
+          },
+          {
+            "role": "user", 
+            "content": text
+          },
+        ],
+        text_format=ProductExtraction,
+        prompt_cache_key="leaddits-productparser-0.1",
+        prompt_cache_retention="24h"
+      )
 
-  try:
-    return client.batches.create(
-      input_file_id=input_file_id,
-      endpoint="/v1/embeddings",
-      completion_window="24h"
-    )
-  except Exception as e:
-    print(f"❌ Error creating embedding batch job: {e}")
-    return None
+      return response.output_parsed
 
-async def retrieve_batch_status(client: OpenAI, batch_id: str):
-  try:
-    return client.batches.retrieve(batch_id)
-  except Exception as e:
-    print(f"❌ Error retrieving batch: {e}")
-    return None
-
-async def cancel_batch_job(client: OpenAI, batch_id: str):
-  try:
-    return client.batches.cancel(batch_id)
-  except Exception as e:
-    print(f"❌ Error cancelling batch: {e}")
-    return None
-
-async def list_batches(client: OpenAI, limit: int = 10):
-  try:
-    return client.batches.list(limit=limit)
-  except Exception as e:
-    print(f"❌ Error listing batches: {e}")
-    return []
-
-async def get_file_content(client: OpenAI, file_id: str):
-  try:
-    return client.files.content(file_id)
-  except Exception as e:
-    print(f"❌ Error retrieving file content: {e}")
-    return None
+    except Exception as e:
+      print(f"⚠️ Product extraction failed (attempt {attempt+1}): {e}")
+      if attempt < configs.MAX_RETRIES - 1:
+        await asyncio.sleep(configs.RETRY_DELAY)
+      else:
+        print(f"❌ Product extraction failed after {configs.MAX_RETRIES} attempts")
+        return None
