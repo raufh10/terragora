@@ -1,19 +1,16 @@
 import os
 import tempfile
-
 from pydantic import BaseModel
 from typing import List, Type, Dict, Any
-
 from openai import OpenAI
 
-from services.config import configs
-from services.pg import get_db_connection, insert_batch
+from services.pg import insert_batch
 from services.jsonl import generate_embedding_jsonl, generate_structured_jsonl
 from services.llm import create_batch_file, create_structured_batch_job, create_embedding_batch_job
 
-client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
-
 async def orchestrate_structured_batch(
+  conn,
+  client: OpenAI,
   owner: str,
   texts: List[dict],
   model_class: Type[BaseModel],
@@ -41,21 +38,21 @@ async def orchestrate_structured_batch(
     if not batch_response:
       return None
 
-    with get_db_connection() as conn:
-      insert_batch(
-        conn=conn,
-        batch_id=batch_response.id,
-        file_input_id=file_response.id,
-        owner=owner,
-        data={
-          "type": "structured_extraction",
-          "schema": schema_name,
-          "count": len(texts),
-          **custom_metadata
-        },
-        type="structured",
-        status=batch_response.status
-      )
+    # Use the passed-in connection
+    insert_batch(
+      conn=conn,
+      batch_id=batch_response.id,
+      file_input_id=file_response.id,
+      owner=owner,
+      data={
+        "type": "structured_extraction",
+        "schema": schema_name,
+        "count": len(texts),
+        **custom_metadata
+      },
+      type="structured",
+      status=batch_response.status
+    )
 
     return batch_response
 
@@ -64,6 +61,8 @@ async def orchestrate_structured_batch(
       os.remove(tmp_path)
 
 async def orchestrate_embedding_batch(
+  conn,
+  client: OpenAI,
   owner: str,
   texts: List[dict],
   custom_metadata: Dict[str, Any] = {}
@@ -83,23 +82,24 @@ async def orchestrate_embedding_batch(
     if not batch_response:
       return None
 
-    with get_db_connection() as conn:
-      insert_batch(
-        conn=conn,
-        batch_id=batch_response.id,
-        file_input_id=file_response.id,
-        owner=owner,
-        data={
-          "type": "embeddings",
-          "count": len(texts),
-          **custom_metadata
-        },
-        type="embedding",
-        status=batch_response.status
-      )
+    # Use the passed-in connection
+    insert_batch(
+      conn=conn,
+      batch_id=batch_response.id,
+      file_input_id=file_response.id,
+      owner=owner,
+      data={
+        "type": "embeddings",
+        "count": len(texts),
+        **custom_metadata
+      },
+      type="embedding",
+      status=batch_response.status
+    )
 
     return batch_response
 
   finally:
     if os.path.exists(tmp_path):
       os.remove(tmp_path)
+
