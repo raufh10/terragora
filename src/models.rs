@@ -22,6 +22,7 @@ pub struct RedditPostChild {
 #[derive(Debug, Deserialize)]
 pub struct RedditData {
   pub children: Vec<RedditPostChild>,
+  pub after: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -29,29 +30,22 @@ pub struct RedditResponse {
   pub data: RedditData,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct RedditUrlResponse(pub Vec<RedditResponse>);
-
-impl RedditUrlResponse {
-  pub fn get_post(&self) -> Option<&RedditPostData> {
-    Some(&self.0.first()?.data.children.first()?.data)
-  }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RedditUrls {
-  pub urls: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RedditUrlStatus {
+#[allow(dead_code)]
+pub struct RawScrapedPost {
+  pub reddit_id: String,
+  pub title: String,
+  pub selftext: String,
   pub url: String,
-  pub is_active: bool,
+  pub created_utc: f64,
+  pub subreddit: String,
+  pub raw_json: Value,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RedditUrlStatuses {
-  pub items: Vec<RedditUrlStatus>,
+pub struct StorablePost {
+  pub reddit_id: String,
+  pub title: String,
+  pub content: String,
+  pub url: String,
+  pub created_at: f64,
+  pub raw_json: Value,
 }
-
-

@@ -1,43 +1,18 @@
-use crate::models::{RedditResponse, RedditUrlResponse};
+use crate::models::{RedditResponse, RawScrapedPost, StorablePost};
 use serde_json::Value;
 
-#[allow(dead_code)]
-pub struct RawScrapedPost {
-  pub reddit_id: String,
-  pub title: String,
-  pub selftext: String,
-  pub url: String,
-  pub created_utc: f64,
-  pub subreddit: String,
-  pub raw_json: Value,
-}
-
-pub struct StorablePost {
-  pub reddit_id: String,
-  pub title: String,
-  pub content: String,
-  pub url: String,
-  pub created_at: f64,
-  pub raw_json: Value,
-}
-
-pub fn process_url_response(response: RedditUrlResponse) -> Vec<RawScrapedPost> {
-  if let Some(post_listing) = response.0.into_iter().next() {
-    return process_response(post_listing);
-  }
-  
-  Vec::new()
-}
-
+/// Processes a standard Reddit API response, filtering for "WTS" flairs.
 pub fn process_response(response: RedditResponse) -> Vec<RawScrapedPost> {
   response.data.children
     .into_iter()
     .filter(|child| {
+      // Extract flairs safely; if none exist or it's empty, discard the post.
       let flairs = match &child.data.link_flair_richtext {
         Some(f) if !f.is_empty() => f,
         _ => return false,
       };
 
+      // Only keep posts where at least one flair contains "WTS" (case-insensitive)
       flairs.iter().any(|f| {
         f.get("t")
           .and_then(|t| t.as_str())
@@ -47,6 +22,7 @@ pub fn process_response(response: RedditResponse) -> Vec<RawScrapedPost> {
     })
     .map(|child| {
       let post = child.data;
+      // Convert the post back to raw JSON for the raw_json field
       let raw_val = serde_json::to_value(&post).unwrap_or(Value::Null);
 
       RawScrapedPost {
@@ -62,15 +38,20 @@ pub fn process_response(response: RedditResponse) -> Vec<RawScrapedPost> {
     .collect()
 }
 
+/// Maps the scraped posts into a flatter format suitable for database storage.
 pub fn process_response_to_storable(raw_posts: Vec<RawScrapedPost>) -> Vec<StorablePost> {
-  raw_posts.into_iter().map(|post| {
-    StorablePost {
-      reddit_id: post.reddit_id,
-      title: post.title,
-      content: post.selftext,
-      url: post.url,
-      created_at: post.created_utc,
-      raw_json: post.raw_json,
-    }
-  }).collect()
+  raw_posts
+    .into_iter()
+    .map(|post| {
+      StorablePost {
+        reddit_id: post.reddit_id,
+        title: post.title,
+        content: post.selftext,
+        url: post.url,
+        created_at: post.created_utc,
+        raw_json: post.raw_json,
+      }
+    })
+    .collect()
 }
+

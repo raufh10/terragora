@@ -37,10 +37,10 @@ impl Config {
     let username = encode(&user);
     let password = encode(&key);
 
-    let session_id: u32 = rand::random_range(100000..999999);
+    let session_id: u32 = rand::random(100000..999999);
 
     let full_username = format!("customer-{}-cc-ID-sessid-{}", username, session_id);
-    
+
     Ok(format!(
       "http://{}:{}@pr.oxylabs.io:7777",
       full_username, password
@@ -49,6 +49,10 @@ impl Config {
 
   pub fn get_subreddit_url(&self, subreddit: &str) -> String {
     format!("{}/r/{}.json?limit=100", self.base_url, subreddit)
+  }
+
+  pub fn get_subreddit_pagination_url(&self, subreddit: &str, after: &str) -> String {
+    format!("{}/r/{}.json?limit=100&after={}", self.base_url, subreddit, after)
   }
 }
 
