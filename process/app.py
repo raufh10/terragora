@@ -1,7 +1,7 @@
 import asyncio
 from openai import OpenAI
 from services.config import configs
-from services.pg import get_db_connection
+from services.pg import get_db_connection, deactivate_old_posts
 from services.orchestration import (
   run_data_extraction, 
   run_data_vectorization, 
@@ -14,6 +14,9 @@ async def main():
 
   try:
     print("🚀 Starting Leaddits Data Pipeline...")
+
+    # --- STAGE 0: Cleaning ---
+    deactivate_old_posts(conn)
 
     # --- STAGE 1: Extract ---
     await run_data_extraction(conn, client)
