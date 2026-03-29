@@ -1,39 +1,36 @@
 import asyncio
-from openai import OpenAI
 from services.config import configs
 from services.pg import get_db_connection, deactivate_old_posts
 from services.orchestration import (
   run_data_extraction, 
-  run_data_vectorization, 
-  run_data_storage
+  run_data_vectorization
 )
 
 async def main():
-  client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
   conn = get_db_connection()
 
   try:
-    print("🚀 Starting Leaddits Data Pipeline...")
+    print("🚀 Starting Leaddits Real-time Pipeline...")
 
     # --- STAGE 0: Cleaning ---
     deactivate_old_posts(conn)
 
-    # --- STAGE 1: Extract ---
-    await run_data_extraction(conn, client)
+    # --- STAGE 1: Extract (LLM Parsing) ---
+    await run_data_extraction(conn)
 
-    # --- STAGE 2: Vectorize ---
-    #await run_data_vectorization(conn, client)
+    # --- STAGE 2: Vectorize (Semantic Search) ---
+    await run_data_vectorization(conn)
 
-    # --- STAGE 3: Store ---
-    #await run_data_storage(conn, client)
-
-    print("✨ Pipeline execution complete.")
+    print("✨ Pipeline execution complete. Data is now searchable.")
 
   except Exception as e:
     print(f"🔥 Critical Pipeline Failure: {e}")
   
   finally:
-    conn.close()
+    if conn:
+      conn.close()
+      print("🔌 Database connection closed.")
 
 if __name__ == "__main__":
   asyncio.run(main())
+

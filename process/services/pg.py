@@ -25,7 +25,8 @@ def fetch_posts_to_process(conn):
     FROM reddit_posts
     WHERE embedding IS NULL 
     AND is_active = true
-    LIMIT 200
+    AND (notes IS NULL OR embedding IS NULL)
+    LIMIT 10
   """
   with conn.cursor() as cur:
     cur.execute(query)
