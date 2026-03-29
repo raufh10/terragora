@@ -19,17 +19,32 @@ def get_db_connection():
     print(f"[ERROR] Failed to connect to {configs.env} database: {e}")
     raise
 
-def fetch_posts_to_process(conn):
-  query = """
-    SELECT id, title, content, metadata
-    FROM reddit_posts
-    WHERE embedding IS NULL 
-    AND is_active = true
-    AND (notes IS NULL OR embedding IS NULL)
-    LIMIT 10
-  """
+def fetch_posts_to_process(conn, batch_type: str = "extraction", limit: int = 200):
+
+  if batch_type == "extraction":
+    query = """
+      SELECT id, title, content, metadata 
+      FROM reddit_posts 
+      WHERE is_active = true 
+      AND (notes IS NULL OR price IS NULL OR price = '[]'::jsonb)
+      LIMIT %s
+    """
+
+  elif batch_type == "vectorization":
+    query = """
+      SELECT id, title, price, notes, metadata 
+      FROM reddit_posts 
+      WHERE is_active = true 
+      AND notes IS NOT NULL 
+      AND embedding IS NULL
+      LIMIT %s
+    """
+
+  else:
+    raise ValueError(f"Unknown batch_type: {batch_type}")
+
   with conn.cursor() as cur:
-    cur.execute(query)
+    cur.execute(query, (limit,))
     return cur.fetchall()
 
 def bulk_update_embeddings(conn, updates):
