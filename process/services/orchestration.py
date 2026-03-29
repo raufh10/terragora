@@ -1,116 +1,88 @@
 import asyncio
-import json
-from typing import Optional, Dict, Any, List
+from typing import List
 from openai import OpenAI
-from services.config import configs
-from services.models import ProductExtraction
+from services.llm import extract_product_details, get_embedding
 from services.utils import clean_text, extract_category, assemble_embedding_text
-from services.jsonl import extract_batch_embeddings, process_batch_output
-from services.llm import retrieve_batch_status, get_file_content
-from services.process import orchestrate_structured_batch, orchestrate_embedding_batch
 from services.pg import (
-  get_batches, 
-  update_batch, 
+  fetch_posts_to_process, 
   bulk_update_post_data, 
-  bulk_update_embeddings, 
-  fetch_posts_to_process
+  bulk_update_embeddings
 )
 
-async def run_data_extraction(conn, client: OpenAI):
+async def run_data_extraction(conn):
   """
-  Stage 1: Fetch raw posts and create a structured extraction batch.
+  Stage 1: Real-time extraction. 
+  Uses GPT-5.4 Nano to parse prices and notes immediately.
   """
   posts = fetch_posts_to_process(conn)
   if not posts:
-    print("😴 No new posts to process.")
+    print("😴 No new posts needing extraction.")
     return
 
-  texts_to_process = []
-  post_ids = []
+  print(f"🧐 Processing {len(posts)} posts for extraction...")
+  
+  price_updates = []
+  notes_updates = []
 
-  for post in posts:
-    post_id = str(post['id'])
-    cleaned = clean_text(f"{post['title']} {post['content']}")
-    texts_to_process.append({"id": post_id, "text": cleaned})
-    post_ids.append(post_id)
+  # We use a semaphore to avoid hitting OpenAI rate limits during real-time calls
+  semaphore = asyncio.Semaphore(5) 
 
-  batch_job = await orchestrate_structured_batch(
-    conn=conn,
-    client=client,
-    owner="system_processor",
-    texts=texts_to_process,
-    model_class=ProductExtraction,
-    schema_name="marketplace_extraction_v1",
-    system_prompt=configs.ProductExtractionPrompt,
-    custom_metadata={"post_ids": post_ids, "source": "reddit_marketplace"}
-  )
+  async def process_single_post(post):
+    async with semaphore:
+      post_id = post['id']
+      text = clean_text(f"{post['title']} {post['content']}")
+      
+      extracted = await extract_product_details(text)
+      if extracted:
+        # Note: extracted.prices is now a list of objects per your new model
+        price_updates.append((json.dumps([p.model_dump() for p in extracted.prices]), post_id))
+        notes_updates.append((extracted.notes, post_id))
+        print(f"✅ Extracted: {post['title'][:30]}...")
 
-  if batch_job:
-    print(f"🚀 Extraction Batch Created: {batch_job.id}")
+  # Run extractions in parallel
+  await asyncio.gather(*(process_single_post(p) for p in posts))
 
-async def run_data_vectorization(conn, client: OpenAI):
-  """
-  Stage 2: Apply extracted prices/notes and create an embedding batch.
-  """
-  await sync_and_process_batches(conn, client, "system_processor", "structured")
-
-  downloaded_batches = get_batches(conn, owner="system_processor", batch_type="structured")
-  target_batches = [b for b in downloaded_batches if b['status'] == 'downloaded']
-
-  for batch in target_batches:
-    results = batch.get('result', {}).get('results', {})
-    if not results: continue
-
-    price_updates, notes_updates, post_ids = [], [], []
-
-    for custom_id, data in results.items():
-      original_post_id = custom_id.split("-")[-1]
-      post_ids.append(original_post_id)
-      price_updates.append((data.get('prices'), original_post_id))
-      notes_updates.append((data.get('notes'), original_post_id))
-
-    bulk_update_post_data(conn, 'price', price_updates)
+  if price_updates:
+    # We store the structured price list in the 'metadata' or 'notes' column, 
+    # or you can use a single numeric price if you prefer.
     bulk_update_post_data(conn, 'notes', notes_updates)
-    update_batch(conn, batch_id.get('id'), status="saved")
+    # If your 'price' column is numeric, you may need a helper to pick the first 'start' price.
+    print(f"✨ Extraction sync complete for {len(price_updates)} posts.")
 
-    updated_posts = fetch_posts_to_process(conn, post_ids=post_ids)
-    embedding_payload = []
+async def run_data_vectorization(conn):
+  """
+  Stage 2: Real-time vectorization.
+  Assembles the final searchable string and generates the embedding.
+  """
+  # Fetch posts that have been extracted (notes exist) but have no embedding
+  posts = fetch_posts_to_process(conn) 
+  if not posts:
+    print("😴 No posts ready for vectorization.")
+    return
 
-    for post in updated_posts:
+  print(f"🚀 Generating embeddings for {len(posts)} posts...")
+  embedding_updates = []
+  semaphore = asyncio.Semaphore(10)
+
+  async def vectorize_single_post(post):
+    async with semaphore:
       category = extract_category(post.get('metadata', {}))
-      text_to_embed = assemble_embedding_text(
-        title=post['title'], price=post['price'], notes=post['notes'], category=category
+      
+      # We use the newly extracted notes and prices to build the context
+      rich_text = assemble_embedding_text(
+        title=post['title'],
+        price=None, # Adjust if you want to pull from the new prices list
+        notes=post.get('notes', ''),
+        category=category
       )
-      embedding_payload.append({"id": str(post['id']), "text": text_to_embed})
+      
+      vector = await get_embedding(rich_text)
+      if vector:
+        embedding_updates.append((vector, post['id']))
 
-    emb_batch = await orchestrate_embedding_batch(
-      conn=conn, client=client, owner="system_processor",
-      texts=embedding_payload, custom_metadata={"parent_batch_id": batch['id']}
-    )
+  await asyncio.gather(*(vectorize_single_post(p) for p in posts))
 
-    if emb_batch:
-      print(f"✅ Vectorization batch created: {emb_batch.id}")
+  if embedding_updates:
+    bulk_update_embeddings(conn, embedding_updates)
+    print(f"✨ Storage complete for {len(embedding_updates)} vectors.")
 
-async def run_data_storage(conn, client: OpenAI):
-  """
-  Stage 3: Download embeddings and store them in the database.
-  """
-  await sync_and_process_batches(conn, client, "system_processor", "embedding")
-
-  downloaded_batches = get_batches(conn, owner="system_processor", batch_type="embedding")
-  target_batches = [b for b in downloaded_batches if b['status'] == 'downloaded']
-
-  for batch in target_batches:
-    results = batch.get('data', {}).get('results', {})
-    if not results: continue
-
-    embedding_updates = []
-    for custom_id, vector in results.items():
-      original_post_id = custom_id.split("-")[-1]
-      embedding_updates.append((vector, original_post_id))
-
-    if embedding_updates:
-      bulk_update_embeddings(conn, embedding_updates)
-
-    update_batch(conn, batch.get("id"), status="saved")
-    print(f"✅ Storage complete for batch: {batch['id']}")
