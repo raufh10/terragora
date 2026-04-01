@@ -2,21 +2,31 @@ use reqwest::{header::{HeaderMap, HeaderValue, USER_AGENT}, Proxy};
 use crate::models::RedditResponse;
 use std::net::SocketAddr;
 use std::time::Duration;
+use dotenvy::dotenv;
+use std::env;
 
 pub async fn init_client(
   timeout: u64, 
   proxy_url: String,
   reddit_ip: SocketAddr
 ) -> Result<reqwest::Client, Box<dyn std::error::Error>> {
+  dotenv().ok();
+
+  let is_production = env::var("ENV").unwrap_or_default() == "production";
   let proxy = Proxy::all(proxy_url)?;
 
-  let client = reqwest::Client::builder()
-    .resolve("www.reddit.com", reddit_ip)
-    .resolve("reddit.com", reddit_ip)
-    .use_rustls_tls() 
-    .proxy(proxy) 
-    .timeout(Duration::from_secs(timeout))
-    .build()?;
+  let mut builder = reqwest::Client::builder()
+    .use_rustls_tls()
+    .proxy(proxy)
+    .timeout(Duration::from_secs(timeout));
+
+  if !is_production {
+    builder = builder
+      .resolve("www.reddit.com", reddit_ip)
+      .resolve("reddit.com", reddit_ip);
+  }
+
+  let client = builder.build()?;
 
   Ok(client)
 }
