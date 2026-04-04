@@ -16,6 +16,10 @@ use tokio::time::{sleep, Duration};
 async fn main() -> Result<(), Box<dyn Error>> {
   println!("🚀 --- STARTING REDDIT SCRAPER PIPELINE --- 🚀");
 
+  let delay_mins = rand::random_range(5..=30);
+  println!("⏳ Applying initial jitter: Sleeping for {} minutes before starting...", delay_mins);
+  sleep(Duration::from_secs(delay_mins * 60)).await;
+
   // 1. Setup Config
   let config = Config::from_env();
   println!("[1/3] Config loaded. Target subreddits: {:?}", config.subreddits);
@@ -47,11 +51,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
       };
 
       // Fetch JSON from Reddit
-      let response = fetch_subreddit_json(
-        scraper.get_client(), 
-        &url,
-        &scraper.config.user_agent
-      ).await?;
+      let mut attempts = 0;
+      let max_retries = 3;
+      let mut backoff = 3;
+
+      let response = loop {
+        match fetch_subreddit_json(
+          scraper.get_client(),
+          &url,
+          &scraper.config.user_agent,
+        ).await {
+          Ok(res) => break res,
+          Err(e) if attempts < max_retries => {
+            attempts += 1;
+            println!("⚠️ Fetch failed: {}. Retry {}/{} in {}s...", e, attempts, max_retries, backoff);
+            sleep(Duration::from_secs(backoff)).await;
+            backoff *= 2;
+          }
+          Err(e) => return Err(e),
+        }
+      };
 
       // Capture pagination token for next iteration
       current_after = response.data.after.clone();
