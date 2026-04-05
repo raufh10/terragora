@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "etl/processor",
+  "etl/scraper"
+]
+resolver = "2"
