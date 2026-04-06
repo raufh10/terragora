@@ -8,21 +8,20 @@ import (
   "time"
 )
 
-// InitHttpClient creates a reusable client configured with your Oxylabs proxy.
-// We return a pointer to http.Client which is thread-safe and designed for reuse.
 func (c *Client) InitHttpClient() (*http.Client, error) {
-  proxyURL, err := url.Parse(c.Config.ProxyURL)
-  if err != nil {
-    return nil, fmt.Errorf("invalid proxy URL: %w", err)
-  }
-
   transport := &http.Transport{
-    Proxy: http.ProxyURL(proxyURL),
-    // Performance tuning for concurrent scraping
     MaxIdleConns:          100,
     IdleConnTimeout:       90 * time.Second,
     TLSHandshakeTimeout:   10 * time.Second,
     ExpectContinueTimeout: 1 * time.Second,
+  }
+
+  if c.Config.ProxyURL != "" {
+    proxyURL, err := url.Parse(c.Config.ProxyURL)
+    if err != nil {
+      return nil, fmt.Errorf("invalid proxy URL: %w", err)
+    }
+    transport.Proxy = http.ProxyURL(proxyURL)
   }
 
   return &http.Client{
@@ -31,14 +30,12 @@ func (c *Client) InitHttpClient() (*http.Client, error) {
   }, nil
 }
 
-// FetchSubredditJson performs the GET request and returns a generic JSON map.
-func (c *Client) FetchSubredditJson(httpClient *http.Client, targetURL string, ua UserAgent) (map[string]interface{}, error) {
+func (c *Client) FetchSubredditJson(httpClient *http.Client, targetURL string, ua UserAgent) (*RedditResponse, error) {
   req, err := http.NewRequest("GET", targetURL, nil)
   if err != nil {
     return nil, err
   }
 
-  // Set the identity headers
   req.Header.Set("User-Agent", ua.Raw)
   req.Header.Set("Accept", "application/json")
 
@@ -48,17 +45,14 @@ func (c *Client) FetchSubredditJson(httpClient *http.Client, targetURL string, u
   }
   defer resp.Body.Close()
 
-  // Sanity check on status code
   if resp.StatusCode != http.StatusOK {
     return nil, fmt.Errorf("Reddit API Error: Status %d", resp.StatusCode)
   }
 
-  // Decode into a generic map
-  var result map[string]interface{}
+  var result RedditResponse
   if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-    return nil, fmt.Errorf("failed to decode raw JSON: %w", err)
+    return nil, fmt.Errorf("failed to decode reddit response: %w", err)
   }
 
-  return result, nil
+  return &result, nil
 }
-

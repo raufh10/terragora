@@ -13,29 +13,6 @@ import (
   "github.com/joho/godotenv"
 )
 
-type UserAgent struct {
-  Raw  string `json:"str"`
-  Type string `json:"type"` // windows, macos, linux, android, ios
-}
-
-type Targets struct {
-  BaseURL    string
-  Subreddits []string
-}
-
-type ScraperConfigs struct {
-  UserAgentPool  []UserAgent
-  LastUsedUA     string
-  ProxyURL       string
-  TimeoutSeconds time.Duration
-}
-
-type Client struct {
-  DatabaseURL string
-  Targets     Targets
-  Config      ScraperConfigs
-}
-
 func NewConfig() (*Client, error) {
   _ = godotenv.Load()
 
@@ -107,6 +84,8 @@ func (c *Client) GetSubredditPaginationURL(subreddit, after string) string {
   return fmt.Sprintf("%s/r/%s.json?limit=100&after=%s", c.Targets.BaseURL, subreddit, after)
 }
 
+// --- Client Private Helpers ---
+
 func fetchFreshUserAgents(apiKey string) ([]UserAgent, error) {
   apiURL := fmt.Sprintf("http://headers.scrapeops.io/v1/user-agents?api_key=%s&num_results=5", apiKey)
 
@@ -153,7 +132,7 @@ func parseOSType(ua string) string {
   case strings.Contains(ua, "linux"):
     return "linux"
   default:
-    return "windows" // Default for Oxylabs platform param
+    return "windows"
   }
 }
 
@@ -173,3 +152,4 @@ func generateOxylabsProxy(platform string) (string, error) {
 
   return fmt.Sprintf("http://%s:%s@pr.oxylabs.io:7777", fullUsername, password), nil
 }
+
