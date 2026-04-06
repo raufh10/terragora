@@ -148,7 +148,8 @@ func generateOxylabsProxy(platform string) (string, error) {
   password := url.QueryEscape(key)
   sessionID := rand.Intn(999999-100000) + 100000
 
-  fullUsername := fmt.Sprintf("customer-%s-platform-%s-sessid-%d", username, platform, sessionID)
+  // fullUsername := fmt.Sprintf("customer-%s-platform-%s-sessid-%d", username, platform, sessionID)
+  fullUsername := fmt.Sprintf("customer-%s-sessid-%d", username, sessionID)
 
   return fmt.Sprintf("http://%s:%s@pr.oxylabs.io:7777", fullUsername, password), nil
 }
