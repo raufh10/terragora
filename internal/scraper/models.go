@@ -24,9 +24,8 @@ type ScraperConfigs struct {
 
 // Client is the main scraper controller.
 type Client struct {
-  DatabaseURL string
-  Targets     Targets
-  Config      ScraperConfigs
+  Targets Targets
+  Config  ScraperConfigs
 }
 
 // --- Reddit Specific API Models ---
@@ -52,14 +51,4 @@ type RedditData struct {
 
 type RedditResponse struct {
   Data RedditData `json:"data"`
-}
-
-type StorablePost struct {
-  RedditID string                 `json:"reddit_id"`
-  Title    string                 `json:"title"`
-  Content  string                 `json:"content"`
-  URL      string                 `json:"url"`
-  PostedAt float64                `json:"posted_at"`
-  Metadata map[string]interface{} `json:"metadata"`
-  IsActive bool                   `json:"is_active"`
 }
