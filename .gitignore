@@ -1,12 +1,13 @@
-# Folders
-__pycache__/
-
 # Logs
 logs/
 *.log
 
-# Files
-*.env
+# Secrets and Config
+.env*
+!.env.example
+*.pem
+*.key
+*.cert
 
 # Binaries for programs and plugins
 *.exe
@@ -17,3 +18,12 @@ logs/
 
 # Standard Go binary output
 bin/
+
+# Go test coverage and profiles
+*.out
+*.test
+*.prof
+
+# Python artifacts
+**/__pycache__/
+.venv/
