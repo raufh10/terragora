@@ -41,13 +41,22 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
   client := getClient()
 
   for i := 0; i < MaxRetries; i++ {
+    // Corrected for the Union type expected by the new SDK
     res, err := client.Embeddings.New(ctx, openai.EmbeddingNewParams{
-      Input:      openai.F(text),
+      Input: openai.F(openai.EmbeddingNewParamsInputUnion{
+        OfString: openai.F(text),
+      }),
       Model:      openai.F(openai.EmbeddingModelTextEmbedding3Small),
       Dimensions: openai.F(int64(1536)),
     })
 
     if err == nil {
+      // Ensure we have data before accessing index 0
+      if len(res.Data) == 0 {
+        return nil, fmt.Errorf("empty embedding data returned")
+      }
+
+      // Convert []float64 to []float32 for pgvector compatibility
       embeddings := make([]float32, len(res.Data[0].Embedding))
       for j, v := range res.Data[0].Embedding {
         embeddings[j] = float32(v)
@@ -56,7 +65,13 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
     }
 
     log.Printf("⚠️ Embedding failed (attempt %d): %v", i+1, err)
-    time.Sleep(RetryDelay)
+    
+    // Use the context for the sleep to allow for graceful cancellation
+    select {
+    case <-time.After(RetryDelay):
+    case <-ctx.Done():
+      return nil, ctx.Err()
+    }
   }
 
   return nil, fmt.Errorf("failed to get embedding after %d retries", MaxRetries)
