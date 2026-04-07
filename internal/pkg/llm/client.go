@@ -15,6 +15,6 @@ const (
 // NewClient initializes a new OpenAI client.
 func NewClient(apiKey string) *openai.Client {
   client := openai.NewClient(option.WithAPIKey(apiKey))
-  return client
+  return &client
 }
 
