@@ -6,19 +6,21 @@ import (
   "encoding/json"
   "fmt"
   "io"
-  "os"
   "net/http"
+  "os"
   "strings"
   "sync"
   "time"
+
+  // Replace 'leaddits' with the module name found in your go.mod file
+  "leaddits/internal/bot-server" 
 )
 
 var (
   lastSeen = make(map[int64]float64)
-  mu       sync.Mutex // Protects the lastSeen map for concurrent access
+  mu       sync.Mutex 
 )
 
-// Telegram types for incoming webhook
 type Update struct {
   Message struct {
     Chat struct {
@@ -32,7 +34,8 @@ type Update struct {
 }
 
 func sendMessage(chatID int64, text string) {
-  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", GlobalConfig.TelegramBotToken)
+  // Accessing TelegramBotToken from the imported botserver package
+  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botserver.GlobalConfig.TelegramBotToken)
   payload, _ := json.Marshal(map[string]interface{}{
     "chat_id":    chatID,
     "text":       text,
@@ -42,7 +45,7 @@ func sendMessage(chatID int64, text string) {
 }
 
 func sendChatAction(chatID int64, action string) {
-  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendChatAction", GlobalConfig.TelegramBotToken)
+  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendChatAction", botserver.GlobalConfig.TelegramBotToken)
   payload, _ := json.Marshal(map[string]interface{}{
     "chat_id": chatID,
     "action":  action,
@@ -50,7 +53,6 @@ func sendChatAction(chatID int64, action string) {
   http.Post(url, "application/json", bytes.NewBuffer(payload))
 }
 
-// typingLoop runs until the context is cancelled
 func typingLoop(ctx context.Context, chatID int64) {
   ticker := time.NewTicker(4 * time.Second)
   defer ticker.Stop()
@@ -65,14 +67,13 @@ func typingLoop(ctx context.Context, chatID int64) {
 }
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
-  // 1. Verify Secret Token
+  // Verify Secret Token using the botserver package prefix
   secret := r.Header.Get("X-Telegram-Bot-Api-Secret-Token")
-  if secret != GlobalConfig.TelegramWebhookSecret {
+  if secret != botserver.GlobalConfig.TelegramWebhookSecret {
     w.WriteHeader(http.StatusUnauthorized)
     return
   }
 
-  // 2. Parse Body
   var update Update
   body, _ := io.ReadAll(r.Body)
   json.Unmarshal(body, &update)
@@ -88,21 +89,17 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  // 3. Normalize & Constraints
   text := strings.TrimSpace(rawText)
   if len(text) > 1000 {
     text = text[:1000]
   }
-  // Normalize whitespace
   text = strings.Join(strings.Fields(text), " ")
 
-  // 4. Spam Guard
   if strings.Count(text, "http") > 3 {
     sendMessage(chatID, "🚫 Too many links in message.")
     return
   }
 
-  // 5. Rate Limiting
   now := float64(time.Now().UnixNano()) / 1e9
   mu.Lock()
   last, exists := lastSeen[chatID]
@@ -114,14 +111,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
   lastSeen[chatID] = now
   mu.Unlock()
 
-  // 6. Process Reply
-  // We use a context to manage the typing loop lifecycle
-  ctx, cancel := context.WithCancel(context.Background())
+  ctx, cancel := context.WithCancel(r.Context())
   go typingLoop(ctx, chatID)
   defer cancel()
 
-  // Get the reply from our orchestrator
-  replyText := GetMarketplaceReply(ctx, text)
+  // Calling GetMarketplaceReply from the internal package
+  replyText := botserver.GetMarketplaceReply(ctx, text)
   sendMessage(chatID, replyText)
 
   w.WriteHeader(http.StatusOK)
@@ -129,8 +124,8 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-  // Load config from our configs.go
-  LoadConfig()
+  // Initialize config from the internal package
+  botserver.LoadConfig()
 
   http.HandleFunc("/webhook", handleWebhook)
 
