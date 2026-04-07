@@ -2,13 +2,15 @@ package botserver
 
 import (
   "context"
+  "encoding/json"
   "fmt"
   "log"
   "strings"
   "time"
 
-  "github.com/openai/openai-go"
-  "github.com/openai/openai-go/option"
+  "github.com/openai/openai-go/v3"
+  "github.com/openai/openai-go/v3/option"
+  "github.com/openai/openai-go/v3/responses"
 )
 
 const (
@@ -41,22 +43,18 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
   client := getClient()
 
   for i := 0; i < MaxRetries; i++ {
-    // Corrected for the Union type expected by the new SDK
     res, err := client.Embeddings.New(ctx, openai.EmbeddingNewParams{
-      Input: openai.F(openai.EmbeddingNewParamsInputUnion{
-        OfString: openai.F(text),
-      }),
-      Model:      openai.F(openai.EmbeddingModelTextEmbedding3Small),
-      Dimensions: openai.F(int64(1536)),
+      Input: openai.EmbeddingNewParamsInputUnion{
+        OfString: openai.String(text),
+      },
+      Model:      openai.String(string(openai.EmbeddingModelTextEmbedding3Small)),
+      Dimensions: openai.Int(1536),
     })
 
     if err == nil {
-      // Ensure we have data before accessing index 0
       if len(res.Data) == 0 {
         return nil, fmt.Errorf("empty embedding data returned")
       }
-
-      // Convert []float64 to []float32 for pgvector compatibility
       embeddings := make([]float32, len(res.Data[0].Embedding))
       for j, v := range res.Data[0].Embedding {
         embeddings[j] = float32(v)
@@ -65,16 +63,9 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
     }
 
     log.Printf("⚠️ Embedding failed (attempt %d): %v", i+1, err)
-    
-    // Use the context for the sleep to allow for graceful cancellation
-    select {
-    case <-time.After(RetryDelay):
-    case <-ctx.Done():
-      return nil, ctx.Err()
-    }
+    time.Sleep(RetryDelay)
   }
-
-  return nil, fmt.Errorf("failed to get embedding after %d retries", MaxRetries)
+  return nil, fmt.Errorf("failed after %d retries", MaxRetries)
 }
 
 func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[string]interface{}) (*MarketplaceSearch, error) {
@@ -90,41 +81,61 @@ func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[
   }
   contextText := strings.Join(contextParts, "\n\n---\n\n")
 
-  client := getClient()
+  client := openai.NewClient(option.WithAPIKey(GlobalConfig.OpenAIAPIKey))
 
   for i := 0; i < MaxRetries; i++ {
-    var result MarketplaceSearch
-
-    // Use the ResponseFormat helper for Structured Outputs
-    _, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+    resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
       Model: openai.F("gpt-5.4-mini-2026-03-17"),
-      Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-        openai.SystemMessage(GlobalConfig.MarketplaceSearchPrompt),
-        openai.UserMessage(fmt.Sprintf("User Search: %s\n\nContext:\n%s", userQuery, contextText)),
-      }),
-      ResponseFormat: openai.F[openai.ChatCompletionResponseFormatParamUnion](
-        openai.ChatCompletionResponseFormatJSONSchemaParam{
-          Type: openai.F(openai.ChatCompletionResponseFormatJSONSchemaTypeJSONSchema),
-          JSONSchema: openai.F(openai.ChatCompletionResponseFormatJSONSchemaJSONSchemaParam{
-            Name:        openai.F("MarketplaceSearch"),
-            Description: openai.F("Structured marketplace search results"),
-            Schema:      openai.F(MarketplaceSearch{}), 
-            Strict:      openai.F(true),
+      Input: openai.F([]responses.ResponseNewParamsInputUnion{
+        responses.ResponseNewParamsInput{
+          Type: openai.F(responses.ResponseNewParamsInputTypeItem),
+          Item: openai.F(responses.ResponseNewParamsInputItem{
+            Type: openai.F(responses.ResponseNewParamsInputItemTypeMessage),
+            Message: openai.F(responses.ResponseNewParamsInputItemMessage{
+              Role: openai.F(responses.ResponseNewParamsInputItemMessageRoleUser),
+              Content: openai.F([]responses.ResponseNewParamsInputItemMessageContentUnion{
+                responses.ResponseNewParamsInputItemMessageContentText{
+                  Type: openai.F(responses.ResponseNewParamsInputItemMessageContentTextTypeLines),
+                  Text: openai.F(fmt.Sprintf("%s\n\nUser Search: %s\n\nContext:\n%s", 
+                    GlobalConfig.MarketplaceSearchPrompt, userQuery, contextText)),
+                },
+              }),
+            }),
           }),
         },
-      ),
+      }),
+      // Using ResponseTextConfig based on your second screenshot
+      Text: openai.F(responses.ResponseTextConfigParam{
+        // Using ResponseFormatTextJSONSchemaConfig based on your first screenshot
+        Format: openai.F[responses.ResponseFormatTextConfigUnion](
+          responses.ResponseFormatTextJSONSchemaConfigParam{
+            Type: openai.F(responses.ResponseFormatTextJSONSchemaConfigTypeJSONSchema),
+            JSONSchema: openai.F(responses.ResponseFormatTextJSONSchemaConfigJSONSchemaParam{
+              Name:        openai.String("MarketplaceSearch"),
+              Description: openai.String("Structured marketplace listings"),
+              Schema:      openai.F(MarketplaceSearch{}), // Struct converted to map[string]any by SDK
+              Strict:      openai.Bool(true),
+            }),
+          },
+        ),
+      }),
     })
 
-    // Logic: In a real implementation, you'd unmarshal the raw JSON from the response
-    // But since the SDK handles validation, we'll assume the parse here
     if err == nil {
+      var result MarketplaceSearch
+      // Convienence method to grab the text from the response object
+      outputText := resp.OutputText()
+      
+      err = json.Unmarshal([]byte(outputText), &result)
+      if err != nil {
+        return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+      }
       return &result, nil
     }
 
-    log.Printf("⚠️ Search analysis failed (attempt %d): %v", i+1, err)
+    log.Printf("⚠️ Responses API failed (attempt %d): %v", i+1, err)
     time.Sleep(RetryDelay)
   }
 
   return nil, fmt.Errorf("LLM search failed after retries")
 }
-
