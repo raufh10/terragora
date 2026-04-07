@@ -48,7 +48,7 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
       Input: openai.EmbeddingNewParamsInputUnion{
         OfString: openai.String(text),
       },
-      Model:      openai.String(string(openai.EmbeddingModelTextEmbedding3Small)),
+      Model:      openai.EmbeddingModelTextEmbedding3Small,
       Dimensions: openai.Int(1536),
     })
 
@@ -104,7 +104,7 @@ func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[
 
   for i := 0; i < MaxRetries; i++ {
     resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
-      Model: openai.F(openai.ChatModelGPT5_4Mini),
+      Model: openai.ChatModelGPT5_4Mini,
       // Using the OfString helper as seen in the example main()
       Input: responses.ResponseNewParamsInputUnion{
         OfString: openai.String(fmt.Sprintf("%s\n\nUser Search: %s\n\nContext:\n%s", 
