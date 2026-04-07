@@ -5,6 +5,8 @@ import (
   "sort"
   "strings"
 
+  // Import the internal pkg where RedditPost is defined
+  "leaddits/internal/pkg" 
   "golang.org/x/text/language"
   "golang.org/x/text/message"
 )
@@ -12,17 +14,15 @@ import (
 // formatRp handles the Indonesian currency formatting (e.g., 1.000.000)
 func formatRp(value float64) string {
   p := message.NewPrinter(language.Indonesian)
-  // We use the Indonesian tag because it naturally uses dots for thousands
   return p.Sprintf("%d", int64(value))
 }
 
-// FormatPrice replicates your logic for handling single prices or lists of price objects
+// FormatPrice remains the same
 func FormatPrice(price interface{}) string {
   if price == nil {
     return "Rp -"
   }
 
-  // Normalize input to a slice of maps (handling both single value and list)
   var priceList []map[string]interface{}
   switch v := price.(type) {
   case []interface{}:
@@ -80,7 +80,6 @@ func FormatPrice(price interface{}) string {
 
   priceLine := "Rp " + strings.Join(parts, ", ")
 
-  // Add total if multiple items
   if len(priceList) > 1 {
     totalStr := ""
     if hasMax {
@@ -94,15 +93,15 @@ func FormatPrice(price interface{}) string {
   return priceLine
 }
 
-// FormatTelegramMessage pairs the LLM search results with the original DB posts
-func FormatTelegramMessage(userQuery string, result *MarketplaceSearch, relevantPosts []RedditPost) string {
+// FormatTelegramMessage - Updated to use pkg.RedditPost
+func FormatTelegramMessage(userQuery string, result *MarketplaceSearch, relevantPosts []pkg.RedditPost) string {
   if result == nil || len(result.Listings) == 0 {
     return fmt.Sprintf("🔍 Terragora Results: %s\n\nNo relevant listings found.", userQuery)
   }
 
   type pairedItem struct {
     Listing Listing
-    Post    RedditPost
+    Post    pkg.RedditPost
   }
 
   var paired []pairedItem
@@ -112,7 +111,6 @@ func FormatTelegramMessage(userQuery string, result *MarketplaceSearch, relevant
     }
   }
 
-  // Sort by DealScore descending (nil/empty scores last)
   sort.Slice(paired, func(i, j int) bool {
     scoreI := 0.0
     if paired[i].Listing.DealScore != nil {
@@ -127,12 +125,10 @@ func FormatTelegramMessage(userQuery string, result *MarketplaceSearch, relevant
 
   var b strings.Builder
 
-  // Header
   b.WriteString(fmt.Sprintf("🔍 Terragora Results: %s\n", userQuery))
   b.WriteString(fmt.Sprintf("📊 Found: %d listings | Sorted by: Best Value\n\n", len(paired)))
   b.WriteString("━━━━━━━━━━━━━━━\n\n")
 
-  // Listings
   for i, item := range paired {
     priceStr := FormatPrice(item.Post.Price)
 
@@ -161,8 +157,7 @@ func FormatTelegramMessage(userQuery string, result *MarketplaceSearch, relevant
 
     b.WriteString(fmt.Sprintf("\n✅ Verdict: %s\n", item.Listing.Verdict))
     b.WriteString(fmt.Sprintf("⚠️ Watch Out: %s\n\n", watchOut))
-    
-    // Attempt to get URL from RedditPost model (assuming it's available or in Metadata)
+
     b.WriteString(fmt.Sprintf("🔗 View Post: %s\n\n", item.Listing.URL))
     b.WriteString("━━━━━━━━━━━━━━━\n\n")
   }
