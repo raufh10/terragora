@@ -1,7 +1,6 @@
 package main
 
 import (
-  "bytes"
   "context"
   "encoding/json"
   "fmt"
@@ -12,69 +11,26 @@ import (
   "sync"
   "time"
 
-  // Replace 'leaddits' with the module name found in your go.mod file
-  "leaddits/internal/bot-server" 
+  "leaddits/internal/bot-server"
 )
 
 var (
   lastSeen = make(map[int64]float64)
-  mu       sync.Mutex 
+  mu       sync.Mutex
 )
 
-type Update struct {
-  Message struct {
-    Chat struct {
-      ID int64 `json:"id"`
-    } `json:"chat"`
-    From struct {
-      Username string `json:"username"`
-    } `json:"from"`
-    Text string `json:"text"`
-  } `json:"message"`
-}
-
-func sendMessage(chatID int64, text string) {
-  // Accessing TelegramBotToken from the imported botserver package
-  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botserver.GlobalConfig.TelegramBotToken)
-  payload, _ := json.Marshal(map[string]interface{}{
-    "chat_id":    chatID,
-    "text":       text,
-    "parse_mode": "Markdown",
-  })
-  http.Post(url, "application/json", bytes.NewBuffer(payload))
-}
-
-func sendChatAction(chatID int64, action string) {
-  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendChatAction", botserver.GlobalConfig.TelegramBotToken)
-  payload, _ := json.Marshal(map[string]interface{}{
-    "chat_id": chatID,
-    "action":  action,
-  })
-  http.Post(url, "application/json", bytes.NewBuffer(payload))
-}
-
-func typingLoop(ctx context.Context, chatID int64) {
-  ticker := time.NewTicker(4 * time.Second)
-  defer ticker.Stop()
-  for {
-    select {
-    case <-ctx.Done():
-      return
-    case <-ticker.C:
-      sendChatAction(chatID, "typing")
-    }
-  }
-}
-
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
-  // Verify Secret Token using the botserver package prefix
+  // 1. Auth check via direct env read
   secret := r.Header.Get("X-Telegram-Bot-Api-Secret-Token")
-  if secret != botserver.GlobalConfig.TelegramWebhookSecret {
+  expectedSecret := os.Getenv("TELEGRAM_WEBHOOK_SECRET")
+  
+  if secret == "" || secret != expectedSecret {
     w.WriteHeader(http.StatusUnauthorized)
     return
   }
 
-  var update Update
+  // 2. Decode Update
+  var update botserver.Update
   body, _ := io.ReadAll(r.Body)
   json.Unmarshal(body, &update)
 
@@ -83,60 +39,51 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  rawText := update.Message.Text
-  if rawText == "" {
-    sendMessage(chatID, "❌ I only support text messages for now.")
+  // 3. Validation
+  if update.Message.Text == "" {
+    botserver.SendMessage(chatID, "❌ I only support text messages for now.")
     return
   }
 
-  text := strings.TrimSpace(rawText)
-  if len(text) > 1000 {
-    text = text[:1000]
-  }
-  text = strings.Join(strings.Fields(text), " ")
+  text := botserver.SanitizeInput(update.Message.Text)
 
-  if strings.Count(text, "http") > 3 {
-    sendMessage(chatID, "🚫 Too many links in message.")
-    return
-  }
-
+  // 4. Rate Limiting
   now := float64(time.Now().UnixNano()) / 1e9
   mu.Lock()
   last, exists := lastSeen[chatID]
   if exists && now-last < 1.0 {
     mu.Unlock()
-    sendMessage(chatID, "⏳ You're sending messages too fast. Please slow down.")
+    botserver.SendMessage(chatID, "⏳ You're sending messages too fast.")
     return
   }
   lastSeen[chatID] = now
   mu.Unlock()
 
+  // 5. Execution
   ctx, cancel := context.WithCancel(r.Context())
-  go typingLoop(ctx, chatID)
+  go botserver.TypingLoop(ctx, chatID)
   defer cancel()
 
-  // Calling GetMarketplaceReply from the internal package
-  replyText := botserver.GetMarketplaceReply(ctx, text)
-  sendMessage(chatID, replyText)
+  // Note: Ensure your OpenAI client is initialized and passed here
+  // replyText := botserver.GetMarketplaceReply(ctx, text, yourLLMClient)
+  // For now, assuming standard flow:
+  replyText := botserver.GetMarketplaceReply(ctx, text, nil) 
+  botserver.SendMessage(chatID, replyText)
 
   w.WriteHeader(http.StatusOK)
   fmt.Fprint(w, `{"status": "ok"}`)
 }
 
 func main() {
-  // Initialize config from the internal package
-  botserver.LoadConfig()
-
+  // No more botserver.LoadConfig() needed if using direct envs
+  
   http.HandleFunc("/webhook", handleWebhook)
 
   port := os.Getenv("PORT")
-  if port == "" {
-    port = "8080"
-  }
+  if port == "" { port = "8080" }
 
   fmt.Printf("Bot server starting on :%s\n", port)
   if err := http.ListenAndServe(":"+port, nil); err != nil {
     panic(err)
   }
 }
-
