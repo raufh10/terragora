@@ -12,6 +12,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/nats-io/nats.go v1.50.0
 	github.com/openai/openai-go/v3 v3.30.0
+	github.com/robfig/cron/v3 v3.0.1
 	golang.org/x/text v0.35.0
 )
 
