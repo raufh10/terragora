@@ -33,7 +33,7 @@ func GetMarketplaceReply(ctx context.Context, text string, llmClient *openai.Cli
   embedCtx, cancelEmbed := context.WithTimeout(ctx, 10*time.Second)
   defer cancelEmbed()
 
-  queryVector, err := GetEmbedding(embedCtx, userQuery)
+  queryVector, err := llm.GetEmbedding(embedCtx, userQuery)
   if err != nil || len(queryVector) == 0 {
     log.Printf("Embedding Error: %v", err)
     return "❌ Sorry, I had trouble processing your search. Please try again."
