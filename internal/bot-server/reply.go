@@ -14,7 +14,7 @@ import (
 )
 
 // GetMarketplaceReply handles the full pipeline: Embedding -> DB -> LLM -> Formatting
-func GetMarketplaceReply(ctx context.Context, text string, llmClient openai.Client) string {
+func GetMarketplaceReply(ctx context.Context, text string, llmClient *openai.Client) string {
   userQuery := strings.TrimSpace(text)
   if userQuery == "" {
     return "⚠️ What used item are you looking for today?"
