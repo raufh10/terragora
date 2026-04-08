@@ -8,12 +8,13 @@ import (
   "strings"
   "time"
 
+  "github.com/openai/openai-go/v3"
   llm "leaddits/internal/pkg/llm"
   pg "leaddits/internal/pkg/pg"
 )
 
 // GetMarketplaceReply handles the full pipeline: Embedding -> DB -> LLM -> Formatting
-func GetMarketplaceReply(ctx context.Context, text string, llmClient *llm.openai.Client) string {
+func GetMarketplaceReply(ctx context.Context, text string, llmClient openai.Client) string {
   userQuery := strings.TrimSpace(text)
   if userQuery == "" {
     return "⚠️ What used item are you looking for today?"
