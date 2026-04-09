@@ -51,18 +51,31 @@ func main() {
   // 2. Start the Background Flusher
   go startFlusher(client)
 
-  // 3. Start DB Listener
-  err = pgPkg.ListenForEvents(dbURL, "reddit_posts_inserted", func(payload string) {
-    collectPipelineEvent(payload)
-  })
-  if err != nil {
-    log.Fatalf("[-] DB Listener error: %v", err)
-  }
+  // 3. Listen for INSERTS
+  go func() {
+    err = pgPkg.ListenForEvents(dbURL, "reddit_posts_inserted", func(payload string) {
+      collectPipelineEvent("INSERT", payload)
+    })
+    if err != nil {
+      log.Printf("[-] DB Insert Listener error: %v", err)
+    }
+  }()
 
+  // 4. Listen for UPDATES
+  go func() {
+    err = pgPkg.ListenForEvents(dbURL, "reddit_posts_updated", func(payload string) {
+      collectPipelineEvent("UPDATE", payload)
+    })
+    if err != nil {
+      log.Printf("[-] DB Update Listener error: %v", err)
+    }
+  }()
+
+  // Keep the process alive
   select {}
 }
 
-func collectPipelineEvent(payload string) {
+func collectPipelineEvent(opType string, payload string) {
   var dbRow natsPkg.PipelineEvent
   if err := json.Unmarshal([]byte(payload), &dbRow); err != nil {
     log.Printf("[!] Failed to decode DB payload: %v", err)
@@ -75,18 +88,15 @@ func collectPipelineEvent(payload string) {
   count := len(pool)
   poolMutex.Unlock()
 
-  log.Printf("[*] Pooled event %s (Current batch size: %d)", dbRow.RedditID, count)
+  log.Printf("[*] %s: Pooled event %s (Batch: %d)", opType, dbRow.RedditID, count)
 }
 
 func startFlusher(client *natsPkg.Client) {
   ticker := time.NewTicker(1 * time.Minute)
   for range ticker.C {
     poolMutex.Lock()
-    
-    // Check if pool has data AND if it's been 5 mins since last activity
+
     shouldFlush := len(pool) > 0 && time.Since(lastAdded) >= 5*time.Minute
-    
-    // Optional: Auto-flush if batch is very large (e.g., > 500 items) regardless of time
     if len(pool) >= 500 {
       shouldFlush = true
     }
@@ -96,7 +106,7 @@ func startFlusher(client *natsPkg.Client) {
       pool = nil
       poolMutex.Unlock()
 
-      log.Printf("[^] Flushing %d events to NATS after idle period...", len(batchToSend))
+      log.Printf("[^] Flushing %d combined events to NATS...", len(batchToSend))
       if err := client.PublishPipelineBatch("pipeline.event", batchToSend); err != nil {
         log.Printf("[!] Batch Publish error: %v", err)
       }
