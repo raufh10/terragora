@@ -9,11 +9,9 @@ import (
   "syscall"
 
   "github.com/joho/godotenv"
-
   llmPkg "leaddits/internal/pkg/llm"
   natsPkg "leaddits/internal/pkg/nats"
   pgPkg "leaddits/internal/pkg/pg"
-
   "leaddits/internal/pipeline"
 )
 
@@ -58,7 +56,7 @@ func main() {
 // handleExtraction handles logic for newly inserted posts
 func handleExtraction(ctx context.Context, batch []natsPkg.PipelineEvent) {
   log.Printf("[>] Extraction triggered for batch of %d", len(batch))
-  
+
   db, llmClient, err := initDeps()
   if err != nil {
     log.Printf("[!] Dep init failed: %v", err)
@@ -67,12 +65,13 @@ func handleExtraction(ctx context.Context, batch []natsPkg.PipelineEvent) {
   defer db.Close()
 
   engine := pipeline.NewPipelineEngine(db, llmClient)
+  // Process the batch size based on NATS input or a fixed limit
   if err := engine.RunDataExtraction(ctx, 100); err != nil {
     log.Printf("[!] Extraction pipeline error: %v", err)
   }
 }
 
-// handleVectorization handles logic for updated posts (extracted but not vectorized)
+// handleVectorization handles logic for updated posts
 func handleVectorization(ctx context.Context, batch []natsPkg.PipelineEvent) {
   log.Printf("[>] Vectorization triggered for batch of %d", len(batch))
 
@@ -90,6 +89,7 @@ func handleVectorization(ctx context.Context, batch []natsPkg.PipelineEvent) {
 }
 
 // initDeps creates fresh connections for the specific handler run
+// Using pgPkg.DB if that is your custom wrapper, otherwise *sqlx.DB
 func initDeps() (*pgPkg.DB, llmPkg.Client, error) {
   db, err := pgPkg.Connect(os.Getenv("DATABASE_URL"))
   if err != nil {

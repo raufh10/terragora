@@ -7,8 +7,8 @@ import (
 
   "github.com/google/uuid"
   "github.com/jmoiron/sqlx"
-  "leaddits/internal/pkg/llm"
-  "leaddits/internal/pkg/pg"
+  llm "leaddits/internal/pkg/llm"
+  pg "leaddits/internal/pkg/pg"
   "leaddits/internal/pipeline/filters"
 )
 
@@ -33,10 +33,10 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
 
   priceUpdates := make(map[uuid.UUID]interface{})
   notesUpdates := make(map[uuid.UUID]interface{})
-  
+
   var mu sync.Mutex
   var wg sync.WaitGroup
-  semaphore := make(chan struct{}, 5) // Limit to 5 concurrent LLM calls
+  semaphore := make(chan struct{}, 5)
 
   for _, post := range posts {
     wg.Add(1)
@@ -45,8 +45,8 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
       semaphore <- struct{}{}
       defer func() { <-semaphore }()
 
-      // 1. Initialize Payload
-      payload := &ExtractionPayload{Post: p}
+      // 1. Initialize Payload from the filters package
+      payload := &filters.ExtractionPayload{Post: p}
 
       // 2. Run Filters
       content := ""
@@ -56,18 +56,18 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
       merged := filters.MergePostData(p.Title, content)
       payload.CleanedText = filters.CleanPostText(merged)
 
-      err := filters.ExtractProductDetails(ctx, e.LLMClient, payload)
-      if err != nil {
+      // Pass the payload to the filter
+      if err := filters.ExtractProductDetails(ctx, e.LLMClient, payload); err != nil {
         log.Printf("[!] Extraction error for %s: %v", p.ID, err)
         return
       }
 
-      // 3. Prepare for Bulk Update (Thread-safe)
+      // 3. Prepare for Bulk Update
       mu.Lock()
       priceUpdates[p.ID] = payload.Extraction.Prices
       notesUpdates[p.ID] = payload.Extraction.Notes
       mu.Unlock()
-      
+
       log.Printf("✅ Extracted: %s...", p.Title[:20])
     }(post)
   }
@@ -96,11 +96,11 @@ func (e *PipelineEngine) RunDataVectorization(ctx context.Context, limit int) er
   }
 
   log.Printf("🚀 Generating embeddings for %d posts...", len(posts))
-  
+
   embeddingUpdates := make(map[uuid.UUID][]float32)
   var mu sync.Mutex
   var wg sync.WaitGroup
-  semaphore := make(chan struct{}, 10) // Limit to 10 concurrent embedding calls
+  semaphore := make(chan struct{}, 10)
 
   for _, post := range posts {
     wg.Add(1)
@@ -109,22 +109,20 @@ func (e *PipelineEngine) RunDataVectorization(ctx context.Context, limit int) er
       semaphore <- struct{}{}
       defer func() { <-semaphore }()
 
-      // 1. Initialize Payload
-      payload := &VectorizationPayload{Post: p}
+      // 1. Initialize Payload from the filters package
+      payload := &filters.VectorizationPayload{Post: p}
 
       // 2. Run Filters
       payload.Category = filters.ExtractCategory(p.Metadata)
-      
-      // Need to unmarshal p.Price for Formatter (simplified for example)
+
       var prices []llm.PriceRange
-      _ = pg.UnmarshalJSONB(p.Price, &prices) 
-      
+      _ = pg.UnmarshalJSONB(p.Price, &prices)
+
       formattedPrice := filters.FormatPrice(prices)
       payload.AssembledText = filters.AssembleEmbeddingText(payload, payload.Category, formattedPrice)
 
-      // 3. Generate Vector
-      err := filters.GenerateEmbedding(ctx, e.LLMClient, payload, payload.AssembledText)
-      if err != nil {
+      // 3. Generate Vector using LLMClient as EmbeddingClient
+      if err := filters.GenerateEmbedding(ctx, e.LLMClient, payload, payload.AssembledText); err != nil {
         log.Printf("[!] Embedding error for %s: %v", p.ID, err)
         return
       }
@@ -138,8 +136,7 @@ func (e *PipelineEngine) RunDataVectorization(ctx context.Context, limit int) er
   wg.Wait()
 
   if len(embeddingUpdates) > 0 {
-    err := pg.BulkUpdateEmbeddings(e.DB, embeddingUpdates)
-    if err != nil {
+    if err := pg.BulkUpdateEmbeddings(e.DB, embeddingUpdates); err != nil {
       return err
     }
     log.Printf("✨ Storage complete: %d vectors generated.", len(embeddingUpdates))
