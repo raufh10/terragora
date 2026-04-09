@@ -2,6 +2,8 @@ package pkg
 
 import (
   "fmt"
+  "encoding/json"
+  "log"
 
   "github.com/nats-io/nats.go"
 )
@@ -23,3 +25,17 @@ func (c *Client) Listen(subject string, handler Handler) (*nats.Subscription, er
 
   return sub, nil
 }
+
+// SubscribeToPipeline handles unmarshaling the batch of events automatically
+func (c *Client) SubscribeToPipeline(subject string, handler func([]PipelineEvent)) error {
+  _, err := c.Listen(subject, func(m *nats.Msg) {
+    var batch []PipelineEvent
+    if err := json.Unmarshal(m.Data, &batch); err != nil {
+      log.Printf("[!] Failed to unmarshal pipeline batch: %v", err)
+      return
+    }
+    handler(batch)
+  })
+  return err
+}
+

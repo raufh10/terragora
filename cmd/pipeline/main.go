@@ -9,6 +9,7 @@ import (
   "syscall"
 
   "github.com/joho/godotenv"
+  "github.com/jmoiron/sqlx"
   llmPkg "leaddits/internal/pkg/llm"
   natsPkg "leaddits/internal/pkg/nats"
   pgPkg "leaddits/internal/pkg/pg"
@@ -23,7 +24,6 @@ func main() {
     natsURL = "nats://127.0.0.1:4222"
   }
 
-  // Primary NATS connection for the listener
   natsClient, err := natsPkg.NewClient(natsURL)
   if err != nil {
     log.Fatalf("[-] NATS connection failed: %v", err)
@@ -53,7 +53,6 @@ func main() {
   fmt.Println("[!] Pipeline worker shutting down...")
 }
 
-// handleExtraction handles logic for newly inserted posts
 func handleExtraction(ctx context.Context, batch []natsPkg.PipelineEvent) {
   log.Printf("[>] Extraction triggered for batch of %d", len(batch))
 
@@ -65,13 +64,11 @@ func handleExtraction(ctx context.Context, batch []natsPkg.PipelineEvent) {
   defer db.Close()
 
   engine := pipeline.NewPipelineEngine(db, llmClient)
-  // Process the batch size based on NATS input or a fixed limit
   if err := engine.RunDataExtraction(ctx, 100); err != nil {
     log.Printf("[!] Extraction pipeline error: %v", err)
   }
 }
 
-// handleVectorization handles logic for updated posts
 func handleVectorization(ctx context.Context, batch []natsPkg.PipelineEvent) {
   log.Printf("[>] Vectorization triggered for batch of %d", len(batch))
 
@@ -88,15 +85,17 @@ func handleVectorization(ctx context.Context, batch []natsPkg.PipelineEvent) {
   }
 }
 
-// initDeps creates fresh connections for the specific handler run
-// Using pgPkg.DB if that is your custom wrapper, otherwise *sqlx.DB
-func initDeps() (*pgPkg.DB, llmPkg.Client, error) {
+// initDeps uses the local pipeline.Client bridge to satisfy the engine
+func initDeps() (*sqlx.DB, pipeline.Client, error) {
   db, err := pgPkg.Connect(os.Getenv("DATABASE_URL"))
   if err != nil {
     return nil, nil, err
   }
 
-  llmClient := llmPkg.NewClient(os.Getenv("OPENAI_API_KEY"))
-  return db, llmClient, nil
+  // llmPkg.NewClient returns the raw client from your existing package
+  rawLLM := llmPkg.NewClient(os.Getenv("OPENAI_API_KEY"))
+  
+  // Wrap it using the bridge in internal/pipeline/clients.go
+  return db, pipeline.NewClientBridge(rawLLM), nil
 }
 

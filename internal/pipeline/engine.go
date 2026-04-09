@@ -7,17 +7,17 @@ import (
 
   "github.com/google/uuid"
   "github.com/jmoiron/sqlx"
-  llm "leaddits/internal/pkg/llm"
+  llmPkg "leaddits/internal/pkg/llm"
   pg "leaddits/internal/pkg/pg"
   "leaddits/internal/pipeline/filters"
 )
 
 type PipelineEngine struct {
   DB        *sqlx.DB
-  LLMClient llm.Client
+  LLMClient Client // Refers to the local interface in clients.go
 }
 
-func NewPipelineEngine(db *sqlx.DB, llmClient llm.Client) *PipelineEngine {
+func NewPipelineEngine(db *sqlx.DB, llmClient Client) *PipelineEngine {
   return &PipelineEngine{DB: db, LLMClient: llmClient}
 }
 
@@ -45,10 +45,10 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
       semaphore <- struct{}{}
       defer func() { <-semaphore }()
 
-      // 1. Initialize Payload from the filters package
+      // 1. Initialize Payload from filters package
       payload := &filters.ExtractionPayload{Post: p}
 
-      // 2. Run Filters
+      // 2. Run Text Processing Filters
       content := ""
       if p.Content != nil {
         content = *p.Content
@@ -56,13 +56,13 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
       merged := filters.MergePostData(p.Title, content)
       payload.CleanedText = filters.CleanPostText(merged)
 
-      // Pass the payload to the filter
+      // 3. Run LLM Extraction Filter
       if err := filters.ExtractProductDetails(ctx, e.LLMClient, payload); err != nil {
         log.Printf("[!] Extraction error for %s: %v", p.ID, err)
         return
       }
 
-      // 3. Prepare for Bulk Update
+      // 4. Thread-safe collection of updates
       mu.Lock()
       priceUpdates[p.ID] = payload.Extraction.Prices
       notesUpdates[p.ID] = payload.Extraction.Notes
@@ -109,24 +109,27 @@ func (e *PipelineEngine) RunDataVectorization(ctx context.Context, limit int) er
       semaphore <- struct{}{}
       defer func() { <-semaphore }()
 
-      // 1. Initialize Payload from the filters package
+      // 1. Initialize Payload from filters package
       payload := &filters.VectorizationPayload{Post: p}
 
-      // 2. Run Filters
+      // 2. Prepare context for assembly
       payload.Category = filters.ExtractCategory(p.Metadata)
 
-      var prices []llm.PriceRange
-      _ = pg.UnmarshalJSONB(p.Price, &prices)
+      var prices []llmPkg.PriceRange
+      if err := pg.UnmarshalJSONB(p.Price, &prices); err != nil {
+        log.Printf("[!] Price unmarshal skipped for %s: %v", p.ID, err)
+      }
 
       formattedPrice := filters.FormatPrice(prices)
       payload.AssembledText = filters.AssembleEmbeddingText(payload, payload.Category, formattedPrice)
 
-      // 3. Generate Vector using LLMClient as EmbeddingClient
+      // 3. Generate Vector Embedding
       if err := filters.GenerateEmbedding(ctx, e.LLMClient, payload, payload.AssembledText); err != nil {
         log.Printf("[!] Embedding error for %s: %v", p.ID, err)
         return
       }
 
+      // 4. Thread-safe collection
       mu.Lock()
       embeddingUpdates[p.ID] = payload.Embedding
       mu.Unlock()
