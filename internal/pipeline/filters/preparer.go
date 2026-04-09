@@ -1,7 +1,6 @@
 package filters
 
 import (
-  "leaddits/internal/pipeline"
   "github.com/google/uuid"
 )
 
