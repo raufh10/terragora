@@ -1,7 +1,6 @@
 package pkg
 
 import (
-  "encoding/json"
   "fmt"
 
   "github.com/jmoiron/sqlx"
