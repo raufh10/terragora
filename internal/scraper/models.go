@@ -5,7 +5,7 @@ import "time"
 // UserAgent represents a browser identity and its operating system.
 type UserAgent struct {
   Raw  string `json:"str"`
-  Type string `json:"type"` // windows, macos, linux, android, ios
+  Type string `json:"type"`
 }
 
 // Targets holds the URLs and subreddits for the scraper.

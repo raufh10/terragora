@@ -47,6 +47,7 @@ func NewConfig() (*Client, error) {
   }, nil
 }
 
+// Get random UA from UserAgent pool
 func (c *Client) GetRandomUA() UserAgent {
   if len(c.Config.UserAgentPool) == 0 {
     return UserAgent{Raw: "LeadditsBot/1.0", Type: "windows"}
@@ -54,6 +55,7 @@ func (c *Client) GetRandomUA() UserAgent {
   return c.Config.UserAgentPool[rand.Intn(len(c.Config.UserAgentPool))]
 }
 
+// Rotate session by getting new UserAgent paired with generating new ProxyURL
 func (c *Client) RotateSession() error {
   var newUA UserAgent
 
@@ -74,10 +76,12 @@ func (c *Client) RotateSession() error {
   return nil
 }
 
+// Assemble target SubredditURL with limit int
 func (c *Client) GetSubredditURL(subreddit string, limit int) string {
   return fmt.Sprintf("%s/r/%s.json?limit=%d", c.Targets.BaseURL, subreddit, limit)
 }
 
+// Assemble target SubredditPaginationURL with extracted after string & limit int
 func (c *Client) GetSubredditPaginationURL(subreddit, after string, limit int) string {
   return fmt.Sprintf("%s/r/%s.json?limit=%d&after=%s", c.Targets.BaseURL, subreddit, limit, after)
 }

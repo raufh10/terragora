@@ -4,10 +4,10 @@ import (
   "encoding/json"
   "strings"
 
-  // We alias it to 'pg' for clarity, otherwise you'd use 'pkg.StorablePost'
   pg "leaddits/internal/pkg/pg" 
 )
 
+// Extract StorablePost data from RedditResponse
 func ProcessResponse(resp RedditResponse) []pg.StorablePost {
   posts := make([]pg.StorablePost, 0, len(resp.Data.Children))
 
@@ -35,6 +35,7 @@ func ProcessResponse(resp RedditResponse) []pg.StorablePost {
   return posts
 }
 
+// Check posts for WTS flair
 func hasWTSFlair(flairs []map[string]interface{}) bool {
   for _, flair := range flairs {
     if val, ok := flair["t"]; ok {
