@@ -9,3 +9,12 @@ func UnmarshalJSONB(data []byte, v interface{}) error {
   }
   return json.Unmarshal(data, v)
 }
+
+// formatEmbedding converts the Go slice to a format pgvector recognizes.
+func formatEmbedding(v []float32) (string, error) {
+  j, err := json.Marshal(v)
+  if err != nil {
+    return "", err
+  }
+  return string(j), nil
+}

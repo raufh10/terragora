@@ -68,12 +68,3 @@ func FetchPostsToProcess(db *sqlx.DB, batchType string, limit int) ([]RedditPost
 
   return posts, nil
 }
-
-// formatEmbedding converts the Go slice to a format pgvector recognizes.
-func formatEmbedding(v []float32) (string, error) {
-  j, err := json.Marshal(v)
-  if err != nil {
-    return "", err
-  }
-  return string(j), nil
-}
