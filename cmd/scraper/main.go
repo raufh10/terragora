@@ -56,7 +56,7 @@ func main() {
   select {}
 }
 
-// scrape now handles its own database and config setup
+// scrape func (need adjustments for to be concurrent friendly)
 func scrape(event natsPkg.ScraperEvent) {
   ctx := context.Background()
 

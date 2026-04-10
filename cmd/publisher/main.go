@@ -19,7 +19,7 @@ import (
 var (
   pool      []natsPkg.PipelineEvent
   poolMutex sync.Mutex
-  lastAdded time.Time
+  lastAdded = time.Now()
 )
 
 func main() {
@@ -118,7 +118,6 @@ func startFlusher(client *natsPkg.Client) {
 
 func publishScraperTrigger(client *natsPkg.Client) {
   min, max := 5, 30
-  rand.Seed(time.Now().UnixNano())
   randomSeconds := rand.Intn(max-min+1) + min
   delay := time.Duration(randomSeconds) * time.Second
 
