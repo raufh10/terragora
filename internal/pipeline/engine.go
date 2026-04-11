@@ -58,9 +58,7 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
   }
 
   log.Printf("🧐 Processing %d posts for extraction...", len(posts))
-
-  priceUpdates := make(map[uuid.UUID]interface{})
-  notesUpdates := make(map[uuid.UUID]interface{})
+  allUpdates := make(map[uuid.UUID]map[string]interface{})
 
   var mu sync.Mutex
   var wg sync.WaitGroup
@@ -88,8 +86,12 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
       }
 
       mu.Lock()
-      priceUpdates[p.ID] = payload.Extraction.Prices
-      notesUpdates[p.ID] = payload.Extraction.Notes
+      allUpdates[p.ID] = map[string]interface{}{
+        "price": payload.Extraction.Prices,
+        "notes": payload.Extraction.Notes,
+        // If you have a status column to mark it done, add it here too
+        "status": "processed", 
+      }
       mu.Unlock()
 
       log.Printf("✅ Extracted: %s...", p.Title[:20])
@@ -98,14 +100,11 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
 
   wg.Wait()
 
-  if len(priceUpdates) > 0 {
-    if err := pg.BulkUpdatePostData(e.DB, "price", priceUpdates); err != nil {
+  if len(allUpdates) > 0 {
+    if err := pg.BulkUpdatePostData(e.DB, allUpdates); err != nil {
       return err
     }
-    if err := pg.BulkUpdatePostData(e.DB, "notes", notesUpdates); err != nil {
-      return err
-    }
-    log.Printf("✨ Extraction complete: %d items updated.", len(priceUpdates))
+    log.Printf("✨ Extraction complete: %d items updated in bulk.", len(allUpdates))
   }
 
   return nil
