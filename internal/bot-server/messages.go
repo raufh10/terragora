@@ -4,87 +4,66 @@ import (
   "fmt"
   "strings"
 
-  llm "leaddits/internal/pkg/llm"
   pg "leaddits/internal/pkg/pg"
 )
 
 type TelegramMessageBuilder struct {
   userQuery string
-  paired    []PairedResult
+  posts     []pg.RedditPost
   builder   strings.Builder
 }
 
-func NewTelegramMessageBuilder(userQuery string, result *llm.MarketplaceSearch, relevantPosts []pg.RedditPost) *TelegramMessageBuilder {
-  var paired []PairedResult
-  if result != nil {
-    for i, listing := range result.Listings {
-      if i < len(relevantPosts) {
-        paired = append(paired, PairedResult{
-          Listing: listing,
-          Post:    relevantPosts[i],
-        })
-      }
-    }
-  }
-
+func NewTelegramMessageBuilder(userQuery string, relevantPosts []pg.RedditPost) *TelegramMessageBuilder {
   return &TelegramMessageBuilder{
     userQuery: userQuery,
-    paired:    paired,
+    posts:     relevantPosts,
   }
 }
 
 func (b *TelegramMessageBuilder) Build() string {
-  if len(b.paired) == 0 {
+  if len(b.posts) == 0 {
     return fmt.Sprintf("🔍 Results: %s\n\nNo relevant listings found.", b.userQuery)
   }
 
   b.builder.WriteString(fmt.Sprintf("🔍 Results for: %s\n", b.userQuery))
-  b.builder.WriteString(fmt.Sprintf("📊 Found: %d listings\n", len(b.paired)))
+  b.builder.WriteString(fmt.Sprintf("📊 Found: %d listings\n", len(b.posts)))
   b.builder.WriteString("━━━━━━━━━━━━━━━\n\n")
 
-  for i, item := range b.paired {
-    b.addListing(i+1, item)
+  for i, post := range b.posts {
+    b.addListing(i+1, post)
   }
 
   return strings.TrimSpace(b.builder.String())
 }
 
-func (b *TelegramMessageBuilder) addListing(index int, item PairedResult) {
-
+func (b *TelegramMessageBuilder) addListing(index int, post pg.RedditPost) {
   // Title
-  b.builder.WriteString(fmt.Sprintf("%d. %s\n", index, item.Post.Title))
+  b.builder.WriteString(fmt.Sprintf("%d. %s\n", index, post.Title))
 
-  // Adjustable: Price
-  formattedPrice := FormatPrice(item.Post.Price)
+  // Price
+  formattedPrice := FormatPrice(post.Price)
   if formattedPrice != "" && !strings.EqualFold(formattedPrice, "n/a") {
     b.builder.WriteString(fmt.Sprintf("💰 Price: %s\n", formattedPrice))
   }
 
-  // Adjustable: Seller Notes
-  if len(item.Listing.SellerNotes) > 0 {
-    hasContent := false
-    for _, note := range item.Listing.SellerNotes {
-      trimmed := strings.TrimSpace(note)
-      if trimmed != "" {
-        if !hasContent {
-          b.builder.WriteString("\n📝 Seller Notes:\n")
-          hasContent = true
-        }
-        b.builder.WriteString(fmt.Sprintf("• %s\n", trimmed))
-      }
-    }
+  // Seller Notes (Pulling directly from DB field)
+  if post.Notes != nil && strings.TrimSpace(*post.Notes) != "" {
+    b.builder.WriteString("\n📝 Notes:\n")
+    // If notes are stored as a block, we just display it. 
+    // If you want bullets, you can split by newlines.
+    b.builder.WriteString(fmt.Sprintf("%s\n", *post.Notes))
   }
 
   // URL
   url := ""
-  if item.Post.URL != nil {
-    url = *item.Post.URL
+  if post.URL != nil {
+    url = *post.URL
   }
   b.builder.WriteString(fmt.Sprintf("\n🔗 View Post: %s\n", url))
-
   b.builder.WriteString("━━━━━━━━━━━━━━━\n\n")
 }
 
-func FormatTelegramMessage(userQuery string, result *llm.MarketplaceSearch, relevantPosts []pg.RedditPost) string {
-  return NewTelegramMessageBuilder(userQuery, result, relevantPosts).Build()
+func FormatTelegramMessage(userQuery string, relevantPosts []pg.RedditPost) string {
+  return NewTelegramMessageBuilder(userQuery, relevantPosts).Build()
 }
+
