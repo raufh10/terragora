@@ -79,4 +79,3 @@ func handleVectorization(ctx context.Context, batch []natsPkg.PipelineEvent) {
     log.Printf("[!] Vectorization pipeline error: %v", err)
   }
 }
-

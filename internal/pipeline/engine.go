@@ -16,13 +16,11 @@ import (
 )
 
 // LLMWrapper adapts the raw openai.Client to the interfaces defined in filters.
-// This lives here so llmPkg stays "pure" and filters stays decoupled.
 type LLMWrapper struct {
   api *openai.Client
 }
 
 func (w *LLMWrapper) ExecuteTask(ctx context.Context, input string, task llmPkg.StructuredTask) ([]byte, error) {
-  // Assembly happens here to keep the generic llmPkg simple.
   fullInput := fmt.Sprintf("%s\n\nInput:\n%s", task.SystemPrompt, input)
   return llmPkg.CallOpenAIWithSchema(ctx, w.api, fullInput, task.Name, task.Schema)
 }
@@ -43,7 +41,6 @@ func NewPipelineEngine() (*PipelineEngine, error) {
     return nil, err
   }
 
-  // llmPkg.NewClient returns *openai.Client
   rawClient := llmPkg.NewClient(os.Getenv("OPENAI_API_KEY"))
 
   return &PipelineEngine{
@@ -162,4 +159,3 @@ func (e *PipelineEngine) RunDataVectorization(ctx context.Context, limit int) er
 
   return nil
 }
-
