@@ -9,10 +9,7 @@ import (
   "syscall"
 
   "github.com/joho/godotenv"
-  "github.com/jmoiron/sqlx"
-  llmPkg "leaddits/internal/pkg/llm"
   natsPkg "leaddits/internal/pkg/nats"
-  pgPkg "leaddits/internal/pkg/pg"
   "leaddits/internal/pipeline"
 )
 
@@ -56,14 +53,13 @@ func main() {
 func handleExtraction(ctx context.Context, batch []natsPkg.PipelineEvent) {
   log.Printf("[>] Extraction triggered for batch of %d", len(batch))
 
-  db, llmClient, err := initDeps()
+  engine, err := pipeline.NewPipelineEngine()
   if err != nil {
-    log.Printf("[!] Dep init failed: %v", err)
+    log.Printf("[!] Engine init failed: %v", err)
     return
   }
-  defer db.Close()
+  defer engine.DB.Close()
 
-  engine := pipeline.NewPipelineEngine(db, llmClient)
   if err := engine.RunDataExtraction(ctx, 100); err != nil {
     log.Printf("[!] Extraction pipeline error: %v", err)
   }
@@ -72,30 +68,15 @@ func handleExtraction(ctx context.Context, batch []natsPkg.PipelineEvent) {
 func handleVectorization(ctx context.Context, batch []natsPkg.PipelineEvent) {
   log.Printf("[>] Vectorization triggered for batch of %d", len(batch))
 
-  db, llmClient, err := initDeps()
+  engine, err := pipeline.NewPipelineEngine()
   if err != nil {
-    log.Printf("[!] Dep init failed: %v", err)
+    log.Printf("[!] Engine init failed: %v", err)
     return
   }
-  defer db.Close()
+  defer engine.DB.Close()
 
-  engine := pipeline.NewPipelineEngine(db, llmClient)
   if err := engine.RunDataVectorization(ctx, 100); err != nil {
     log.Printf("[!] Vectorization pipeline error: %v", err)
   }
-}
-
-// initDeps uses the local pipeline.Client bridge to satisfy the engine
-func initDeps() (*sqlx.DB, pipeline.Client, error) {
-  db, err := pgPkg.Connect(os.Getenv("DATABASE_URL"))
-  if err != nil {
-    return nil, nil, err
-  }
-
-  // llmPkg.NewClient returns the raw client from your existing package
-  rawLLM := llmPkg.NewClient(os.Getenv("OPENAI_API_KEY"))
-  
-  // Wrap it using the bridge in internal/pipeline/clients.go
-  return db, pipeline.NewClientBridge(rawLLM), nil
 }
 

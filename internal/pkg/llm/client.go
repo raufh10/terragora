@@ -17,4 +17,3 @@ func NewClient(apiKey string) *openai.Client {
   client := openai.NewClient(option.WithAPIKey(apiKey))
   return &client
 }
-
