@@ -74,11 +74,11 @@ func (c *Client) RotateSession() error {
   return nil
 }
 
-func (c *Client) GetSubredditURL(subreddit string) string {
-  return fmt.Sprintf("%s/r/%s.json?limit=100", c.Targets.BaseURL, subreddit)
+func (c *Client) GetSubredditURL(subreddit string, limit int) string {
+  return fmt.Sprintf("%s/r/%s.json?limit=%d", c.Targets.BaseURL, subreddit, limit)
 }
 
-func (c *Client) GetSubredditPaginationURL(subreddit, after string) string {
-  return fmt.Sprintf("%s/r/%s.json?limit=100&after=%s", c.Targets.BaseURL, subreddit, after)
+func (c *Client) GetSubredditPaginationURL(subreddit, after string, limit int) string {
+  return fmt.Sprintf("%s/r/%s.json?limit=%d&after=%s", c.Targets.BaseURL, subreddit, limit, after)
 }
 
