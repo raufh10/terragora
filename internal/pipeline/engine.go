@@ -94,7 +94,7 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
       }
       mu.Unlock()
 
-      log.Printf("✅ Extracted: %s...", p.Title[:20])
+      log.Printf("✅ Extracted: %s...", p.Title)
     }(post)
   }
 
