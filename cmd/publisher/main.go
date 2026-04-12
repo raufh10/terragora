@@ -1,7 +1,6 @@
 package main
 
 import (
-  "encoding/json"
   "fmt"
   "log"
   "math/rand"
@@ -72,10 +71,8 @@ func main() {
 }
 
 func collectEvent(opType string, payload string) {
-  var event natsPkg.PipelineEvent
-  if err := json.Unmarshal([]byte(payload), &event); err != nil {
-    log.Printf("[!] Failed to decode DB payload: %v", err)
-    return
+  event := natsPkg.PipelineEvent{
+    ID: payload,
   }
 
   poolMutex.Lock()
@@ -88,7 +85,12 @@ func collectEvent(opType string, payload string) {
   }
 
   lastAdded = time.Now()
-  log.Printf("[*] Pooled %s: %s", opType, event.RedditID)
+  
+  log.Printf("[*] Pooled %s ID: %s (Pool Size: %d)", 
+    opType, 
+    payload, 
+    len(insertPool)+len(updatePool),
+  )
 }
 
 func startFlusher(client *natsPkg.Client) {
