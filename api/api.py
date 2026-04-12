@@ -16,7 +16,9 @@ async def telegram_webhook(request: Request):
     return {"status": "no_chat_id"}
 
   reply_text = await reply.get_marketplace_reply(message)
+  print(reply_text)
 
+  """
   async with httpx.AsyncClient() as client:
     try:
       await client.post(TELEGRAM_URL, json={
@@ -26,5 +28,6 @@ async def telegram_webhook(request: Request):
       })
     except Exception as e:
       print(f"❌ Telegram Delivery Error: {e}")
+  """
 
   return {"status": "ok"}
