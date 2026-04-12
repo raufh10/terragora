@@ -8,6 +8,7 @@ import (
   "time"
 )
 
+// Initialize http client for scraping with ProxyURL
 func (c *Client) InitHttpClient() (*http.Client, error) {
   transport := &http.Transport{
     MaxIdleConns:          100,
@@ -30,6 +31,7 @@ func (c *Client) InitHttpClient() (*http.Client, error) {
   }, nil
 }
 
+// Fetch SubredditJson data (scrape reddit)
 func (c *Client) FetchSubredditJson(httpClient *http.Client, targetURL string, ua UserAgent) (*RedditResponse, error) {
   req, err := http.NewRequest("GET", targetURL, nil)
   if err != nil {
