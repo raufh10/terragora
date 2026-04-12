@@ -2,7 +2,6 @@ package filters
 
 import (
   pg "leaddits/internal/pkg/pg"
-  llm "leaddits/internal/pkg/llm"
 )
 
 // ExtractionPayload carries state through the LLM data extraction pipeline.
@@ -11,7 +10,7 @@ type ExtractionPayload struct {
   Post        pg.RedditPost          // Input: Raw DB row
   FullText    string                 // Title + Content merged
   CleanedText string                 // Noise removed for LLM consumption
-  Extraction  llm.ProductExtraction // Output: Structured prices and notes
+  Extraction  ProductExtraction // Output: Structured prices and notes
 }
 
 // VectorizationPayload carries state through the Embedding generation pipeline.
