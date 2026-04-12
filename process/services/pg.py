@@ -2,6 +2,7 @@ import json
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from services.config import configs
 
@@ -111,3 +112,22 @@ def get_batches(
   with conn.cursor() as cur:
     cur.execute(query, params)
     return cur.fetchall()
+
+def deactivate_old_posts(conn):
+
+  query = """
+    UPDATE reddit_posts
+    SET is_active = FALSE
+    WHERE posted_at < NOW() - INTERVAL '1 month'
+    AND is_active = TRUE
+  """
+
+  try:
+    with conn.cursor() as cur:
+      cur.execute(query)
+      affected = cur.rowcount
+    conn.commit()
+    print(f"✅ Deactivated {affected} posts older than 1 month.")
+  except Exception as e:
+    conn.rollback()
+    print(f"❌ Failed to deactivate old posts: {e}")
