@@ -37,24 +37,47 @@ func (b *TelegramMessageBuilder) Build() string {
 }
 
 func (b *TelegramMessageBuilder) addListing(index int, post pg.RedditPost) {
-  // Title
-  b.builder.WriteString(fmt.Sprintf("%d. %s\n", index, post.Title))
+  // Clean up Title: Remove [WTS], WTS:, etc. (Case-Insensitive)
+  cleanTitle := post.Title
+  upperTitle := strings.ToUpper(cleanTitle)
+  
+  // Common prefixes to strip
+  prefixes := []string{"[WTS]", "WTS:", "WTS -", "WTS "}
+  
+  for _, prefix := range prefixes {
+    if strings.HasPrefix(upperTitle, prefix) {
+      // Slice the original string by the length of the matching prefix
+      cleanTitle = cleanTitle[len(prefix):]
+      // Update upperTitle in case of multiple prefixes
+      upperTitle = strings.ToUpper(cleanTitle)
+    }
+  }
 
-  // Price
+  // Trim leading/trailing brackets, dashes, colons, and spaces
+  cleanTitle = strings.TrimLeft(cleanTitle, " []-:")
+  cleanTitle = strings.TrimSpace(cleanTitle)
+
+  // Fallback to original if stripping made it empty
+  if cleanTitle == "" {
+    cleanTitle = post.Title
+  }
+
+  // 1. Title
+  b.builder.WriteString(fmt.Sprintf("%d. %s\n", index, cleanTitle))
+
+  // 2. Price
   formattedPrice := FormatPrice(post.Price)
   if formattedPrice != "" && !strings.EqualFold(formattedPrice, "n/a") {
     b.builder.WriteString(fmt.Sprintf("💰 Price: %s\n", formattedPrice))
   }
 
-  // Seller Notes (Pulling directly from DB field)
+  // 3. Seller Notes (Pulling directly from DB field)
   if post.Notes != nil && strings.TrimSpace(*post.Notes) != "" {
     b.builder.WriteString("\n📝 Notes:\n")
-    // If notes are stored as a block, we just display it. 
-    // If you want bullets, you can split by newlines.
     b.builder.WriteString(fmt.Sprintf("%s\n", *post.Notes))
   }
 
-  // URL
+  // 4. URL
   url := ""
   if post.URL != nil {
     url = *post.URL
