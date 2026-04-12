@@ -52,7 +52,7 @@ func main() {
   go startFlusher(client)
 
   // 3. Start DB Listener
-  err = pgPkg.ListenForEvents(dbURL, "reddit_posts_channel", func(payload string) {
+  err = pgPkg.ListenForEvents(dbURL, "reddit_posts_inserted", func(payload string) {
     collectPipelineEvent(payload)
   })
   if err != nil {
