@@ -19,10 +19,9 @@ for batch in batches.data:
     if not batch.id == "batch_69c546ba70d08190bd117620495fbcdb":
       continue
 
-    file_response = client.files.content(batch.output_file_id)
+    file_response = client.files.content(batch.error_file_id)
     content = file_response.text
 
     for line in content.splitlines():
       obj = json.loads(line)
-      obj = obj.get("response").get("body").get("output")[1].get("content")[0].get("text")
       print(obj)
