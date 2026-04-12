@@ -53,6 +53,7 @@ async def orchestrate_structured_batch(
           "count": len(texts),
           **custom_metadata
         },
+        type="structured",
         status=batch_response.status
       )
 
@@ -93,6 +94,7 @@ async def orchestrate_embedding_batch(
           "count": len(texts),
           **custom_metadata
         },
+        type="embedding",
         status=batch_response.status
       )
 

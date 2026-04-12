@@ -16,11 +16,11 @@ batches = client.batches.list(limit=10)
 # Print results
 for batch in batches.data:
 
-    if not batch.id == "batch_69c68c61c214819087613367276a7f2c":
-      continue
+    #if not batch.id == "batch_69c68c61c214819087613367276a7f2c":
+      #continue
 
     print(batch)
-    #continue
+    continue
 
     file_response = client.files.content(batch.output_file_id)
     content = file_response.text
