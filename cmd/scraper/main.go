@@ -34,7 +34,7 @@ func main() {
 
     currentURL := client.GetSubredditURL(sub)
     pagesScraped := 0
-    const maxPages = 5 
+    const maxPages = 2
 
     for currentURL != "" && pagesScraped < maxPages {
       log.Printf("[>] Fetching page %d: %s", pagesScraped+1, currentURL)
