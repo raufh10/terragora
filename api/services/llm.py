@@ -70,8 +70,8 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
           },
           {"role": "user", "content": f"User Search: {user_query}\n\nContext:\n{context_text}"},
         ],
+        text_format=MarketplaceSearch,
         text={
-          "format": MarketplaceSearch,
           "verbosity": "low"
         },
         prompt_cache_key="marketplace-search-v1",
