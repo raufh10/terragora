@@ -7,7 +7,7 @@ import (
   "github.com/openai/openai-go/v3/responses"
 )
 
-func callOpenAIWithSchema(ctx context.Context, client *openai.Client, input string, schemaName string, schema map[string]any) ([]byte, error) {
+func CallOpenAIWithSchema(ctx context.Context, client *openai.Client, input string, schemaName string, schema map[string]any) ([]byte, error) {
   resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
     Model: openai.ChatModelGPT5_4Mini,
     ServiceTier: responses.ResponseNewParamsServiceTierFlex,

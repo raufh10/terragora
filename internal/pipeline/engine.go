@@ -2,6 +2,7 @@ package pipeline
 
 import (
   "context"
+  "fmt"
   "log"
   "os"
   "sync"
@@ -14,9 +15,25 @@ import (
   "leaddits/internal/pipeline/filters"
 )
 
+// LLMWrapper adapts the raw openai.Client to the interfaces defined in filters.
+// This lives here so llmPkg stays "pure" and filters stays decoupled.
+type LLMWrapper struct {
+  api *openai.Client
+}
+
+func (w *LLMWrapper) ExecuteTask(ctx context.Context, input string, task llmPkg.StructuredTask) ([]byte, error) {
+  // Assembly happens here to keep the generic llmPkg simple.
+  fullInput := fmt.Sprintf("%s\n\nInput:\n%s", task.SystemPrompt, input)
+  return llmPkg.CallOpenAIWithSchema(ctx, w.api, fullInput, task.Name, task.Schema)
+}
+
+func (w *LLMWrapper) CreateEmbedding(ctx context.Context, input string) ([]float32, error) {
+  return llmPkg.GetEmbedding(ctx, w.api, input)
+}
+
 type PipelineEngine struct {
   DB        *sqlx.DB
-  LLMClient *llmPkg.Client
+  LLMClient *LLMWrapper
 }
 
 // NewPipelineEngine handles initialization of DB and LLM
@@ -26,11 +43,12 @@ func NewPipelineEngine() (*PipelineEngine, error) {
     return nil, err
   }
 
-  llmClient := llmPkg.NewClient(os.Getenv("OPENAI_API_KEY"))
+  // llmPkg.NewClient returns *openai.Client
+  rawClient := llmPkg.NewClient(os.Getenv("OPENAI_API_KEY"))
 
   return &PipelineEngine{
     DB:        db,
-    LLMClient: llmClient,
+    LLMClient: &LLMWrapper{api: rawClient},
   }, nil
 }
 
@@ -119,7 +137,7 @@ func (e *PipelineEngine) RunDataVectorization(ctx context.Context, limit int) er
       defer func() { <-semaphore }()
 
       payload := &filters.VectorizationPayload{Post: p}      
-      payload.Category = filters.ExtractCategory(p.Metadata)
+      payload.Category = filters.ExtractCategory(p.Metadata)      
       payload.AssembledText = filters.AssembleEmbeddingText(payload, payload.Category)
 
       if err := filters.GenerateEmbedding(ctx, e.LLMClient, payload, payload.AssembledText); err != nil {
