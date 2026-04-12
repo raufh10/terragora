@@ -34,7 +34,6 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
   context_entries = []
   for p in relevant_posts:
     post_url = p.get('metadata', {}).get('url', p.get('url', 'No URL available'))
-    
     entry = (
       f"Item: {p['title']}\n"
       f"Description: {p['content']}\n"
@@ -46,9 +45,9 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
   context_text = "\n\n---\n\n".join(context_entries)
 
   try:
-    completion = client.beta.chat.completions.parse(
+    response = client.responses.parse(
       model="gpt-5-mini-2025-08-07",
-      messages=[
+      input=[
         {
           "role": "system", 
           "content": (
@@ -59,10 +58,11 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
         },
         {"role": "user", "content": f"User Search: {user_query}\n\nContext:\n{context_text}"},
       ],
-      response_format=MarketplaceSearch,
+      text_format=MarketplaceSearch,
+      prompt_cache_key="leaddits-ragparser-0.1",
+      prompt_cache_retention="24h"
     )
-    return completion.choices[0].message.parsed
+    return response.output_parsed
   except Exception as e:
     print(f"❌ LLM Error: {e}")
     return None
-
