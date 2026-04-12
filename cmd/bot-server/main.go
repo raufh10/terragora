@@ -10,7 +10,9 @@ import (
   "sync"
   "time"
 
+  "github.com/openai/openai-go/v3"
   "leaddits/internal/bot-server"
+  llm "leaddits/internal/pkg/llm"
 )
 
 var (
@@ -74,6 +76,11 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, client *openai.Client
 func main() {
 
   apiKey := os.Getenv("OPENAI_API_KEY")
+  if apiKey == "" {
+    fmt.Println("CRITICAL: OPENAI_API_KEY is not set")
+    os.Exit(1)
+  }
+
   llmClient := llm.NewClient(apiKey)
 
   http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
