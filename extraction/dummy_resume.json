@@ -1,0 +1,34 @@
+{
+  "name": "Jordan Smith",
+  "skills": [
+    {
+      "name": "Python"
+    },
+    {
+      "name": "FastAPI"
+    },
+    {
+      "name": "PostgreSQL"
+    },
+    {
+      "name": "Docker"
+    },
+    {
+      "name": "AWS Lambda"
+    },
+    {
+      "name": "Machine Learning"
+    }
+  ],
+  "experiences": [
+    {
+      "title": "Backend Engineer",
+      "description": "Developed scalable microservices using Python and FastAPI. Optimized database queries in PostgreSQL to reduce latency by 30%."
+    },
+    {
+      "title": "Data Scientist",
+      "description": "Built and deployed machine learning models on AWS. Automated data pipelines to process 50GB of daily logs using Python scripts."
+    }
+  ]
+}
+

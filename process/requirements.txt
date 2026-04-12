@@ -1,0 +1,15 @@
+# General
+requests
+pydantic
+pydantic-settings
+python-dotenv
+
+# Database and Vectors
+supabase
+psycopg[binary]
+
+# AI and Process
+openai
+
+# Others
+tiktoken
