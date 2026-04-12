@@ -8,6 +8,7 @@ import (
   "strings"
   "time"
 
+  "github.com/invopop/jsonschema"
   "github.com/openai/openai-go/v3"
   "github.com/openai/openai-go/v3/option"
   "github.com/openai/openai-go/v3/responses"
@@ -68,6 +69,24 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
   return nil, fmt.Errorf("failed after %d retries", MaxRetries)
 }
 
+// GenerateSchema follows the provided documentation example for Structured Outputs
+func GenerateSchema[T any]() map[string]any {
+  reflector := jsonschema.Reflector{
+    AllowAdditionalProperties: false,
+    DoNotReference:            true,
+  }
+  var v T
+  schema := reflector.Reflect(v)
+
+  data, _ := json.Marshal(schema)
+  var result map[string]any
+  json.Unmarshal(data, &result)
+  return result
+}
+
+// Global schema generated at initialization
+var MarketplaceSearchSchema = GenerateSchema[MarketplaceSearch]()
+
 func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[string]interface{}) (*MarketplaceSearch, error) {
   if len(relevantPosts) == 0 {
     return nil, nil
@@ -85,48 +104,25 @@ func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[
 
   for i := 0; i < MaxRetries; i++ {
     resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
-      Model: openai.ChatModelGPT5_4Mini,
-      Input: openai.F([]responses.ResponseNewParamsInputUnion{
-        responses.ResponseNewParamsInput{
-          Type: openai.F(responses.ResponseNewParamsInputTypeItem),
-          Item: openai.F(responses.ResponseNewParamsInputItem{
-            Type: openai.F(responses.ResponseNewParamsInputItemTypeMessage),
-            Message: openai.F(responses.ResponseNewParamsInputItemMessage{
-              Role: openai.F(responses.ResponseNewParamsInputItemMessageRoleUser),
-              Content: openai.F([]responses.ResponseNewParamsInputItemMessageContentUnion{
-                responses.ResponseNewParamsInputItemMessageContentText{
-                  Type: openai.F(responses.ResponseNewParamsInputItemMessageContentTextTypeLines),
-                  Text: openai.F(fmt.Sprintf("%s\n\nUser Search: %s\n\nContext:\n%s", 
-                    GlobalConfig.MarketplaceSearchPrompt, userQuery, contextText)),
-                },
-              }),
-            }),
-          }),
-        },
-      }),
-      // Using ResponseTextConfig based on your second screenshot
-      Text: openai.F(responses.ResponseTextConfigParam{
-        // Using ResponseFormatTextJSONSchemaConfig based on your first screenshot
-        Format: openai.F[responses.ResponseFormatTextConfigUnion](
-          responses.ResponseFormatTextJSONSchemaConfigParam{
-            Type: openai.F(responses.ResponseFormatTextJSONSchemaConfigTypeJSONSchema),
-            JSONSchema: openai.F(responses.ResponseFormatTextJSONSchemaConfigJSONSchemaParam{
-              Name:        openai.String("MarketplaceSearch"),
-              Description: openai.String("Structured marketplace listings"),
-              Schema:      openai.F(MarketplaceSearch{}), // Struct converted to map[string]any by SDK
-              Strict:      openai.Bool(true),
-            }),
-          },
+      Model: openai.F(openai.ChatModelGPT5_4Mini),
+      // Using the OfString helper as seen in the example main()
+      Input: responses.ResponseNewParamsInputUnion{
+        OfString: openai.String(fmt.Sprintf("%s\n\nUser Search: %s\n\nContext:\n%s", 
+          GlobalConfig.MarketplaceSearchPrompt, userQuery, contextText)),
+      },
+      Text: responses.ResponseTextConfigParam{
+        // Using the helper from your example: FormatTextConfigParamOfJSONSchema
+        Format: responses.ResponseFormatTextConfigParamOfJSONSchema(
+          "marketplace_search",
+          MarketplaceSearchSchema,
         ),
-      }),
+      },
     })
 
     if err == nil {
       var result MarketplaceSearch
-      // Convienence method to grab the text from the response object
-      outputText := resp.OutputText()
-      
-      err = json.Unmarshal([]byte(outputText), &result)
+      // Extracting into the well-typed struct
+      err = json.Unmarshal([]byte(resp.OutputText()), &result)
       if err != nil {
         return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
       }
@@ -134,7 +130,12 @@ func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[
     }
 
     log.Printf("⚠️ Responses API failed (attempt %d): %v", i+1, err)
-    time.Sleep(RetryDelay)
+    
+    select {
+    case <-time.After(RetryDelay):
+    case <-ctx.Done():
+      return nil, ctx.Err()
+    }
   }
 
   return nil, fmt.Errorf("LLM search failed after retries")
