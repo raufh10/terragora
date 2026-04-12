@@ -7,3 +7,13 @@ logs/
 
 # Files
 *.env
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Standard Go binary output
+bin/
