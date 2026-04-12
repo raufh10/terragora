@@ -119,6 +119,13 @@ func startFlusher(client *natsPkg.Client) {
 }
 
 func publishScraperTrigger(client *natsPkg.Client) {
+  min, max := 5, 30
+  randomSeconds := rand.Intn(max-min+1) + min
+  delay := time.Duration(randomSeconds) * time.Second
+
+  log.Printf("[*] Cron triggered. Delaying %v...", delay)
+  time.Sleep(delay)
+
   event := natsPkg.ScraperEvent{
     Pages:     5,
     Limit:     100,
