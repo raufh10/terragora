@@ -15,11 +15,19 @@ class Configs(BaseSettings):
 
   # pgvector creds
   conn_str: SecretStr | None = None
+  prod_conn_str: SecretStr | None = None
 
   # OpenAI creds
   openai_api_key: SecretStr | None = None
 
   # General settings
   env: SecretStr | None = None
+
+  @computed_field
+  @property
+  def active_conn_str(self) -> SecretStr | None:
+    if self.env.get_secret_value().lower() == "production":
+      return self.prod_conn_str
+    return self.conn_str
 
 configs = Configs()

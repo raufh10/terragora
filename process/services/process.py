@@ -1,36 +1,104 @@
-from typing import List, Optional
+import os
+import tempfile
+
+from pydantic import BaseModel
+from typing import List, Type, Dict, Any
+
 from openai import OpenAI
-from pydantic import BaseModel, Field
+
 from services.config import configs
+from services.pg import get_db_connection, insert_batch
+from services.jsonl import generate_embedding_jsonl, generate_structured_jsonl
+from services.llm import create_batch_file, create_structured_batch_job, create_embedding_batch_job
 
 client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
 
-class ProductExtraction(BaseModel):
-  prices: List[float] = Field(description="Numerical prices extracted from the text.")
-  notes: str = Field(description="1-3 sentences of additional context regarding condition, location, or bundle details.")
+async def orchestrate_structured_batch(
+  owner: str,
+  texts: List[str],
+  model_class: Type[BaseModel],
+  schema_name: str,
+  system_prompt: str,
+  custom_metadata: Dict[str, Any] = {}
+):
+  jsonl_content = generate_structured_jsonl(
+    texts=texts,
+    system_prompt=system_prompt,
+    model_class=model_class,
+    schema_name=schema_name
+  )
 
-async def get_embedding(text: str) -> List[float]:
-  try:
-    response = client.embeddings.create(
-      input=text,
-      model="text-embedding-3-small",
-      dimensions=1536
-    )
-    return response.data[0].embedding
-  except Exception:
-    return []
+  with tempfile.NamedTemporaryFile(mode="w+", suffix=".jsonl", delete=False) as tmp:
+    tmp.write(jsonl_content)
+    tmp_path = tmp.name
 
-async def extract_product_details(text: str) -> Optional[ProductExtraction]:
   try:
-    completion = client.beta.chat.completions.parse(
-      model="gpt-5-nano-2025-08-07",
-      messages=[
-        {"role": "system", "content": "Extract pricing and 1-3 sentences of seller notes from the marketplace post with high precision."},
-        {"role": "user", "content": text},
-      ],
-      response_format=ProductExtraction,
-    )
-    return completion.choices[0].message.parsed
-  except Exception as e:
-    print(f"❌ Error during structured extraction: {e}")
-    return None
+    file_response = await create_batch_file(client, tmp_path)
+    if not file_response:
+      return None
+
+    batch_response = await create_structured_batch_job(client, file_response.id)
+    if not batch_response:
+      return None
+
+    with get_db_connection() as conn:
+      insert_batch(
+        conn=conn,
+        batch_id=batch_response.id,
+        file_input_id=file_response.id,
+        owner=owner,
+        data={
+          "type": "structured_extraction",
+          "schema": schema_name,
+          "count": len(texts),
+          **custom_metadata
+        },
+        status=batch_response.status
+      )
+
+    return batch_response
+
+  finally:
+    if os.path.exists(tmp_path):
+      os.remove(tmp_path)
+
+async def orchestrate_embedding_batch(
+  owner: str,
+  texts: List[str],
+  custom_metadata: Dict[str, Any] = {}
+):
+  jsonl_content = generate_embedding_jsonl(texts=texts)
+
+  with tempfile.NamedTemporaryFile(mode="w+", suffix=".jsonl", delete=False) as tmp:
+    tmp.write(jsonl_content)
+    tmp_path = tmp.name
+
+  try:
+    file_response = await create_batch_file(client, tmp_path)
+    if not file_response:
+      return None
+
+    batch_response = await create_embedding_batch_job(client, file_response.id)
+    if not batch_response:
+      return None
+
+    with get_db_connection() as conn:
+      insert_batch(
+        conn=conn,
+        batch_id=batch_response.id,
+        file_input_id=file_response.id,
+        owner=owner,
+        data={
+          "type": "embeddings",
+          "count": len(texts),
+          **custom_metadata
+        },
+        status=batch_response.status
+      )
+
+    return batch_response
+
+  finally:
+    if os.path.exists(tmp_path):
+      os.remove(tmp_path)
+
