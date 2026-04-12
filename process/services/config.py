@@ -1,5 +1,5 @@
 import os
-from pydantic import SecretStr
+from pydantic import SecretStr, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Configs(BaseSettings):
