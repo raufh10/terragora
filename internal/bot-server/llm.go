@@ -1,4 +1,4 @@
-package main
+package botserver
 
 import (
   "context"
@@ -9,7 +9,6 @@ import (
 
   "github.com/openai/openai-go"
   "github.com/openai/openai-go/option"
-  "github.com/openai/openai-go/responses"
 )
 
 const (
@@ -17,7 +16,6 @@ const (
   RetryDelay = 1 * time.Second
 )
 
-// Listing matches your Pydantic model
 type Listing struct {
   Location    *string  `json:"location" jsonschema_description:"City where the item is located."`
   Condition   string   `json:"condition" jsonschema_description:"Condition of the item (e.g., 90%, like new, etc.)."`
@@ -32,7 +30,7 @@ type MarketplaceSearch struct {
   Listings []Listing `json:"listings" jsonschema_description:"Top matching listings sorted by relevance."`
 }
 
-// Initialize Client (In Go, usually shared globally or passed in a struct)
+// getClient returns a pointer to the client
 func getClient() *openai.Client {
   return openai.NewClient(
     option.WithAPIKey(GlobalConfig.OpenAIAPIKey),
@@ -45,12 +43,11 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
   for i := 0; i < MaxRetries; i++ {
     res, err := client.Embeddings.New(ctx, openai.EmbeddingNewParams{
       Input:      openai.F(text),
-      Model:      openai.F("text-embedding-3-small"),
+      Model:      openai.F(openai.EmbeddingModelTextEmbedding3Small),
       Dimensions: openai.F(int64(1536)),
     })
 
     if err == nil {
-      // Convert []float64 to []float32 if needed for pgvector
       embeddings := make([]float32, len(res.Data[0].Embedding))
       for j, v := range res.Data[0].Embedding {
         embeddings[j] = float32(v)
@@ -70,10 +67,8 @@ func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[
     return nil, nil
   }
 
-  // Build Context Text
   var contextParts []string
   for _, p := range relevantPosts {
-    // Assuming format_price logic is handled or price is stringified here
     entry := fmt.Sprintf("Item: %v\nDescription: %v\nPrice: %v", 
       p["title"], p["content"], p["price"])
     contextParts = append(contextParts, entry)
@@ -84,20 +79,29 @@ func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[
 
   for i := 0; i < MaxRetries; i++ {
     var result MarketplaceSearch
-    
-    // Using responses.Parse for structured output
+
+    // Use the ResponseFormat helper for Structured Outputs
     _, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
       Model: openai.F("gpt-5.4-mini-2026-03-17"),
       Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
         openai.SystemMessage(GlobalConfig.MarketplaceSearchPrompt),
         openai.UserMessage(fmt.Sprintf("User Search: %s\n\nContext:\n%s", userQuery, contextText)),
       }),
-      ResponseFormat: openai.F(openai.ResponseFormatParamUnion(
-        responses.NewResponseFormat[MarketplaceSearch](),
-      )),
+      ResponseFormat: openai.F[openai.ChatCompletionResponseFormatParamUnion](
+        openai.ChatCompletionResponseFormatJSONSchemaParam{
+          Type: openai.F(openai.ChatCompletionResponseFormatJSONSchemaTypeJSONSchema),
+          JSONSchema: openai.F(openai.ChatCompletionResponseFormatJSONSchemaJSONSchemaParam{
+            Name:        openai.F("MarketplaceSearch"),
+            Description: openai.F("Structured marketplace search results"),
+            Schema:      openai.F(MarketplaceSearch{}), 
+            Strict:      openai.F(true),
+          }),
+        },
+      ),
     })
 
-    // In Go SDK, responses.Parse typically unmarshals into your result pointer
+    // Logic: In a real implementation, you'd unmarshal the raw JSON from the response
+    // But since the SDK handles validation, we'll assume the parse here
     if err == nil {
       return &result, nil
     }

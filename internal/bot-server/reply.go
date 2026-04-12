@@ -1,4 +1,4 @@
-package main
+package botserver
 
 import (
   "context"
@@ -6,7 +6,7 @@ import (
   "strings"
   "time"
 
-  "leaddits/pkg" // Adjust based on your actual module name in go.mod
+  "leaddits/internal/pkg"
 )
 
 // GetMarketplaceReply handles the full pipeline: Embedding -> DB -> LLM -> Formatting
