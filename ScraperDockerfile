@@ -28,4 +28,4 @@ WORKDIR /root/
 COPY --from=builder /scraper .
 
 # Set the binary as the entrypoint
-ENTRYPOINT ["./leaddits-scraper"]
+ENTRYPOINT ["./scraper"]
