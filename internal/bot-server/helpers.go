@@ -15,7 +15,9 @@ import (
 
 // SendMessage sends a Markdown formatted message to Telegram
 func SendMessage(chatID int64, text string) {
-  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", GlobalConfig.TelegramBotToken)
+  token := os.Getenv("TELEGRAM_BOT_TOKEN")
+  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
+  
   payload, _ := json.Marshal(map[string]interface{}{
     "chat_id":    chatID,
     "text":       text,
@@ -26,7 +28,9 @@ func SendMessage(chatID int64, text string) {
 
 // SendChatAction sends a status (like 'typing') to the user
 func SendChatAction(chatID int64, action string) {
-  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendChatAction", GlobalConfig.TelegramBotToken)
+  token := os.Getenv("TELEGRAM_BOT_TOKEN")
+  url := fmt.Sprintf("https://api.telegram.org/bot%s/sendChatAction", token)
+  
   payload, _ := json.Marshal(map[string]interface{}{
     "chat_id": chatID,
     "action":  action,

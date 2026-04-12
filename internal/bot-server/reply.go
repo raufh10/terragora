@@ -4,6 +4,7 @@ import (
   "context"
   "fmt"
   "log"
+  "os"
   "strings"
   "time"
 
@@ -19,7 +20,8 @@ func GetMarketplaceReply(ctx context.Context, text string, llmClient *llm.openai
   }
 
   // 1. Initialize DB Connection using the new pg package logic
-  db, err := pg.Connect(GlobalConfig.ConnStr)
+  dbConn := os.Getenv("DATABASE_URL")
+  db, err := pg.Connect(dbConn)
   if err != nil {
     log.Printf("DB Connection Error: %v", err)
     return "❌ Database connection issue. Please try again later."
