@@ -11,15 +11,32 @@ client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
 
 ShortStr = Annotated[str, Field(max_length=280)]
 
+class Listing(BaseModel):
+  location: Optional[ShortStr] = Field(
+    default=None,
+    description="City where the item is located."
+  )
+  condition: ShortStr = Field(
+    description="Condition of the item (e.g., 90%, like new, etc.)."
+  )
+  seller_notes: List[ShortStr] = Field(
+    description="Key bullet points from seller notes (max 3).",
+    max_items=3
+  )
+  verdict: ShortStr = Field(
+    description="Clear recommendation label (e.g., Best balance, Budget pick, Premium option)."
+  )
+  watch_out: ShortStr = Field(
+    description="Risk or warning. Use '-' if none."
+  )
+  deal_score: Optional[float] = Field(
+    default=None,
+    description="Optional score from 0–10 representing deal quality."
+  )
+
 class MarketplaceSearch(BaseModel):
-  summary: ShortStr = Field(
-    description="A summary of matching items found. Strictly maximum 2 sentences."
-  )
-  best_deal_url: Optional[str] = Field(
-    description="The URL of the post identified as the best deal."
-  )
-  recommendation: ShortStr = Field(
-    description="Buying advice or seller warnings. Strictly maximum 2 sentences."
+  listings: List[Listing] = Field(
+    description="Top matching listings sorted by relevance."
   )
 
 async def get_embedding(text: str) -> List[float]:
@@ -38,18 +55,20 @@ async def get_embedding(text: str) -> List[float]:
       else:
         return []
 
-async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Optional[MarketplaceSearch]:
+async def search_used_items(
+  user_query: str,
+  relevant_posts: List[dict]
+) -> Optional[MarketplaceSearch]:
+
   if not relevant_posts:
     return None
 
   context_entries = []
   for p in relevant_posts:
-    post_url = p.get('metadata', {}).get('url', p.get('url', 'No URL available'))
     entry = (
       f"Item: {p.get('title', 'N/A')}\n"
       f"Description: {p.get('content', 'N/A')}\n"
       f"Price: {p.get('price', 'N/A')}\n"
-      f"URL: {post_url}"
     )
     context_entries.append(entry)
 
@@ -62,11 +81,7 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
         input=[
           {
             "role": "system", 
-            "content": (
-              "You are a marketplace scout. Analyze the posts to find items for sale. "
-              "IMPORTANT: Ignore 'WTB' (Want To Buy) posts; only consider 'WTS' (Want To Sell). "
-              "Your summary and recommendation must be extremely concise, maximum 2 sentences each."
-            )
+            "content": configs.MarketplaceSearchPrompt
           },
           {"role": "user", "content": f"User Search: {user_query}\n\nContext:\n{context_text}"},
         ],
