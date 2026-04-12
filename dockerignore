@@ -1,0 +1,32 @@
+# Version Control
+.git
+.gitignore
+
+# Go Build Artifacts
+bin/
+*.exe
+*.test
+*.prof
+
+# Local Development / Secrets
+.env
+*.local
+certs/
+*.pem
+*.key
+
+# IDE / Editor Configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation & Miscellaneous
+README.md
+docs/
+scripts/
+temp/
+testdata/
+
+# Logs
+*.log

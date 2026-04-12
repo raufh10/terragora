@@ -1,0 +1,35 @@
+# Stage 1: Build the binary
+FROM golang:1.26.1-alpine AS builder
+
+WORKDIR /app
+
+# Install git and certificates for HTTPS requests
+RUN apk add --no-generated --no-cache git ca-certificates
+
+# Copy module files first for better layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source code
+COPY . .
+
+# Build the bot-server binary
+# -ldflags="-s -w" shrinks the binary size
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o bot-server ./cmd/bot-server
+
+# Stage 2: Final lightweight image
+FROM alpine:latest
+
+WORKDIR /root/
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/bot-server .
+
+# Ensure ca-certificates are present for OpenAI/Telegram API calls
+RUN apk add --no-cache ca-certificates
+
+EXPOSE 8080
+
+# Run the binary
+CMD ["./bin/bot-server"]
+
