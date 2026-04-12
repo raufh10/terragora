@@ -23,6 +23,15 @@ class Configs(BaseSettings):
   # General settings
   env: SecretStr | None = None
 
+  # OpenAI settings
+  ProductExtractionPrompt: str = """
+    Extract the price and a concise summary (1–3 sentences) of the seller’s notes 
+    from the marketplace post.
+    Ensure high precision:
+    - Do not infer or guess missing details
+    - Only use explicitly stated information
+  """
+
   @computed_field
   @property
   def active_conn_str(self) -> SecretStr | None:
