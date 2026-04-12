@@ -12,7 +12,7 @@ from services.pg import (
 
 async def run_data_extraction(conn):
 
-  posts = fetch_posts_to_process(conn)
+  posts = fetch_posts_to_process(conn, batch_type="extraction", limit=20)
   if not posts:
     print("😴 No new posts needing extraction.")
     return
@@ -47,7 +47,7 @@ async def run_data_extraction(conn):
 
 async def run_data_vectorization(conn):
 
-  posts = fetch_posts_to_process(conn)
+  posts = fetch_posts_to_process(conn, batch_type="vectorization", limit=50)
   if not posts:
     print("😴 No posts ready for vectorization.")
     return
@@ -76,4 +76,3 @@ async def run_data_vectorization(conn):
   if embedding_updates:
     bulk_update_embeddings(conn, embedding_updates)
     print(f"✨ Storage complete: {len(embedding_updates)} vectors generated.")
-
