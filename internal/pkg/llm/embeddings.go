@@ -11,6 +11,10 @@ import (
 
 // GetEmbedding converts text to a 1536-dimensional vector.
 func GetEmbedding(ctx context.Context, client *openai.Client, text string) ([]float32, error) {
+  if client == nil {
+    return nil, fmt.Errorf("llm client is not initialized")
+  }
+
   for i := 0; i < MaxRetries; i++ {
     res, err := client.Embeddings.New(ctx, openai.EmbeddingNewParams{
       Input: openai.EmbeddingNewParamsInputUnion{

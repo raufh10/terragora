@@ -18,7 +18,8 @@ var (
   mu       sync.Mutex
 )
 
-func handleWebhook(w http.ResponseWriter, r *http.Request) {
+func handleWebhook(w http.ResponseWriter, r *http.Request, client *openai.Client) {
+
   // 1. Auth check via direct env read
   secret := r.Header.Get("X-Telegram-Bot-Api-Secret-Token")
   expectedSecret := os.Getenv("TELEGRAM_WEBHOOK_SECRET")
@@ -63,10 +64,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
   go botserver.TypingLoop(ctx, chatID)
   defer cancel()
 
-  // Note: Ensure your OpenAI client is initialized and passed here
-  // replyText := botserver.GetMarketplaceReply(ctx, text, yourLLMClient)
-  // For now, assuming standard flow:
-  replyText := botserver.GetMarketplaceReply(ctx, text, nil) 
+  replyText := botserver.GetMarketplaceReply(ctx, text, client)
   botserver.SendMessage(chatID, replyText)
 
   w.WriteHeader(http.StatusOK)
@@ -74,10 +72,14 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-  // No more botserver.LoadConfig() needed if using direct envs
-  
-  http.HandleFunc("/webhook", handleWebhook)
 
+  apiKey := os.Getenv("OPENAI_API_KEY")
+  llmClient := llm.NewClient(apiKey)
+
+  http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
+    handleWebhook(w, r, llmClient)
+  })
+  
   port := os.Getenv("PORT")
   if port == "" { port = "8080" }
 
