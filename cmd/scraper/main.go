@@ -36,7 +36,7 @@ func main() {
   ctx := context.Background()
 
   for _, sub := range client.Targets.Subreddits {
-    log.Printf("[*] Starting scrape for r/%s", sub)
+    log.Printf("[*] Starting scraping for r/%s", sub)
 
     currentURL := client.GetSubredditURL(sub)
     pagesScraped := 0
