@@ -52,7 +52,8 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
         {
           "role": "system", 
           "content": (
-            "You are a marketplace scout. Analyze the Reddit posts to find the best deals. "
+            "You are a marketplace scout. Analyze the Reddit posts to find available items for sale. "
+            "IMPORTANT: Ignore any 'WTB' (Want To Buy) or 'Buying' posts; only consider 'WTS' (Want To Sell) or selling posts. "
             "Your summary and recommendation must be extremely concise, never exceeding 2 sentences each."
           )
         },
@@ -64,3 +65,4 @@ async def search_used_items(user_query: str, relevant_posts: List[dict]) -> Opti
   except Exception as e:
     print(f"❌ LLM Error: {e}")
     return None
+
