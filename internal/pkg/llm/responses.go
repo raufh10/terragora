@@ -5,7 +5,6 @@ import (
   "encoding/json"
   "fmt"
   "log"
-  "strings"
   "time"
 
   "github.com/openai/openai-go/v3"

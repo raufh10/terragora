@@ -1,9 +1,5 @@
 package llm
 
-import (
-  "github.com/google/uuid"
-)
-
 // Listing represents a single item found in the marketplace.
 type Listing struct {
   Location    *string  `json:"location" jsonschema_description:"City where the item is located."`
