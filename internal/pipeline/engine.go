@@ -89,8 +89,6 @@ func (e *PipelineEngine) RunDataExtraction(ctx context.Context, limit int) error
       allUpdates[p.ID] = map[string]interface{}{
         "price": payload.Extraction.Prices,
         "notes": payload.Extraction.Notes,
-        // If you have a status column to mark it done, add it here too
-        "status": "processed", 
       }
       mu.Unlock()
 
