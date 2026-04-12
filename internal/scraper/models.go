@@ -1,5 +1,36 @@
 package scraper
 
+import "time"
+
+// UserAgent represents a browser identity and its operating system.
+type UserAgent struct {
+  Raw  string `json:"str"`
+  Type string `json:"type"` // windows, macos, linux, android, ios
+}
+
+// Targets holds the URLs and subreddits for the scraper.
+type Targets struct {
+  BaseURL    string
+  Subreddits []string
+}
+
+// ScraperConfigs holds the technical settings for the scraper instance.
+type ScraperConfigs struct {
+  UserAgentPool  []UserAgent
+  LastUsedUA     string
+  ProxyURL       string
+  TimeoutSeconds time.Duration
+}
+
+// Client is the main scraper controller.
+type Client struct {
+  DatabaseURL string
+  Targets     Targets
+  Config      ScraperConfigs
+}
+
+// --- Reddit Specific API Models ---
+
 type RedditPostData struct {
   RedditID          string                   `json:"name"`
   Title             string                   `json:"title"`
@@ -16,7 +47,7 @@ type RedditPostChild struct {
 
 type RedditData struct {
   Children []RedditPostChild `json:"children"`
-  After    *string           `json:"after"` // Pointer used for Nullable/Option
+  After    *string           `json:"after"`
 }
 
 type RedditResponse struct {
@@ -32,4 +63,3 @@ type StorablePost struct {
   Metadata map[string]interface{} `json:"metadata"`
   IsActive bool                   `json:"is_active"`
 }
-
