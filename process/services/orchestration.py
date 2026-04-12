@@ -12,7 +12,7 @@ from services.pg import (
 
 async def run_data_extraction(conn):
 
-  posts = fetch_posts_to_process(conn, batch_type="extraction", limit=20)
+  posts = fetch_posts_to_process(conn, batch_type="extraction")
   if not posts:
     print("😴 No new posts needing extraction.")
     return
@@ -47,7 +47,7 @@ async def run_data_extraction(conn):
 
 async def run_data_vectorization(conn):
 
-  posts = fetch_posts_to_process(conn, batch_type="vectorization", limit=50)
+  posts = fetch_posts_to_process(conn, batch_type="vectorization")
   if not posts:
     print("😴 No posts ready for vectorization.")
     return
