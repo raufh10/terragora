@@ -25,21 +25,6 @@ def assemble_embedding_text(title: str, price: dict, notes: str, category: str) 
   price_str = format_price(price)
   return f"Category: {category} | Product: {title} | Price: {price_str} | Info: {notes}"
 
-def build_openai_text_format(model_class: Type[BaseModel], schema_name: str) -> dict:
-
-  schema = model_class.model_json_schema()
-  schema["required"] = list(schema["properties"].keys())
-  schema["additionalProperties"] = False
-
-  return {
-    "format": {
-      "type": "json_schema",
-      "name": schema_name,
-      "strict": True,
-      "schema": schema
-    }
-  }
-
 def format_price(price) -> str:
   def format_rp(value):
     if value is None:

@@ -4,6 +4,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
+
 from services.config import configs
 
 def get_db_connection():
@@ -24,6 +25,7 @@ def fetch_posts_to_process(conn):
     FROM reddit_posts
     WHERE embedding IS NULL 
     AND is_active = true
+    LIMIT 200
   """
   with conn.cursor() as cur:
     cur.execute(query)
@@ -52,66 +54,6 @@ def bulk_update_post_data(conn, column_name, updates):
   except Exception as e:
     conn.rollback()
     print(f"❌ Bulk {column_name} update failed: {e}")
-
-def insert_batch(conn, batch_id: str, file_input_id: str, owner: str, data: Dict[str, Any], type: str, status: str = "validating"):
-  query = """
-    INSERT INTO batches (id, file_input_id, owner, data, type, status)
-    VALUES (%s, %s, %s, %s, %s, %s)
-    RETURNING *;
-  """
-  with conn.cursor() as cur:
-    cur.execute(query, (batch_id, file_input_id, owner, Jsonb(data), type, status))
-    conn.commit()
-    return cur.fetchone()
-
-def update_batch(conn, batch_id: str, status: Optional[str] = None, data: Optional[Dict[str, Any]] = None):
-  updates = []
-  params = []
-
-  if status:
-    updates.append("status = %s")
-    params.append(status)
-  if data:
-    updates.append("data = %s")
-    params.append(Jsonb(data))
-
-  if not updates:
-    return None
-
-  params.append(batch_id)
-  query = f"UPDATE batches SET {', '.join(updates)} WHERE id = %s RETURNING *;"
-
-  with conn.cursor() as cur:
-    cur.execute(query, params)
-    conn.commit()
-    return cur.fetchone()
-
-def get_batches(
-  conn, 
-  owner: Optional[str] = None, 
-  batch_id: Optional[str] = None, 
-  batch_type: Optional[str] = None
-) -> List[Dict]:
-  if batch_id:
-    query = "SELECT * FROM batches WHERE id = %s;"
-    params = (batch_id,)
-  elif owner:
-    if batch_type:
-      query = "SELECT * FROM batches WHERE owner = %s AND type = %s ORDER BY created_at DESC;"
-      params = (owner, batch_type)
-    else:
-      query = "SELECT * FROM batches WHERE owner = %s ORDER BY created_at DESC;"
-      params = (owner,)
-  elif batch_type:
-    query = "SELECT * FROM batches WHERE type = %s ORDER BY created_at DESC LIMIT 100;"
-    params = (batch_type,)
-  else:
-    query = "SELECT * FROM batches ORDER BY created_at DESC LIMIT 100;"
-    params = ()
-
-  with conn.cursor() as cur:
-    cur.execute(query, params)
-    return cur.fetchall()
 
 def deactivate_old_posts(conn):
 
