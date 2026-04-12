@@ -6,10 +6,11 @@ import (
   "strings"
 
   pg "leaddits/internal/pkg/pg"
+  llm "leaddits/internal/pkg/llm"
 )
 
 // FormatTelegramMessage constructs the final string for the bot UI
-func FormatTelegramMessage(userQuery string, result *MarketplaceSearch, relevantPosts []pg.RedditPost) string {
+func FormatTelegramMessage(userQuery string, result *llm.MarketplaceSearch, relevantPosts []pg.RedditPost) string {
   if result == nil || len(result.Listings) == 0 {
     return fmt.Sprintf("🔍 Terragora Results: %s\n\nNo relevant listings found.", userQuery)
   }
