@@ -1,10 +1,5 @@
 package botserver
 
-import (
-  llm "leaddits/internal/pkg/llm"
-  pg "leaddits/internal/pkg/pg"
-)
-
 // Update represents a Telegram incoming webhook update
 type Update struct {
   Message struct {
@@ -17,10 +12,3 @@ type Update struct {
     Text string `json:"text"`
   } `json:"message"`
 }
-
-// PairedResult now uses the LLM package's version of Listing
-type PairedResult struct {
-  Listing llm.Listing
-  Post    pg.RedditPost
-}
-
