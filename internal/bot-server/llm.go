@@ -85,7 +85,7 @@ func SearchUsedItems(ctx context.Context, userQuery string, relevantPosts []map[
 
   for i := 0; i < MaxRetries; i++ {
     resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
-      Model: openai.F("gpt-5.4-mini-2026-03-17"),
+      Model: openai.ChatModelGPT5_4Mini,
       Input: openai.F([]responses.ResponseNewParamsInputUnion{
         responses.ResponseNewParamsInput{
           Type: openai.F(responses.ResponseNewParamsInputTypeItem),
