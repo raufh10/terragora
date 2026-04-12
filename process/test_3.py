@@ -16,7 +16,7 @@ batches = client.batches.list(limit=10)
 # Print results
 for batch in batches.data:
 
-    if not batch.id == "batch_69c546ba70d08190bd117620495fbcdb":
+    if not batch.id == "batch_69c5ea3ebca08190b28698ecd9f7027d":
       continue
 
     file_response = client.files.content(batch.error_file_id)
