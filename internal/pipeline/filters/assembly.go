@@ -5,7 +5,7 @@ import (
 )
 
 // AssembleEmbeddingText creates the final string used to generate the vector embedding.
-func AssembleEmbeddingText(payload *VectorizationPayload, category string, formattedPrice string) string {
+func AssembleEmbeddingText(payload *VectorizationPayload, category string) string {
   return fmt.Sprintf(
     "Category: %s | Product: %s | Info: %s",
     category,
@@ -13,4 +13,3 @@ func AssembleEmbeddingText(payload *VectorizationPayload, category string, forma
     payload.Post.Notes,
   )
 }
-
