@@ -10,7 +10,7 @@ import (
 func FetchRelevantPosts(db *sqlx.DB, queryEmbedding []float32, limit int) ([]RedditPost, error) {
   query := `
     SELECT 
-      id, reddit_id, title, content, price, metadata, is_active,
+      id, reddit_id, title, price, posted_at, notes
       1 - (embedding <=> $1::vector) AS similarity
     FROM reddit_posts
     WHERE is_active = true
