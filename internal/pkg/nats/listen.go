@@ -10,6 +10,7 @@ import (
 
 type Handler func(msg *nats.Msg)
 
+// Listen subscribes to a NATS subject asynchronously after verifying the connection state
 func (c *Client) Listen(subject string, handler Handler) (*nats.Subscription, error) {
   if c.Conn == nil {
     return nil, fmt.Errorf("nats connection is not initialized")
