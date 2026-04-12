@@ -15,7 +15,6 @@ class Configs(BaseSettings):
 
   # Telegram creds
   telegram_bot_token: SecretStr | None = None
-  telegram_url: SecretStr | None = None
 
   # OpenAI creds
   openai_api_key: SecretStr | None = None
