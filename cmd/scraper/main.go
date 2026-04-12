@@ -2,104 +2,128 @@ package main
 
 import (
   "context"
+  "encoding/json"
   "log"
   "os"
   "time"
 
+  "github.com/nats-io/nats.go"
+  "github.com/joho/godotenv"
+  
+  natsPkg "leaddits/internal/pkg/nats" 
   pg "leaddits/internal/pkg/pg"
   "leaddits/internal/scraper"
 )
 
 func main() {
-  client, err := scraper.NewConfig()
+  _ = godotenv.Load()
+
+  // 1. Initialize NATS Client Only
+  natsURL := os.Getenv("NATS_URL")
+  if natsURL == "" {
+    natsURL = "nats://127.0.0.1:4222"
+  }
+  
+  nc, err := natsPkg.NewClient(natsURL)
   if err != nil {
-    log.Fatalf("[-] Failed to initialize config: %v", err)
+    log.Fatalf("[-] NATS connection error: %v", err)
+  }
+  defer nc.Close()
+
+  // 2. Define the NATS Handler
+  handleEvent := func(m *nats.Msg) {
+    var event natsPkg.ScraperEvent
+    if err := json.Unmarshal(m.Data, &event); err != nil {
+      log.Printf("[!] JSON Unmarshal error: %v", err)
+      return
+    }
+
+    log.Printf("[*] Event received for r/%s. Initializing job...", event.Target)
+    
+    // Trigger the self-contained scrape function
+    scrape(event)
   }
 
-  dbURL := os.Getenv("DATABASE_URL")
-  if dbURL == "" {
-    log.Fatal("[-] DATABASE_URL environment variable is not set")
-  }
-
-  db, err := pg.Connect(dbURL)
+  // 3. Start Listening
+  _, err = nc.Listen("scraper.event", handleEvent)
   if err != nil {
-    log.Fatalf("[-] Database connection error: %v", err)
-  }
-  defer db.Close()
-  log.Println("[+] Connected to database successfully")
-
-  httpClient, err := client.InitHttpClient()
-  if err != nil {
-    log.Fatalf("[-] HTTP Client error: %v", err)
+    log.Fatalf("[-] Failed to subscribe: %v", err)
   }
 
+  log.Println("[+] Scraper worker active. Waiting for NATS events...")
+  
+  // Keep process alive
+  select {}
+}
+
+// scrape now handles its own database and config setup
+func scrape(event natsPkg.ScraperEvent) {
   ctx := context.Background()
 
-  for _, sub := range client.Targets.Subreddits {
-    log.Printf("[*] Starting scraping for r/%s", sub)
+  // 1. Setup Scraper Config
+  config, err := scraper.NewConfig()
+  if err != nil {
+    log.Printf("[-] Scraper config error: %v", err)
+    return
+  }
 
-    currentURL := client.GetSubredditURL(sub)
-    pagesScraped := 0
-    const maxPages = 5
+  // 2. Setup Database Connection
+  dbURL := os.Getenv("DATABASE_URL")
+  db, err := pg.Connect(dbURL)
+  if err != nil {
+    log.Printf("[-] Database connection error: %v", err)
+    return
+  }
+  defer db.Close()
 
-    for currentURL != "" && pagesScraped < maxPages {
-      log.Printf("[>] Fetching page %d: %s", pagesScraped+1, currentURL)
+  httpClient, _ := config.InitHttpClient()
 
-      var resp *scraper.RedditResponse
-      var fetchErr error
+  // 3. Execution Logic
+  sub := event.Target
+  currentURL := config.GetSubredditURL(sub, event.Limit)
+  pagesScraped := 0
 
-      // --- Retry Logic ---
-      for attempt := 1; attempt <= 3; attempt++ {
-        ua := scraper.UserAgent{Raw: client.Config.LastUsedUA}
-        resp, fetchErr = client.FetchSubredditJson(httpClient, currentURL, ua)
+  for currentURL != "" && pagesScraped < event.Pages {
+    log.Printf("[>] [%s] Fetching page %d...", sub, pagesScraped+1)
 
-        if fetchErr == nil {
-          break
-        }
+    var resp *scraper.RedditResponse
+    var fetchErr error
 
-        log.Printf("[!] Attempt %d failed for r/%s: %v", attempt, sub, fetchErr)
+    for attempt := 1; attempt <= 3; attempt++ {
+      ua := scraper.UserAgent{Raw: config.Config.LastUsedUA}
+      resp, fetchErr = config.FetchSubredditJson(httpClient, currentURL, ua)
 
-        if attempt < 3 {
-          // Now calling the helper from the scraper package
-          backoff := scraper.GetBackoffDuration(attempt)
-          log.Printf("[*] Retrying in %v...", backoff)
-          time.Sleep(backoff)
-
-          _ = client.RotateSession() 
-        }
-      }
-
-      if fetchErr != nil {
-        log.Printf("[!!] Max retries reached for %s. Skipping page.", currentURL)
+      if fetchErr == nil {
         break
       }
 
-      posts := scraper.ProcessResponse(*resp)
-      log.Printf("[+] Parsed %d posts from r/%s", len(posts), sub)
-
-      if len(posts) > 0 {
-        if err := pg.BulkIngestRawPosts(ctx, db, posts); err != nil {
-          log.Printf("[!] Database ingestion error: %v", err)
-        } else {
-          log.Printf("[+] Successfully upserted batch for r/%s", sub)
-        }
+      if attempt < 3 {
+        time.Sleep(scraper.GetBackoffDuration(attempt))
+        _ = config.RotateSession()
       }
+    }
 
-      if resp.Data.After != nil && *resp.Data.After != "" {
-        currentURL = client.GetSubredditPaginationURL(sub, *resp.Data.After)
-        pagesScraped++
+    if fetchErr != nil {
+      log.Printf("[!!] Terminating job for r/%s due to fetch errors", sub)
+      break
+    }
 
-        if err := client.RotateSession(); err != nil {
-          log.Printf("[!] Session rotation failed: %v", err)
-        }
-        time.Sleep(2 * time.Second)
-      } else {
-        log.Printf("[*] Reached end of r/%s", sub)
-        currentURL = "" 
+    posts := scraper.ProcessResponse(*resp)
+    if len(posts) > 0 {
+      if err := pg.BulkIngestRawPosts(ctx, db, posts); err != nil {
+        log.Printf("[!] Ingestion error: %v", err)
       }
+    }
+
+    if resp.Data.After != nil && *resp.Data.After != "" {
+      currentURL = config.GetSubredditPaginationURL(sub, *resp.Data.After, event.Limit)
+      pagesScraped++
+      _ = config.RotateSession()
+      time.Sleep(2 * time.Second)
+    } else {
+      currentURL = ""
     }
   }
 
-  log.Println("[+] Scraping cycle completed.")
+  log.Printf("[+] Job Finished: r/%s. Resources released.", sub)
 }
-
