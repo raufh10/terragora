@@ -30,11 +30,11 @@ type MarketplaceSearch struct {
   Listings []Listing `json:"listings" jsonschema_description:"Top matching listings sorted by relevance."`
 }
 
-// getClient returns a pointer to the client
 func getClient() *openai.Client {
-  return openai.NewClient(
+  client := openai.NewClient(
     option.WithAPIKey(GlobalConfig.OpenAIAPIKey),
   )
+  return &client // The '&' turns the Value into a Pointer
 }
 
 func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
