@@ -1,16 +1,18 @@
-package scraper
+package pkg
 
 import (
   "context"
   "encoding/json"
   "time"
 
+  "leaddits/internal/scraper"
+
   "github.com/jmoiron/sqlx"
   "github.com/lib/pq"
 )
 
 // BulkIngestRawPosts performs a batch upsert into the reddit_posts table.
-func BulkIngestRawPosts(ctx context.Context, db *sqlx.DB, posts []StorablePost) error {
+func BulkIngestRawPosts(ctx context.Context, db *sqlx.DB, posts []scraper.StorablePost) error {
   if len(posts) == 0 {
     return nil
   }
