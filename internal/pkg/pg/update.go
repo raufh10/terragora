@@ -3,6 +3,7 @@ package pkg
 import (
   "encoding/json"
   "fmt"
+  "strings"
 
   "github.com/google/uuid"
   "github.com/jmoiron/sqlx"
@@ -39,37 +40,55 @@ func BulkUpdateEmbeddings(db *sqlx.DB, updates map[uuid.UUID][]float32) error {
   return nil
 }
 
-// BulkUpdatePostData updates a specific column for multiple posts.
-func BulkUpdatePostData(db *sqlx.DB, columnName string, updates map[uuid.UUID]interface{}) error {
+// BulkUpdatePostData handles multiple column updates for multiple posts in one transaction.
+func BulkUpdatePostData(db *sqlx.DB, updates map[uuid.UUID]map[string]interface{}) error {
+  if len(updates) == 0 {
+    return nil
+  }
+
   tx, err := db.Beginx()
   if err != nil {
     return fmt.Errorf("failed to start transaction: %w", err)
   }
-
   defer tx.Rollback()
 
-  query := fmt.Sprintf(`UPDATE reddit_posts SET %s = $1 WHERE id = $2`, columnName)
+  for id, cols := range updates {
+    setClauses := []string{}
+    args := []interface{}{}
+    argCount := 1
 
-  for id, val := range updates {
-    var finalVal interface{} = val
-    if columnName == "price" || columnName == "metadata" {
-      bytes, err := json.Marshal(val)
-      if err != nil {
-        return fmt.Errorf("failed to marshal json for %s: %w", id, err)
+    for colName, val := range cols {
+      var finalVal interface{} = val
+      
+      if colName == "price" || colName == "metadata" || colName == "extraction" {
+        bytes, err := json.Marshal(val)
+        if err != nil {
+          return fmt.Errorf("failed to marshal json for %s (id: %s): %w", colName, id, err)
+        }
+        finalVal = string(bytes)
       }
-      finalVal = string(bytes)
+
+      setClauses = append(setClauses, fmt.Sprintf("%s = $%d", colName, argCount))
+      args = append(args, finalVal)
+      argCount++
     }
 
-    _, err = tx.Exec(query, finalVal, id)
+    args = append(args, id)
+    query := fmt.Sprintf("UPDATE reddit_posts SET %s WHERE id = $%d", 
+      strings.Join(setClauses, ", "), 
+      argCount,
+    )
+
+    _, err = tx.Exec(query, args...)
     if err != nil {
-      return fmt.Errorf("failed to update %s for id %s: %w", columnName, id, err)
+      return fmt.Errorf("failed to update post %s: %w", id, err)
     }
   }
 
   if err := tx.Commit(); err != nil {
-    return fmt.Errorf("failed to commit %s updates: %w", columnName, err)
+    return fmt.Errorf("failed to commit bulk updates: %w", err)
   }
 
-  fmt.Printf("✅ Successfully updated %d records in '%s'.\n", len(updates), columnName)
+  fmt.Printf("✅ Successfully updated %d records across multiple columns.\n", len(updates))
   return nil
 }
