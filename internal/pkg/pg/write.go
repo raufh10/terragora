@@ -3,24 +3,26 @@ package pkg
 import (
   "context"
   "encoding/json"
+  "fmt"
   "time"
-  "leaddits/internal/scraper"
 
   "github.com/jmoiron/sqlx"
   "github.com/lib/pq"
 )
 
-func BulkIngestRawPosts(ctx context.Context, db *sqlx.DB, posts []scraper.StorablePost) error {
+// BulkIngestRawPosts handles upserts using Postgres UNNEST.
+func BulkIngestRawPosts(ctx context.Context, db *sqlx.DB, posts []StorablePost) error {
   if len(posts) == 0 {
     return nil
   }
 
+  // Pre-allocate slices for performance
   redditIDs := make([]string, len(posts))
   titles := make([]string, len(posts))
   contents := make([]string, len(posts))
   urls := make([]string, len(posts))
   postedAts := make([]time.Time, len(posts))
-  metadatas := make([]string, len(posts)) // Changed to string slice for UNNEST
+  metadatas := make([]string, len(posts))
   isActives := make([]bool, len(posts))
 
   for i, p := range posts {
@@ -30,7 +32,7 @@ func BulkIngestRawPosts(ctx context.Context, db *sqlx.DB, posts []scraper.Storab
     urls[i] = p.URL
     postedAts[i] = time.Unix(int64(p.PostedAt), 0).UTC()
 
-    // Convert Metadata map to a JSON string
+    // Marshal the map into a JSON string for the DB
     metaBytes, err := json.Marshal(p.Metadata)
     if err != nil {
       metadatas[i] = "{}"
@@ -49,7 +51,7 @@ func BulkIngestRawPosts(ctx context.Context, db *sqlx.DB, posts []scraper.Storab
       $3::text[], 
       $4::text[], 
       $5::timestamptz[], 
-      $6::jsonb[], -- Postgres will now correctly parse the strings in this array as JSONB
+      $6::jsonb[], 
       $7::boolean[]
     )
     ON CONFLICT (reddit_id) DO UPDATE SET
@@ -72,6 +74,9 @@ func BulkIngestRawPosts(ctx context.Context, db *sqlx.DB, posts []scraper.Storab
     pq.Array(isActives),
   )
 
-  return err
-}
+  if err != nil {
+    return fmt.Errorf("bulk ingest failed: %w", err)
+  }
 
+  return nil
+}
