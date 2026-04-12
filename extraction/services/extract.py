@@ -67,7 +67,7 @@ class SubmissionsExtractor:
         data.append(row)
         
     except Exception as e:
-      # Return whatever was collected before the error occurred
+      print(f"Error occured: {e}")
       pass
 
     return data

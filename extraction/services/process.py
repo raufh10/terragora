@@ -1,15 +1,26 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
+from services.config import configs
 from pydantic import BaseModel
 from openai import OpenAI
 
-client = OpenAI()
+client = OpenAI(api_key=configs.openai_api_key.get_secret_value())
 
 class ItemExtraction(BaseModel):
   item_name: str
   price: Optional[float]
   category: str
   currency: str = "IDR"
+
+async def get_embedding(text: str) -> List[float]:
+  try:
+    response = client.embeddings.create(
+      input=text,
+      model="text-embedding-3-small"
+    )
+    return response.data[0].embedding
+  except Exception:
+    return []
 
 async def process_submissions(submissions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
   processed_results = []
@@ -27,7 +38,7 @@ async def process_submissions(submissions: List[Dict[str, Any]]) -> List[Dict[st
         model="gpt-5-nano-2025-08-07",
         messages=[
           {
-            "role": "system", 
+            "role": "system",
             "content": "Extract item name, price, and category. If price is not mentioned, return null."
           },
           {"role": "user", "content": combined_text},
@@ -36,11 +47,14 @@ async def process_submissions(submissions: List[Dict[str, Any]]) -> List[Dict[st
       )
 
       extracted = response.choices[0].message.parsed
-      
+
+      embedding = await get_embedding(combined_text)
+
       result = {
         "id": post.get("id"),
         "permalink": post.get("permalink"),
-        "extracted_data": extracted.dict()
+        "extracted_data": extracted.model_dump(),
+        "embedding": embedding
       }
       processed_results.append(result)
 
@@ -48,3 +62,4 @@ async def process_submissions(submissions: List[Dict[str, Any]]) -> List[Dict[st
       continue
 
   return processed_results
+
