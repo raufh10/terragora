@@ -15,11 +15,11 @@ import (
   pgPkg "leaddits/internal/pkg/pg"
 )
 
-// Global state for pooling
 var (
-  pool      []natsPkg.PipelineEvent
-  poolMutex sync.Mutex
-  lastAdded = time.Now()
+  insertPool []natsPkg.PipelineEvent
+  updatePool []natsPkg.PipelineEvent
+  poolMutex  sync.Mutex
+  lastAdded  = time.Now()
 )
 
 func main() {
@@ -51,44 +51,44 @@ func main() {
   // 2. Start the Background Flusher
   go startFlusher(client)
 
-  // 3. Listen for INSERTS
-  go func() {
-    err = pgPkg.ListenForEvents(dbURL, "reddit_posts_inserted", func(payload string) {
-      collectPipelineEvent("INSERT", payload)
-    })
-    if err != nil {
-      log.Printf("[-] DB Insert Listener error: %v", err)
-    }
-  }()
+  // 3. Listen for INSERTS (Starts the Extraction Pipeline)
+  err = pgPkg.ListenForEvents(dbURL, "reddit_posts_inserted", func(payload string) {
+    collectEvent("INSERT", payload)
+  })
+  if err != nil {
+    log.Printf("[-] DB Insert Listener error: %v", err)
+  }
 
-  // 4. Listen for UPDATES
-  go func() {
-    err = pgPkg.ListenForEvents(dbURL, "reddit_posts_updated", func(payload string) {
-      collectPipelineEvent("UPDATE", payload)
-    })
-    if err != nil {
-      log.Printf("[-] DB Update Listener error: %v", err)
-    }
-  }()
+  // 4. Listen for UPDATES (Starts the Vectorization Pipeline)
+  err = pgPkg.ListenForEvents(dbURL, "reddit_posts_updated", func(payload string) {
+    collectEvent("UPDATE", payload)
+  })
+  if err != nil {
+    log.Printf("[-] DB Update Listener error: %v", err)
+  }
 
   // Keep the process alive
   select {}
 }
 
-func collectPipelineEvent(opType string, payload string) {
-  var dbRow natsPkg.PipelineEvent
-  if err := json.Unmarshal([]byte(payload), &dbRow); err != nil {
+func collectEvent(opType string, payload string) {
+  var event natsPkg.PipelineEvent
+  if err := json.Unmarshal([]byte(payload), &event); err != nil {
     log.Printf("[!] Failed to decode DB payload: %v", err)
     return
   }
 
   poolMutex.Lock()
-  pool = append(pool, dbRow)
-  lastAdded = time.Now()
-  count := len(pool)
-  poolMutex.Unlock()
+  defer poolMutex.Unlock()
 
-  log.Printf("[*] %s: Pooled event %s (Batch: %d)", opType, dbRow.RedditID, count)
+  if opType == "INSERT" {
+    insertPool = append(insertPool, event)
+  } else {
+    updatePool = append(updatePool, event)
+  }
+
+  lastAdded = time.Now()
+  log.Printf("[*] Pooled %s: %s", opType, event.RedditID)
 }
 
 func startFlusher(client *natsPkg.Client) {
@@ -96,34 +96,29 @@ func startFlusher(client *natsPkg.Client) {
   for range ticker.C {
     poolMutex.Lock()
 
-    shouldFlush := len(pool) > 0 && time.Since(lastAdded) >= 5*time.Minute
-    if len(pool) >= 500 {
-      shouldFlush = true
+    timeThreshold := time.Since(lastAdded) >= 5*time.Minute
+
+    // Flush Insert Pool (Extraction Stage)
+    if len(insertPool) >= 500 || (len(insertPool) > 0 && timeThreshold) {
+      batch := insertPool
+      insertPool = nil
+      go client.PublishPipelineBatch("reddit_posts_inserted", batch)
+      log.Printf("[^] Flushed %d INSERTS to Extraction Stage", len(batch))
     }
 
-    if shouldFlush {
-      batchToSend := pool
-      pool = nil
-      poolMutex.Unlock()
-
-      log.Printf("[^] Flushing %d combined events to NATS...", len(batchToSend))
-      if err := client.PublishPipelineBatch("pipeline.event", batchToSend); err != nil {
-        log.Printf("[!] Batch Publish error: %v", err)
-      }
-    } else {
-      poolMutex.Unlock()
+    // Flush Update Pool (Vectorization Stage)
+    if len(updatePool) >= 500 || (len(updatePool) > 0 && timeThreshold) {
+      batch := updatePool
+      updatePool = nil
+      go client.PublishPipelineBatch("reddit_posts_updated", batch)
+      log.Printf("[^] Flushed %d UPDATES to Vectorization Stage", len(batch))
     }
+
+    poolMutex.Unlock()
   }
 }
 
 func publishScraperTrigger(client *natsPkg.Client) {
-  min, max := 5, 30
-  randomSeconds := rand.Intn(max-min+1) + min
-  delay := time.Duration(randomSeconds) * time.Second
-
-  log.Printf("[*] Cron triggered. Delaying %v...", delay)
-  time.Sleep(delay)
-
   event := natsPkg.ScraperEvent{
     Pages:     5,
     Limit:     100,
@@ -133,8 +128,6 @@ func publishScraperTrigger(client *natsPkg.Client) {
 
   if err := client.PublishScraperEvent("scraper.event", event); err != nil {
     log.Printf("[!] Scraper Publish error: %v", err)
-  } else {
-    log.Printf("[+] Published scraper.event for r/%s", event.Target)
   }
 }
 
