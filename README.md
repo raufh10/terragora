@@ -10,7 +10,7 @@ A Telegram chatbot that helps you find used item deals sourced from the r/jualbe
 | Database | pgvector |
 | Messaging | NATS JetStream |
 | Embeddings | OpenAI text-embedding-3-small |
-| Text Processing | OpenAI GPT-4.5-mini |
+| Text Processing | OpenAI GPT-5.4-mini |
 | Deployment | Railway (Dockerfile) |
 
 ## Project Layout
@@ -55,7 +55,7 @@ The system lifecycle begins via two primary triggers:
 ### 2. Service Layer
 * **Scraper:** Consumes tasks to ingest Reddit data via the `.json` endpoint. It implements a recursive pagination logic, traversing the `after` keys until specified limit target reached.
 * **Data Pipeline:** Processes incoming raw posts through two tracks:
-    * **Extraction:** Utilizes `GPT-4.5-mini` to parse unstructured text into structured fields (Price, Seller Notes).
+    * **Extraction:** Utilizes `GPT-5.4-mini` to parse unstructured text into structured fields (Price, Seller Notes).
     * **Vectorization:** Generates embeddings using `text-embedding-3-small` and persists them in **pgvector**.
 * **Bot Server:** Interfaces with **Telegram** via webhooks. Upon receiving a user query, the server:
     1.  Vectorizes the search string.
