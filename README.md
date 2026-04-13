@@ -13,43 +13,51 @@ A Telegram chatbot that helps you find used item deals sourced from the r/jualbe
 | Text Processing | OpenAI GPT-4.5-mini |
 | Deployment | Railway (Dockerfile) |
 
-## Architecture Overview
-
-Terragora is built around a NATS JetStream messaging backbone that coordinates three independent services: a scraper, a data pipeline, and a bot server.
-
-A cron job and pgvector table notifications act as the system's triggers — the cron fires on a schedule, while pgvector notifies on row insert/update. Both feed into a central publisher that pushes tasks onto JetStream queues.
-
-The scraper consumes tasks from the queue, fetches posts from Reddit using the `.json` endpoint, and handles pagination by looping over `after` keys until all pages are collected.
-
-The data pipeline runs two parallel pipelines per post: one extracts structured fields (price & seller"s notes) from raw post text using GPT-4.5-mini, and another generates a vector embedding using text-embedding-3-small and stores it in pgvector.
-
-The bot server connects to Telegram via webhook. When a search query arrives, it vectorizes the query, runs a cosine similarity search against stored post embeddings, then builds and returns a message with the most relevant results including title, price, notes, and URL.
-
 ## Project Layout
 
 ```
 terragora/
-├── cmd/                        # Entrypoints (main.go) for each service
+├── cmd/                    # Entrypoints (main.go) for each service
 │   ├── bot-server/
 │   ├── pipeline/
 │   ├── publisher/
 │   └── scraper/
 │
-├── internal/                   # Private application code
+├── internal/
 │   ├── bot-server/
 │   ├── pipeline/
 │   ├── scraper/
-│   └── pkg/                    # Shared packages across services
-│       ├── llm/                # OpenAI client (embeddings + text processing)
-│       ├── nats/               # NATS JetStream client
-│       └── pg/                 # pgvector / PostgreSQL client
+│   └── pkg/                # Shared packages across services
+│       ├── llm/            # OpenAI client (embeddings + text processing)
+│       ├── nats/           # NATS JetStream client
+│       └── pg/             # pgvector / PostgreSQL client
 │
-├── migrations/                 # Database migrations
-├── scripts/                    # Utility scripts
-├── bin/                        # Compiled binaries
+├── migrations/             # Database migrations
+├── scripts/                # Utility scripts
+├── bin/                    # Compiled binaries
 │
 ├── BotServerDockerfile
 ├── PipelineDockerfile
 ├── PublisherDockerfile
 └── ScraperDockerfile
 ```
+
+## Architecture Overview
+
+Terragora is built on a **NATS JetStream** backbone. It orchestrates three decoupled services through a producer-consumer architecture.
+
+### 1. Trigger & Orchestration
+The system lifecycle begins via two primary triggers:
+* **Cron Scheduler:** Initiates routine sweeps on a fixed interval.
+* **Database Triggers:** Listens for `INSERT/UPDATE` notifications from a **pgvector** table.
+* **Publisher:** Consolidates these triggers and dispatches tasks into the JetStream message queues.
+
+### 2. Service Layer
+* **Scraper:** Consumes tasks to ingest Reddit data via the `.json` endpoint. It implements a recursive pagination logic, traversing the `after` keys until specified limit target reached.
+* **Data Pipeline:** Processes incoming raw posts through two tracks:
+    * **Extraction:** Utilizes `GPT-4.5-mini` to parse unstructured text into structured fields (Price, Seller Notes).
+    * **Vectorization:** Generates embeddings using `text-embedding-3-small` and persists them in **pgvector**.
+* **Bot Server:** Interfaces with **Telegram** via webhooks. Upon receiving a user query, the server:
+    1.  Vectorizes the search string.
+    2.  Executes a **cosine similarity** search against the vector store.
+    3.  Aggregates the top results into a formatted response containing the title, price, notes, and source URL.
